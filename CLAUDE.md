@@ -15,12 +15,15 @@ sections for schema, page map, design direction, and migration plan.
 - `D:\Rebuild\` (this root) — the blueprint doc, the *old* live app's HTML/JS
   files (reference-only, read but never modify, never connect to the
   project they talk to), and `database\` (SQL migration files, see below).
+  **Now its own git repo** (`git -C D:\Rebuild ...`), initialized
+  2026-07-25 — see the former "Known gap" note, now resolved, near the
+  end of this file for what's tracked vs. `.gitignore`d.
 - `D:\Rebuild\aquadesk-app\` — the actual Next.js rebuild. This is its own
-  git repo (`git -C aquadesk-app ...`, not the root — the root itself is
-  **not** a git repo, see "Known gap" below).
-- `D:\Rebuild\database\` — tracked SQL migration files (001–009 so far),
-  the source of truth for schema/RLS/functions. **Not git-tracked** (root
-  isn't a repo) — see "Known gap" below.
+  separate git repo (`git -C aquadesk-app ...`) — two independent repos
+  in this tree, don't mix up which one a `git` command should target.
+- `D:\Rebuild\database\` — tracked SQL migration files (001–010 so far),
+  the source of truth for schema/RLS/functions. Git-tracked as of
+  2026-07-25 (previously wasn't — see resolved "Known gap" note).
 
 ## Absolute rule: two separate Supabase projects, never confuse them
 
@@ -47,22 +50,37 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
-## Current state (as of 2026-07-25, session end)
+## Current state (as of 2026-07-25, continued session — Staff + Crew)
 
-**Both Reports (all 8 tabs) and Divers + Diver Detail (all 12 planned
-stages) are fully built, verified, and committed.** Main feature
-commit `40f8065`, followed by a small end-of-session dead-code cleanup
-commit `1d28ab7` (see the final dead-code audit entry and retrospective
-#25 below for exactly what that removed and why). `git status` in
-`aquadesk-app` is clean. No uncommitted work right now — check
-`git status` before assuming either way if that's changed by the time
-this file is next read.
+**Reports (all 8 tabs), Divers + Diver Detail (all 12 stages), and now
+Staff (roster CRUD + certifications) plus the public Crew schedule view
+are all fully built, verified, and committed.** The `D:\Rebuild` root is
+now also a git repo (see the folder-layout note above) with its own
+initial commit tracking `database/*.sql` and the old app's reference
+files — `aquadesk-app/` stays a separate repo, excluded via
+`.gitignore` in the root repo. Check `git status` in **both** repos
+before assuming either is clean, since this file is a snapshot at
+write-time, not live state.
 
-Two new migrations this session (`database/008_diver_profile_
-fields.sql`, `database/009_bill_unlock_audit_rpc.sql`) are applied to
-the rebuild database but — like all `database/*.sql` files — not
-git-tracked, since the `D:\Rebuild` root itself isn't a repo (see
-"Known gap" below).
+**Migration 010** (`database/010_staff_roster_fields.sql`): emergency
+contact fields on `staff` (same shape as divers' migration 008), a new
+`staff_certifications` table, a split `staff_select` RLS policy (owner
+sees the whole roster, a secretary sees only their own linked row —
+previously any tenant user could see everyone), and two new RPCs:
+`generate_daily_staff_token` (any authenticated tenant user, not
+owner-gated) and `get_crew_schedule` (anon-callable, token + same-day
+check). See the Staff write-up below for the full design reasoning.
+
+### Not yet built
+
+**Scheduling only** — everything else in the originally-agreed build
+order (Settings → Boat Manifest → Reports → Divers → Staff) is done.
+Scheduling is also where the old app's `divers.html` group-creation/
+equipment-prep/"push to schedule" workflow lands (deferred from the
+Divers build), and where `schedules`/`schedule_divers` will finally get
+a real writer — until then, the just-built Crew schedule view has
+nothing to display without directly-seeded test rows (expected, not a
+bug — called out in the Staff write-up below).
 
 ### What's built and verified (in a real browser, not just compiled)
 
@@ -513,9 +531,125 @@ documents history) — comparable in scope to the entire Reports build.
   rarer, multi-field-affecting actions just reload for guaranteed
   consistency instead of hand-syncing five different pieces of state.
 
+**Staff (roster) + public Crew schedule view** — built end-to-end
+2026-07-25, same session as the Divers close-out, per four scope
+decisions confirmed with the user before starting (see `EnterPlanMode`
+plan used for this build): build the crew schedule view now rather than
+deferring to Scheduling (with token generation kept as its own reusable
+piece); secretary "view own profile" means read-only, own row only;
+add certifications + emergency contact fields beyond the original
+schema; and staff `daily_rate` stays fully separate from Reports'
+per-dive commission rate.
+
+Research first established that `staff.html` (old app) is **not** a
+roster page — it's a token-gated, no-login mobile view crew use to
+check today's trips, with the token generated by Scheduling (which
+doesn't exist yet). The real precedent for a roster page was
+`settings.html`'s "Staff" tab. `public.staff` already existed from the
+original Stage 1a schema pass (position/employment_status enums, RLS) —
+this build was mostly new pages, not a big schema build.
+
+- **Migration 010** (`database/010_staff_roster_fields.sql`): five
+  `emergency_contact_*` text fields on `staff` (identical shape to
+  divers' migration 008); new `staff_certifications` table
+  (`staff_id`, `cert_name`, `expiry_date`, own `dive_center_id` —
+  denormalized, matching this schema's established child-table
+  convention rather than a join-based RLS check); a replaced
+  `staff_select` policy — previously any tenant user could read every
+  staff row, now split so a secretary only sees the row where
+  `staff.user_id = auth.uid()` (owner still sees everything;
+  `staff_owner_write` stays owner-only, unchanged, confirming the
+  read-only-self-view answer); `generate_daily_staff_token` (SECURITY
+  DEFINER, not owner-gated — any authenticated tenant user can trigger
+  it, matching the old app's secretary-driven flow); `get_crew_schedule`
+  (SECURITY DEFINER, `anon`-callable — the only anon-facing piece of
+  this whole feature, mirroring the registration RPCs' "anon has zero
+  direct table access, only a narrow gateway" pattern). Both new RPCs
+  anchor "today" to Asia/Manila via `(now() at time zone 'Asia/Manila')`
+  rather than trusting `current_date`/server timezone, matching every
+  other day-boundary check in this app.
+- **Staff page** (`src/app/(app)/staff/`): roster table (owner: full
+  CRUD — add/edit/deactivate/delete; secretary: their own row only, no
+  controls, matching the RLS split exactly), an inline expandable
+  certifications section per staff member (add/list/delete, with an
+  "Expired"/"Expires soon" badge within 30 days — same surfaced-signal
+  style as Divers' medical/minor banners), and a Crew Code section
+  (generate/regenerate today's 5-character token, visible and usable by
+  owner or secretary alike). Adding/editing a `position = secretary` row
+  offers a picker of existing secretary logins with no staff row yet
+  (`loadUnlinkedSecretaryUsers`-style query) to link `staff.user_id` —
+  this is what makes "secretary sees own profile" resolve to something
+  real; Settings > Staff Access still owns creating the login itself,
+  unchanged. `RELATIONSHIP_OPTIONS` is deliberately duplicated from
+  `divers/[id]/constants.ts` rather than shared, matching this
+  codebase's established small-helper-duplication precedent.
+- **Public Crew schedule view** (`src/app/crew/`, outside `(app)/`,
+  mirroring `src/app/register/`'s anon-accessible pattern): a token
+  entry form, then trip cards assembled from the real (already-existing)
+  Stage 1a scheduling schema — `schedules` → `boats` (name/captain),
+  `schedule_sites` → `dive_sites` (a trip can have multiple sites, via
+  the real join table — not the old app's single flat `dive_site` text
+  field), `schedule_divers` grouped by `staff_id` → `staff` +
+  `divers` (name/nationality/cert level/dives/age/group), a computed
+  12L/15L/nitrox tank tally, and `schedules.is_joiner`/`joiner_boat_name`
+  (already on the schema directly, so "we joined another boat" renders
+  for free — the reverse direction, "another boat joined us," still has
+  no signal anywhere, unchanged known gap). **Expected limitation**:
+  since Scheduling isn't built, `schedules`/`schedule_divers` have no
+  real writer yet, so this view shows nothing until either Scheduling
+  ships or rows are seeded directly for testing (done for verification,
+  see below) — not a bug.
+- Verified end-to-end against a seeded test dive center: RLS confirmed
+  via rolled-back simulated sessions (owner sees all staff/certs, a
+  linked secretary sees only their own row/certs, an unlinked secretary
+  sees nothing, a secretary's direct write attempt affects 0 rows) —
+  then re-confirmed in a real browser: created a staff member with
+  emergency contact + nitrox cert, added an expired certification
+  (correctly badged), generated a crew code, logged in as an unlinked
+  secretary (correctly saw "no profile linked" with no controls),
+  linked a secretary via the owner UI, logged back in as that secretary
+  (correctly saw only their own row, read-only), seeded a full day's
+  schedule (multi-site trip, joiner info, two divers with different
+  tank/nitrox flags) directly via SQL, hit `/crew` with the real code
+  (rendered every field correctly, including the multi-site list and
+  tank tally), and confirmed a wrong code correctly shows "invalid or
+  expired." Test dive center, staff, schedule data, and both auth users
+  deleted afterward — database confirmed back to just the real platform
+  admin account.
+
+**Real, non-code finding worth recording — a Supabase Auth (GoTrue)
+gotcha, not a bug in this feature**: raw-SQL-inserting a test
+`auth.users` row (the established `createAuthUser()`-style pattern this
+project already relies on) failed to log in with a generic
+`{"code":500,"error_code":"unexpected_failure","msg":"Database error
+querying schema"}` — while a wrong password against a real, long-
+standing account correctly returned a normal 400 `invalid_credentials`,
+proving GoTrue itself was reachable and working, and the problem was
+specific to the newly-inserted rows. Root cause, found by a full
+column-by-column diff against a real working `auth.users` row: several
+text columns (`confirmation_token`, `recovery_token`,
+`email_change_token_new`, `email_change`, plus a few others) were left
+`null` in the raw insert, but are `''` (empty string) on every real
+row — GoTrue's own user-scanning query can't handle `null` there and
+fails with that same generic 500, which looks nothing like a
+null-column problem from the error message alone. **Lesson for any
+future raw-SQL `auth.users` test-fixture insert**: explicitly set
+`confirmation_token`, `recovery_token`, `email_change_token_new`,
+`email_change`, `email_change_token_current`, `phone_change`,
+`phone_change_token`, and `reauthentication_token` to `''`, never leave
+them `null` — and make sure `identity_data` on the matching
+`auth.identities` row includes `email_verified`/`phone_verified` keys
+(also missing from a real row's shape otherwise). If a freshly-seeded
+test login mysteriously 500s instead of just failing normally, diff
+every column against a real user row before assuming the password hash
+is wrong.
+
 ### Not yet built
 
-Staff (roster) and Scheduling — that's the rest of the rebuild.
+Scheduling — the last remaining page. See "Current state" above for
+what it still owes (the `divers.html` group-creation workflow, the real
+`schedules`/`schedule_divers` writer the Crew view is waiting on, and
+the "another boat joined us" Dashboard alert signal).
 
 ### Known gaps (tracked in `aquadesk-app/KNOWN_GAPS.md`, none blocking)
 
@@ -530,32 +664,27 @@ Staff (roster) and Scheduling — that's the rest of the rebuild.
 
 ### Suggested next step
 
-**First, before any new work: ask the user whether to commit the
-uncommitted Divers + Diver Detail changes** (see the flag at the top of
-this file).
+**Scheduling is the only remaining page.** That closes out the build
+order agreed at the start of this multi-session arc: Settings (done) →
+Boat Manifest (done) → Reports (done) → Divers (done) → Staff (done,
+this session, placed after confirming with the user it should come
+before Scheduling) → Scheduling (last, deliberately saved for hardest).
+Scheduling also owes: the old app's `divers.html` group-creation/
+equipment-prep/"push to schedule" workflow (deferred from the Divers
+build), a real writer for `schedules`/`schedule_divers` (the just-built
+Crew view is waiting on this), and the "another boat joined us today"
+Dashboard alert signal (documented gap since Dashboard was built).
 
-**Both Reports (all 8 tabs) and Divers + Diver Detail are now fully
-built.** That closes out the build order agreed at the start of this
-multi-session arc: Settings (done) → Boat Manifest (done) → Reports
-(done) → Divers (done) → Scheduling (hardest, last, deliberately saved
-for last). Scheduling is next by that stated order — but per the
-scoping decision made before building Divers, Scheduling is also where
-the old app's `divers.html` group-creation/equipment-prep/"push to
-schedule" workflow is meant to land (deferred from the Divers build
-specifically because it writes to `schedule_divers`/`visits`, not diver
-records). Also not yet built: **Staff (roster)**, which doesn't have an
-established place in the stated order at all — worth confirming with
-the user where it fits before assuming, same as every other scope
-question this arc.
-
-Known, documented gaps in the just-built Divers + Diver Detail worth
-revisiting if Scheduling or a future session touches this area again:
-package-mode nitrox/15L add-on pricing (no dedicated mechanism, stays
-manual entry), `equipment_rental` never auto-computed from a diver's
-saved equipment selection (also manual entry), and Diver Detail only
-ever shows the diver's single most recent visit (no full multi-visit
-history browser) — none of these were in the agreed Stage 7/8 scope as
-blocking, all are called out inline in the write-up above.
+Known, documented gaps worth revisiting if Scheduling or a future
+session touches these areas again: package-mode nitrox/15L add-on
+pricing (Divers, no dedicated mechanism, stays manual entry),
+`equipment_rental` never auto-computed from a diver's saved equipment
+selection (Divers, also manual entry), Diver Detail only ever shows the
+diver's single most recent visit (no full multi-visit history
+browser), and the Crew schedule view's join-ride info is limited to
+`schedules.is_joiner`/`joiner_boat_name` (the "we joined them" direction
+only) — none of these were blocking for their respective builds, all
+called out inline in the write-ups above.
 
 Implementation rules that governed both Reports and Divers this
 session, worth carrying forward into Scheduling if it ends up with a
@@ -1142,6 +1271,42 @@ The point isn't the fix (already applied) — it's recognizing the
     the method used through most of this project so far, isn't sufficient
     on its own.**
 
+### Session 3, continued (2026-07-25 — Staff + Crew Schedule View)
+
+26. **(Testing technique, not a code defect) A raw-SQL-inserted
+    `auth.users` test row that leaves certain text columns `null`
+    instead of `''` makes Supabase Auth (GoTrue) fail login with a
+    generic 500 `"Database error querying schema"` — indistinguishable
+    from a real outage or a wrong password hash from the error message
+    alone.** Seeding a test owner/secretary login for Staff's RLS/browser
+    verification via the same raw-SQL `auth.users`/`auth.identities`
+    insert pattern this project already uses produced that exact 500 on
+    every login attempt, even though the bcrypt hash was independently
+    confirmed correct via `encrypted_password = crypt(password,
+    encrypted_password)`. Ruled out a general outage by testing a wrong
+    password against a real, long-standing account (`aquadeskonline@
+    gmail.com`), which correctly returned a normal 400
+    `invalid_credentials` — proving GoTrue itself was healthy and the
+    problem was specific to the newly-inserted rows. Root cause found
+    only by a full column-by-column diff (`select * from auth.users
+    where email in (...)`) against that same real working row:
+    `confirmation_token`, `recovery_token`, `email_change_token_new`,
+    `email_change`, `email_change_token_current`, `phone_change`,
+    `phone_change_token`, and `reauthentication_token` were `null` in
+    the test row but `''` on the real one — GoTrue's Go code apparently
+    can't scan `null` into whatever it expects there. Also needed:
+    `identity_data` on the matching `auth.identities` row must include
+    `email_verified`/`phone_verified` keys, and `raw_user_meta_data`
+    should be `{"email_verified": true}`, not `{}` — both present on
+    every real row and initially missing from the test insert. **Lesson:
+    for any future raw-SQL `auth.users` test-fixture insert, explicitly
+    set all eight of those token columns to `''` (never leave them at
+    their nullable default) and match the real `identity_data`/
+    `raw_user_meta_data` shape — and if a freshly-seeded login
+    mysteriously 500s instead of failing normally, diff every column
+    against a real user row before assuming the password hash itself is
+    wrong.**
+
 ## Dead-code audit (2026-07-23 session)
 
 - `npm run lint` — clean, no unused-var/import warnings.
@@ -1485,21 +1650,54 @@ methodology gap this exposed — worth applying the usage-count check to
 every future feature's audit from now on, not just when explicitly
 asked twice in one session.
 
-## Known gap (not fixed, flagged for a decision)
+## Dead-code audit (2026-07-25 session, continued — Staff + Crew Schedule View)
 
-**`D:\Rebuild` (this root) is not a git repository.** Only
-`aquadesk-app/` is. That means `database/*.sql` — the actual source of
-truth for the live schema — has no version history at all, just
-whatever's on disk. If this machine's disk were lost, the only other copy
-of the schema is the live Supabase project itself (which can be
-reconstructed via `pg_dump`, but isn't the same as having tracked history
-of *why* each change was made). Worth deciding with the user: git-init
-this root too (mind that it also contains the old app's HTML/JS and a
-20MB+ `logo.png` — decide what belongs in that repo vs. `.gitignore`), or
-move `database/` inside `aquadesk-app/` so it's covered by the existing
-repo. Not acted on unilaterally since it's a structural call, not a bug.
-This is now 9 migrations deep (`001`–`009`) with no tracked history — the
-risk grows with every session this stays unresolved.
+- `npx tsc --noEmit` and `npm run lint` — both clean, run fresh at the
+  end (both checks applied from the start this time, per the
+  retrospective #25 lesson, not bolted on afterward).
+- Ran the usage-count check
+  (`grep -rl "\bsymbol\b" src/app | wc -l`) for every exported
+  function/type/constant added under `src/app/(app)/staff/` and
+  `src/app/crew/` this pass. One symbol came back at count 1
+  (`StaffPageData`, `staff/data.ts`) — checked closely per retrospective
+  #25's warning, but confirmed this is a false positive of the blunt
+  heuristic, not a real instance of the pattern: every field it types
+  (`roster`, `certifications`, `unlinkedSecretaries`, `crewTokenToday`)
+  is actually destructured and passed as a prop in `staff/page.tsx` —
+  unlike `loadPricingMode`/`Visit.isPaid` (retrospective #25's real
+  finds), nothing here is fetched-but-never-read. No fix needed; the
+  type just isn't imported by name anywhere else, which is normal for a
+  function's own return type.
+- Grepped for `TODO`/`FIXME`/`XXX` under both new directories — none
+  found (no stale placeholders left behind this pass).
+- Confirmed `RELATIONSHIP_OPTIONS`'s duplication (`staff/constants.ts`
+  vs. `divers/[id]/constants.ts`) is deliberate, matching this
+  codebase's established small-helper-duplication precedent — not
+  something to centralize.
+- Database confirmed empty of test data at session end — only the real
+  `aquadeskonline@gmail.com` platform admin remains in `auth.users`,
+  `dive_centers` count is 0.
+
+**Nothing found that needed fixing.** The one real, valuable finding
+this pass (the GoTrue raw-insert null-vs-empty-string gotcha) was a
+testing-environment issue, not a defect in the shipped feature — see
+retrospective #26 above.
+
+## Resolved gap: root folder git history (was: "Known gap")
+
+**Fixed 2026-07-25.** `D:\Rebuild` (this root) is now its own git repo,
+separate from `aquadesk-app/`'s. Initial commit tracks `database/*.sql`
+(all migrations, source of truth for the live schema), the blueprint
+doc, and the old app's reference HTML/JS/`logo.png` (turned out to be
+only ~175KB, not the 20MB+ this note previously assumed — worth
+correcting since that earlier figure was stale/wrong). `.gitignore`
+excludes `aquadesk-app/` (its own separate repo — avoids a nested-repo
+gitlink), `supabase/.temp/` (Supabase CLI cache, regenerates on
+`supabase link`), and `.claude/settings.local.json` (machine-local
+permission state). Every `database/*.sql` migration from here forward
+should get committed to this root repo, not just applied to the live
+DB — check `git status` in `D:\Rebuild` (not just `aquadesk-app/`)
+before assuming migration history is up to date.
 
 ## Credential hygiene note
 
