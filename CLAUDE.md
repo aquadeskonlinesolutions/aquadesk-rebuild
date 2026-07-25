@@ -68,6 +68,14 @@ group form collects both, the original schema had neither. See the
 Scheduling write-up below for the full design reasoning and how it
 absorbed the deferred `divers.html` group/push-to-schedule workflow.
 
+A final end-of-day dead-code pass (requested explicitly, covering both
+today's features together, not just the most recent one) found one more
+small real item beyond what each feature's own audit already caught —
+an unnecessarily-exported `BOAT_MODE_LABELS` constant in
+`scheduling/constants.ts` — fixed in place. See the final dead-code
+audit entry near the end of this file for the full methodology and
+result; `git status` in both repos is clean as of session end.
+
 ### Not yet built
 
 **Nothing** — this was the last page. Known, documented, non-blocking
@@ -885,9 +893,15 @@ center could actually fit.
   <file.sql>`), wrapped in `begin`/`commit` inside the SQL file itself so a
   failed migration never leaves partial state. Reuse this pattern rather
   than re-deriving it — a `createAuthUser()` helper (raw SQL insert into
-  `auth.users` + `auth.identities`, bcrypt via `crypt()`/`gen_salt('bf')`)
-  is also worth reusing verbatim; the Admin API (`auth.admin.createUser`)
-  is unreliable when called from a standalone script (see retrospective).
+  `auth.users` + `auth.identities`, bcrypt via `crypt()`/`gen_salt('bf')`,
+  with all eight token columns set to `''` never `null` and
+  `identity_data` including `email_verified`/`phone_verified` — see
+  retrospective #26 for exactly why) is also worth reusing verbatim.
+  **Don't attempt `auth.admin.*` Admin API calls from a standalone
+  script at all** — confirmed (retrospective #27) this project's
+  new-style `sb_secret_...` key is structurally incompatible with what
+  GoTrue's Admin endpoints expect (a legacy JWT-based service-role key),
+  not just "unreliable"; it will fail with a JWT/`kid` error every time.
 - **Browser testing in this environment**: the Browser pane does not
   actually composite frames in this sandbox — `computer.left_click` by
   coordinate is unreliable and `screenshot` always fails ("pane not
@@ -1452,6 +1466,49 @@ The point isn't the fix (already applied) — it's recognizing the
     against a real user row before assuming the password hash itself is
     wrong.**
 
+27. **(Testing technique, not a code defect) The Admin API
+    (`auth.admin.createUser`) failed from a standalone Node script with
+    `"invalid JWT: unable to parse or verify signature... unrecognized
+    JWT kid for algorithm ES256"` — a completely different failure mode
+    from retrospective #26's null-token issue, hit as the *first* attempt
+    at seeding Staff's test logins, before falling back to the raw-SQL
+    `auth.users` insert pattern that #26 is about.** This project's own
+    working practices note already said "the Admin API is unreliable
+    when called from a standalone script" from a prior session, but
+    didn't say why — now it's confirmed: this project's Supabase keys are
+    the newer `sb_publishable_.../sb_secret_...`-style API keys (see
+    `aquadesk-app/.env.local`), not the legacy JWT-based
+    `service_role`/`anon` keys GoTrue's Admin endpoints expect for
+    signature verification. Passing the new-style secret key as the
+    Admin API's service-role credential produces exactly this JWT/`kid`
+    error — it's not a transient/script-specific flakiness as the vague
+    prior note implied, it's a structural key-format mismatch that will
+    recur every time. **Lesson: don't attempt `auth.admin.*` calls from
+    a standalone script with this project's keys at all — go straight to
+    the raw-SQL `auth.users`/`auth.identities` insert pattern (see
+    retrospective #26 for the exact column gotchas that pattern itself
+    needs) rather than losing time on the Admin API first.**
+
+28. **(Testing technique, not a code defect) Deleting a test
+    `dive_centers` row failed against `schedules_created_by_fkey`
+    (`schedules.created_by → users.id`, a plain FK with no cascade) even
+    after explicitly nulling `created_by` earlier in the *same*
+    transaction, immediately before the `dive_centers` delete.** Splitting
+    the `update schedules set created_by = null ...` into its own
+    separately-committed statement, then deleting `dive_centers` in a
+    follow-up call, worked cleanly. Root cause not fully pinned down
+    (most likely how Postgres orders/validates multiple cascade paths —
+    `dive_centers → users` and `dive_centers → schedules` — triggered by
+    one parent delete when a non-cascading cross-reference like
+    `created_by` sits between them), but confirmed as a cleanup-script
+    ordering quirk, not a schema or application bug — no real code path
+    ever deletes a `dive_centers` row this way. **Lesson: for any future
+    test-data cleanup that deletes a `dive_centers` row, if a table has a
+    plain (non-`dive_center_id`-cascade) FK pointing at `users` — like
+    `schedules.created_by` — null that column out in its own prior
+    *committed* statement, not the same transaction as the final
+    cascade-triggering delete.**
+
 ## Dead-code audit (2026-07-23 session)
 
 - `npm run lint` — clean, no unused-var/import warnings.
@@ -1858,6 +1915,52 @@ cross-page bug (two unused exported functions). Nothing else needed
 fixing. This closes out the rebuild's originally-agreed build order —
 Settings, Boat Manifest, Reports, Divers, Staff, and Scheduling are all
 now built, verified, and committed.
+
+## Dead-code audit (2026-07-25 session, final end-of-day pass — Staff + Scheduling together)
+
+Requested explicitly by the user at session close, covering **both**
+features built today (Staff + Crew, and Scheduling), not just the most
+recent one — same "closer second pass" spirit as retrospective #25's
+original finding that a single symbol-grep pass isn't sufficient on its
+own.
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run fresh again.
+- Extracted every exported function/type/constant from both features'
+  diffs (`git diff --stat cfc5b85^ 42f4623 -- src`, the two feature
+  commits) — 74 symbols total — and ran the usage-count check
+  (`grep -rl "\bsymbol\b" src/app | wc -l`) on all of them together in
+  one pass. Two came back at or near 1:
+  - **`BOAT_MODE_LABELS`** (`scheduling/constants.ts`) — a real find:
+    exported but never imported anywhere outside its own file, only used
+    internally to derive `BOAT_MODE_OPTIONS` (which *is* genuinely
+    consumed by `TripBuilderPanel`). Unlike `POSITION_LABELS`/
+    `EMPLOYMENT_STATUS_LABELS`/`EXPERIENCE_TYPE_LABELS` (all directly
+    indexed elsewhere for display, e.g. `POSITION_LABELS[s.position]` in
+    `StaffClient.tsx`), nothing ever needs a standalone boat-mode label
+    lookup — Scheduling's UI shows the boat's real name, not a mode
+    label. Fixed by dropping the `export` keyword, keeping it as a
+    module-private const — `BOAT_MODE_OPTIONS` stays the only exported
+    symbol from that pair.
+  - `StaffPageData` (`staff/data.ts`) — re-checked, still a confirmed
+    false positive (same finding as the original Staff-session audit):
+    it's `loadStaffPageData`'s return type, and every field it describes
+    (`roster`, `certifications`, `unlinkedSecretaries`, `crewTokenToday`)
+    is genuinely destructured and used in `page.tsx` — the type name
+    just isn't imported anywhere by name, which is normal for a
+    function's own inferred return shape, not a sign of an unread field.
+- Grepped for `TODO`/`FIXME`/`XXX` across both `staff/` and
+  `scheduling/` — none found.
+- Confirmed `getStaffOptions`/`getCourseRateOptions` (removed in the
+  earlier same-day Scheduling audit) don't reappear and have zero
+  remaining references anywhere.
+- Database confirmed empty of test data — only the real
+  `aquadeskonline@gmail.com` platform admin remains in `auth.users`,
+  `dive_centers` count is 0.
+
+**One additional real (if minor) dead-code item found**:
+`BOAT_MODE_LABELS`'s unnecessary export, fixed in place. Everything else
+from today's two features checks out clean under both the symbol-grep
+and usage-count methods.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
