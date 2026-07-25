@@ -1,0 +1,3101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — AquaDesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<style>
+:root{
+  --navy:#1A3C5E;--navy-dark:#0F2540;--navy-mid:#244d73;
+  --teal:#00A8AB;--teal-light:#E0F7F8;--teal-mid:#007B7D;
+  --white:#FFFFFF;--off-white:#F8FAFC;--gray-100:#F1F5F9;
+  --gray-200:#E2E8F0;--gray-300:#CBD5E1;--gray-400:#94A3B8;
+  --gray-600:#475569;--gray-700:#334155;--dark:#0F172A;
+  --red:#DC2626;--red-light:#FEF2F2;--green:#16A34A;--green-light:#F0FDF4;
+  --orange:#D97706;--orange-light:#FFFBEB;
+  --font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;
+  --radius:12px;--sidebar-w:260px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-body);background:var(--off-white);color:var(--dark);min-height:100vh;display:flex;font-size:15px}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--navy);min-height:100vh;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;overflow-y:auto}
+.sidebar-brand{display:flex;align-items:center;gap:0.75rem;padding:1.5rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.07)}
+.brand-img{width:38px;height:38px;border-radius:9px;object-fit:contain}
+.brand-name{font-family:var(--font-display);font-size:1.3rem;color:var(--white);letter-spacing:-0.02em}
+.brand-name span{color:var(--teal)}
+.sidebar-dc{padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.07)}
+.dc-label{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:0.3rem}
+.dc-name-el{font-size:0.95rem;font-weight:500;color:var(--white)}
+.dc-role{font-size:0.75rem;color:var(--teal);margin-top:0.2rem}
+.sidebar-nav{padding:1rem 0;flex:1}
+.nav-section-label{font-size:0.65rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);padding:0.75rem 1.25rem 0.4rem}
+.nav-item{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1.25rem;font-size:0.95rem;color:rgba(255,255,255,0.6);text-decoration:none;cursor:pointer;transition:all 0.2s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:var(--white)}
+.nav-item.active{background:rgba(0,168,171,0.12);color:var(--white);border-left-color:var(--teal);font-weight:500}
+.nav-icon{font-size:1.1rem;width:22px;text-align:center;flex-shrink:0}
+.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,0.07)}
+.sidebar-user{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem}
+.user-avatar{width:36px;height:36px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:600;color:var(--white);flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name-el{font-size:0.85rem;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-email-el{font-size:0.72rem;color:rgba(255,255,255,0.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-logout{width:100%;padding:0.6rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:rgba(255,255,255,0.5);font-family:var(--font-body);font-size:0.85rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem}
+.btn-logout:hover{background:rgba(220,38,38,0.15);color:#FCA5A5}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+.page-title{font-family:var(--font-display);font-size:1.5rem;color:var(--navy);letter-spacing:-0.02em}
+.page-subtitle{font-size:0.85rem;color:var(--gray-400);margin-top:0.1rem}
+.content{padding:0;flex:1;display:flex;flex-direction:column}
+
+/* HORIZONTAL TABS */
+.tabs-bar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 2rem;display:flex;gap:0;overflow-x:auto;position:sticky;top:65px;z-index:40}
+.tab-btn{padding:1rem 1.25rem;font-family:var(--font-body);font-size:0.875rem;font-weight:400;color:var(--gray-600);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.2s;white-space:nowrap;display:flex;align-items:center;gap:0.4rem}
+.tab-btn:hover{color:var(--navy)}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--teal);font-weight:500}
+
+/* TAB CONTENT */
+.tab-content{display:none;padding:2rem;flex:1}
+.tab-content.active{display:block}
+
+/* SECTION */
+.settings-section{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius);margin-bottom:1.5rem;overflow:hidden}
+.settings-section-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;background:var(--off-white)}
+.settings-section-title{font-size:0.95rem;font-weight:600;color:var(--navy)}
+.settings-section-sub{font-size:0.78rem;color:var(--gray-400);margin-top:0.15rem}
+.settings-section-body{padding:1.5rem}
+
+/* BUTTONS */
+.btn{padding:0.6rem 1.25rem;font-family:var(--font-body);font-size:0.82rem;font-weight:500;border-radius:8px;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:0.4rem;border:none}
+.btn-navy{background:var(--navy);color:var(--white)}.btn-navy:hover{background:var(--navy-dark)}
+.btn-teal{background:var(--teal);color:var(--white)}.btn-teal:hover{background:var(--teal-mid)}
+.btn-green{background:var(--green);color:var(--white)}.btn-green:hover{background:#15803D}
+.btn-red{background:var(--red);color:var(--white)}
+.btn-ghost{background:transparent;color:var(--gray-600);border:1.5px solid var(--gray-200)}.btn-ghost:hover{border-color:var(--gray-400);color:var(--dark)}
+.btn-sm{padding:0.35rem 0.75rem;font-size:0.75rem}
+.btn-icon{width:30px;height:30px;padding:0;justify-content:center;border-radius:6px}
+
+/* FORM ELEMENTS */
+.form-group{margin-bottom:1rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.form-row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem}
+.field-label{display:block;font-size:0.78rem;font-weight:500;color:var(--gray-700);margin-bottom:0.35rem}
+.field-label .req{color:var(--red)}
+.field-input{width:100%;padding:0.65rem 0.875rem;font-family:var(--font-body);font-size:0.875rem;color:var(--dark);background:var(--white);border:1.5px solid var(--gray-200);border-radius:8px;outline:none;transition:border-color 0.2s}
+.field-input:focus{border-color:var(--teal)}
+.field-select{width:100%;padding:0.65rem 0.875rem;font-family:var(--font-body);font-size:0.875rem;color:var(--dark);background:var(--white);border:1.5px solid var(--gray-200);border-radius:8px;outline:none;-webkit-appearance:none;transition:border-color 0.2s}
+.field-select:focus{border-color:var(--teal)}
+.field-textarea{width:100%;padding:0.75rem 0.875rem;font-family:var(--font-body);font-size:0.875rem;color:var(--dark);background:var(--white);border:1.5px solid var(--gray-200);border-radius:8px;outline:none;resize:vertical;min-height:200px;line-height:1.6}
+.field-textarea:focus{border-color:var(--teal)}
+
+/* STAFF CARDS */
+.staff-list{display:flex;flex-direction:column;gap:0.75rem}
+.staff-card{background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem}
+.staff-avatar{width:40px;height:40px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:600;color:var(--white);flex-shrink:0}
+.staff-info{flex:1;min-width:0}
+.staff-name{font-size:0.9rem;font-weight:600;color:var(--navy)}
+.staff-meta{font-size:0.75rem;color:var(--gray-400);margin-top:0.15rem}
+.staff-actions{display:flex;gap:0.5rem;flex-shrink:0}
+.access-badge{font-size:0.68rem;padding:0.2rem 0.6rem;border-radius:999px;font-weight:500}
+.access-owner{background:#EDE9FE;color:#5B21B6}
+.access-secretary{background:var(--teal-light);color:var(--teal-mid)}
+.access-divemaster{background:var(--orange-light);color:var(--orange)}
+.access-instructor{background:#DBEAFE;color:#1E40AF}
+.access-crew{background:var(--gray-100);color:var(--gray-600)}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.status-active{background:var(--green)}
+.status-inactive{background:var(--gray-300)}
+
+/* BOAT CARDS */
+.boat-list{display:flex;flex-direction:column;gap:0.75rem}
+.boat-card{background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem}
+.boat-icon{width:40px;height:40px;background:var(--teal-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.boat-info{flex:1}
+.boat-name{font-size:0.9rem;font-weight:600;color:var(--navy)}
+.boat-meta{font-size:0.75rem;color:var(--gray-400);margin-top:0.15rem}
+
+/* RATE CARDS */
+.rate-card{background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem}
+.rate-info{flex:1}
+.rate-name{font-size:0.9rem;font-weight:600;color:var(--navy)}
+.rate-meta{font-size:0.75rem;color:var(--gray-400);margin-top:0.15rem}
+.rate-price{font-family:var(--font-display);font-size:1.1rem;color:var(--navy);margin-right:1rem}
+
+/* TIER TABLE */
+.tier-table{width:100%;border-collapse:collapse}
+.tier-table th{padding:0.65rem 1rem;text-align:left;font-size:0.72rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-400);background:var(--gray-100);border-bottom:1px solid var(--gray-200)}
+.tier-table td{padding:0.75rem 1rem;border-bottom:1px solid var(--gray-100);font-size:0.875rem;vertical-align:middle}
+.tier-table tr:last-child td{border-bottom:none}
+.tier-input{width:100%;padding:0.45rem 0.75rem;font-family:var(--font-body);font-size:0.875rem;border:1.5px solid var(--gray-200);border-radius:7px;outline:none}
+.tier-input:focus{border-color:var(--teal)}
+
+/* CHARGE ROW */
+.charge-row{display:flex;align-items:center;gap:1rem;padding:0.75rem 0;border-bottom:1px solid var(--gray-100)}
+.charge-row:last-child{border-bottom:none}
+.charge-label{flex:1;font-size:0.875rem;font-weight:500;color:var(--dark)}
+.charge-amount{width:120px}
+.charge-type-toggle{display:flex;border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden}
+.charge-type-btn{padding:0.4rem 0.875rem;font-family:var(--font-body);font-size:0.78rem;border:none;background:var(--white);color:var(--gray-600);cursor:pointer;transition:all 0.2s}
+.charge-type-btn.active{background:var(--navy);color:var(--white)}
+
+/* CURRENCY TABLE */
+.currency-table{width:100%;border-collapse:collapse}
+.currency-table th{padding:0.65rem 1rem;text-align:left;font-size:0.72rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-400);background:var(--gray-100);border-bottom:1px solid var(--gray-200)}
+.currency-table td{padding:0.75rem 1rem;border-bottom:1px solid var(--gray-100);font-size:0.875rem;vertical-align:middle}
+.currency-table tr:last-child td{border-bottom:none}
+.currency-flag{font-size:1.1rem;margin-right:0.5rem}
+
+/* PRICING MODE */
+.mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.mode-card{border:2px solid var(--gray-200);border-radius:var(--radius);padding:1.5rem;cursor:pointer;transition:all 0.2s;text-align:center}
+.mode-card:hover{border-color:var(--teal)}
+.mode-card.selected{border-color:var(--teal);background:var(--teal-light)}
+.mode-card.locked{cursor:not-allowed;opacity:0.7}
+.mode-icon{font-size:2rem;margin-bottom:0.75rem}
+.mode-title{font-size:1rem;font-weight:600;color:var(--navy);margin-bottom:0.4rem}
+.mode-desc{font-size:0.82rem;color:var(--gray-600);line-height:1.5}
+.locked-badge{display:inline-flex;align-items:center;gap:0.3rem;background:var(--gray-100);border:1px solid var(--gray-200);border-radius:999px;padding:0.25rem 0.75rem;font-size:0.72rem;color:var(--gray-600);margin-top:0.75rem}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;backdrop-filter:blur(4px)}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--white);border-radius:var(--radius);max-width:520px;width:95%;max-height:85vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s}
+.modal-overlay.show .modal{transform:translateY(0)}
+.modal-header{background:var(--navy);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;border-radius:var(--radius) var(--radius) 0 0}
+.modal-title{font-family:var(--font-display);font-size:1.2rem;color:var(--white)}
+.modal-close{background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.2rem;cursor:pointer;padding:0}
+.modal-body{padding:1.5rem}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--gray-200);display:flex;gap:0.75rem;justify-content:flex-end}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:var(--white);padding:0.75rem 1.5rem;border-radius:8px;font-size:0.875rem;z-index:300;opacity:0;transition:all 0.3s;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+
+/* TOGGLE */
+.toggle-wrap{display:flex;align-items:center;gap:0.75rem}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--gray-300);border-radius:999px;transition:0.3s}
+.toggle-slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s}
+input:checked+.toggle-slider{background:var(--teal)}
+input:checked+.toggle-slider:before{transform:translateX(20px)}
+.toggle-label{font-size:0.875rem;color:var(--dark)}
+
+/* WARNING */
+.warning-box{background:var(--orange-light);border:1px solid #FCD34D;border-radius:10px;padding:1rem 1.25rem;font-size:0.875rem;color:var(--orange);margin-bottom:1rem;display:flex;align-items:flex-start;gap:0.75rem}
+.info-box{background:var(--teal-light);border:1px solid rgba(0,168,171,0.2);border-radius:10px;padding:1rem 1.25rem;font-size:0.875rem;color:var(--teal-mid);margin-bottom:1rem}
+
+.empty-state{text-align:center;padding:2.5rem;color:var(--gray-400)}
+.divider{height:1px;background:var(--gray-200);margin:1.25rem 0}
+
+/* ACCESS & PERMISSIONS TAB */
+.secretary-card{background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:0.75rem}
+.secretary-card-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem}
+.secretary-avatar{width:44px;height:44px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:600;color:var(--white);flex-shrink:0}
+.secretary-name{font-size:0.95rem;font-weight:600;color:var(--navy)}
+.secretary-email-display{font-size:0.78rem;color:var(--gray-400);margin-top:0.1rem}
+.secretary-card-body{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+.secretary-card-actions{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;grid-column:1/-1;padding-top:1rem;border-top:1px solid var(--gray-100);margin-top:0.25rem}
+.perm-row{display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--gray-100)}
+.perm-row:last-child{border-bottom:none}
+.perm-label{font-size:0.875rem;color:var(--dark)}
+.perm-sublabel{font-size:0.72rem;color:var(--gray-400);margin-top:0.1rem}
+.no-account-banner{background:var(--orange-light);border:1px solid #FCD34D;border-radius:8px;padding:0.75rem 1rem;font-size:0.82rem;color:var(--orange);display:flex;align-items:center;gap:0.5rem;grid-column:1/-1}
+
+/* ── COLLAPSIBLE HOVER SIDEBAR ── */
+:root{--sidebar-collapsed:54px}
+.sidebar{width:var(--sidebar-collapsed);transition:width .25s ease;overflow:hidden;z-index:200}
+.sidebar:hover,.sidebar.open{width:var(--sidebar-w)}
+.brand-name,.sidebar-dc,.nav-section-label,.user-info,.user-name-el,.user-email-el,.btn-logout,.nav-item-label{opacity:0;transition:opacity .15s ease;white-space:nowrap;overflow:hidden}
+.sidebar:hover .brand-name,.sidebar:hover .sidebar-dc,.sidebar:hover .nav-section-label,.sidebar:hover .user-info,.sidebar:hover .user-name-el,.sidebar:hover .user-email-el,.sidebar:hover .btn-logout,.sidebar:hover .nav-item-label,.sidebar.open .brand-name,.sidebar.open .sidebar-dc,.sidebar.open .nav-section-label,.sidebar.open .user-info,.sidebar.open .user-name-el,.sidebar.open .user-email-el,.sidebar.open .btn-logout,.sidebar.open .nav-item-label{opacity:1}
+.sidebar-brand{display:flex;align-items:center;gap:.75rem;padding:1.25rem 0;padding-left:calc((var(--sidebar-collapsed) - 38px) / 2);border-bottom:1px solid rgba(255,255,255,.07);overflow:hidden;min-width:var(--sidebar-w)}
+.sidebar-dc{padding:.75rem 0 .75rem calc((var(--sidebar-collapsed) - 22px) / 2);border-bottom:1px solid rgba(255,255,255,.07);min-width:var(--sidebar-w);overflow:hidden;white-space:nowrap}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;padding-left:calc((var(--sidebar-collapsed) - 22px) / 2);font-size:.95rem;color:rgba(255,255,255,.6);text-decoration:none;cursor:pointer;transition:.2s;border-left:3px solid transparent;min-width:var(--sidebar-w);white-space:nowrap}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}.nav-item.active{background:rgba(0,168,171,.12);color:var(--white);border-left-color:var(--teal);font-weight:500}
+.sidebar-footer{padding:.75rem 0;padding-left:calc((var(--sidebar-collapsed) - 36px) / 2);border-top:1px solid rgba(255,255,255,.07);min-width:var(--sidebar-w);overflow:hidden}
+.sidebar-user{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;white-space:nowrap}
+.sidebar-overlay{display:none;position:fixed;inset:0;z-index:199}
+.sidebar-overlay.open{display:block}
+.main{margin-left:var(--sidebar-collapsed)}
+@media(max-width:760px){.sidebar:hover{width:var(--sidebar-collapsed)}.sidebar.open{width:var(--sidebar-w)}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <img src="logo.png" class="brand-img" onerror="this.outerHTML='<div style=\'width:38px;height:38px;background:var(--teal);border-radius:9px;display:flex;align-items:center;justify-content:center;\'>🌊</div>'">
+    <div class="brand-name">Aqua<span>Desk</span></div>
+  </div>
+  <div class="sidebar-dc">
+    <div class="dc-label">Dive Center</div>
+    <div class="dc-name-el" id="dcName">Loading...</div>
+    <div class="dc-role" id="userRole">—</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Operations</div>
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span><span class="nav-item-label">Dashboard</span></a>
+    <a class="nav-item" href="divers.html"><span class="nav-icon">🤿</span><span class="nav-item-label">Divers</span></a>
+    <a class="nav-item" href="diver-form.html"><span class="nav-icon">📋</span><span class="nav-item-label">Diver Form</span></a>
+    <a class="nav-item" href="scheduling.html"><span class="nav-icon">🚤</span><span class="nav-item-label">Scheduling</span></a>
+    <a class="nav-item" href="boat-manifest.html"><span class="nav-icon">🚢</span><span class="nav-item-label">Boat Manifest</span></a>
+    <div class="nav-section-label">Management</div>
+    <a class="nav-item" href="reports.html"><span class="nav-icon">📈</span><span class="nav-item-label">Reports</span></a>
+    <a class="nav-item active"><span class="nav-icon">⚙️</span><span class="nav-item-label">Settings</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-info">
+        <div class="user-name-el" id="userName">Loading...</div>
+        <div class="user-email-el" id="userEmail">—</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()">↩ Sign Out</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">Settings</div>
+      <div class="page-subtitle">Configure your dive center — changes apply immediately</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('profile')">🏢 Profile</button>
+    <button class="tab-btn" onclick="switchTab('staff')">👥 Staff</button>
+    <button class="tab-btn" onclick="switchTab('fleet')">🚤 Fleet</button>
+    <button class="tab-btn" onclick="switchTab('rates')">💰 Pricing & Rates</button>
+    <button class="tab-btn" onclick="switchTab('courses')">🎓 Courses</button>
+    <button class="tab-btn" onclick="switchTab('sites')">🗺️ Dive Sites</button>
+    <button class="tab-btn" onclick="switchTab('equipment')">🏊 Equipment Rental</button>
+    <button class="tab-btn" onclick="switchTab('exchange')">💱 Exchange Rates</button>
+    <button class="tab-btn" onclick="switchTab('waiver')">📄 Waiver</button>
+    <button class="tab-btn" onclick="switchTab('inventory')">📦 Inventory</button>
+    <button class="tab-btn" onclick="switchTab('passwords')">🔒 Passwords</button>
+    <button class="tab-btn" onclick="switchTab('access')">🛡️ Access & Permissions</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB: PROFILE -->
+    <div class="tab-content active" id="tab-profile">
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Dive Center Profile</div>
+            <div class="settings-section-sub">Basic information shown across the system and on diver-facing pages</div>
+          </div>
+          <button class="btn btn-navy" onclick="saveProfile()">Save Profile</button>
+        </div>
+        <div class="settings-section-body">
+          <!-- Logo -->
+          <div class="form-group">
+            <label class="field-label">Logo</label>
+            <div style="display:flex;align-items:center;gap:1rem;margin-top:0.25rem;">
+              <div id="logoPreview" style="width:72px;height:72px;border-radius:var(--radius);border:2px dashed var(--gray-200);background:var(--gray-50);display:flex;align-items:center;justify-content:center;font-size:1.5rem;overflow:hidden;flex-shrink:0;">🏢</div>
+              <div>
+                <input type="file" id="logoFile" accept="image/*" style="display:none;" onchange="previewLogo(this)">
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('logoFile').click()">Upload Logo</button>
+                <div style="font-size:0.75rem;color:var(--gray-400);margin-top:0.35rem;">PNG or JPG, recommended 200×200px</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">Dive Center Name <span class="req">*</span></label>
+              <input class="field-input" type="text" id="profileName" placeholder="e.g. Malapascua Divers">
+            </div>
+            <div class="form-group">
+              <label class="field-label">Email</label>
+              <input class="field-input" type="email" id="profileEmail" placeholder="info@yourdivecenter.com">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">Phone Number</label>
+              <input class="field-input" type="tel" id="profilePhone" placeholder="+63 917 123 4567">
+            </div>
+            <div class="form-group">
+              <label class="field-label">Address</label>
+              <input class="field-input" type="text" id="profileAddress" placeholder="Malapascua Island, Cebu, Philippines">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Subscription Status</label>
+            <input class="field-input" id="profileSubscription" readonly style="background:var(--gray-50);color:var(--gray-500);cursor:default;" placeholder="Loading...">
+            <div style="font-size:0.75rem;color:var(--gray-400);margin-top:0.3rem;">Contact AquaDesk support to change your subscription plan.</div>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Do you offer dive insurance?</label>
+            <div class="charge-type-toggle" style="max-width:220px;">
+              <button type="button" class="charge-type-btn" id="insuranceOfferedYes" onclick="setInsuranceOffered(true)">Yes</button>
+              <button type="button" class="charge-type-btn active" id="insuranceOfferedNo" onclick="setInsuranceOffered(false)">No</button>
+            </div>
+          </div>
+          <div class="form-group" id="insuranceReferralGroup" style="display:none;">
+            <label class="field-label">Referral link</label>
+            <input class="field-input" type="url" id="insuranceReferralLink" placeholder="https://...">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: STAFF -->
+    <div class="tab-content" id="tab-staff">
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Staff Members</div>
+            <div class="settings-section-sub">Manage your team and their system access</div>
+          </div>
+          <button class="btn btn-navy" onclick="openStaffModal()">+ Add Staff</button>
+        </div>
+        <div class="settings-section-body">
+          <div class="info-box">ℹ️ Adding a staff member creates their login automatically and sends them a welcome email to set their password.</div>
+          <div class="staff-list" id="staffList">
+            <div class="empty-state">Loading staff...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: FLEET -->
+    <div class="tab-content" id="tab-fleet">
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Fleet</div>
+            <div class="settings-section-sub">Boats appear as dropdown options in Scheduling</div>
+          </div>
+          <button class="btn btn-navy" onclick="openBoatModal()">+ Add Boat</button>
+        </div>
+        <div class="settings-section-body">
+          <div class="boat-list" id="boatList">
+            <div class="empty-state">Loading fleet...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: RATES -->
+    <div class="tab-content" id="tab-rates">
+
+      <!-- Pricing Mode -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Pricing Mode</div>
+            <div class="settings-section-sub">Choose once — locked after confirmation</div>
+          </div>
+          <div id="switchModeBtn" style="display:none;">
+            <button class="btn btn-ghost btn-sm" onclick="openSwitchModeModal()">🔒 Change Pricing Mode</button>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div class="mode-cards" id="modeCards">
+            <div class="mode-card" id="modePackage" onclick="handlePricingModeCardClick('package')">
+              <div class="mode-icon">📦</div>
+              <div class="mode-title">Package Based</div>
+              <div class="mode-desc">Fixed price per trip or activity. One charge per diver regardless of number of dives.</div>
+            </div>
+            <div class="mode-card" id="modeTier" onclick="handlePricingModeCardClick('tier')">
+              <div class="mode-icon">📊</div>
+              <div class="mode-title">Tier Rate Based</div>
+              <div class="mode-desc">Rate per dive that decreases as diver does more dives. Retroactive repricing when tier is crossed.</div>
+            </div>
+          </div>
+          <div id="modeConfirmBtn" style="display:none;margin-top:1rem;">
+            <button class="btn btn-teal" onclick="confirmPricingMode()">Confirm Pricing Mode →</button>
+          </div>
+          <div id="modeLocked" style="display:none;">
+            <div class="warning-box">⚠️ Pricing mode is locked. To switch modes all open bills must be closed first. Use the Switch Mode button and enter your owner password.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PACKAGE RATES -->
+      <div id="packageSection" style="display:none;">
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <div>
+              <div class="settings-section-title">Packages</div>
+              <div class="settings-section-sub">Fixed price packages linked to dive sites</div>
+            </div>
+            <button class="btn btn-navy" onclick="openPackageModal()">+ Add Package</button>
+          </div>
+          <div class="settings-section-body">
+            <div id="packageList"><div class="empty-state">No packages yet</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIER RATES -->
+      <div id="tierSection" style="display:none;">
+
+        <!-- Base Rate Tiers -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <div>
+              <div class="settings-section-title">Base Rate Tiers</div>
+              <div class="settings-section-sub">Rate per dive — retroactive when threshold is crossed</div>
+            </div>
+            <button class="btn btn-navy" onclick="addTierRow('base_dive')">+ Add Tier</button>
+          </div>
+          <div class="settings-section-body">
+            <div class="info-box">ℹ️ When a diver crosses into a new tier, ALL previous dives this visit are repriced at the new rate automatically.</div>
+            <table class="tier-table">
+              <thead>
+                <tr>
+                  <th>From Dive</th>
+                  <th>To Dive</th>
+                  <th>Rate per Dive (PHP)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tierTableBody"></tbody>
+            </table>
+            <button class="btn btn-ghost btn-sm" style="margin-top:1rem;" onclick="saveTiers('base_dive')">Save Tiers</button>
+          </div>
+        </div>
+
+        <!-- Other Charges -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <div>
+              <div class="settings-section-title">Other Charges</div>
+              <div class="settings-section-sub">Added automatically when boat returns</div>
+            </div>
+            <button class="btn btn-navy" onclick="openChargeModal()">+ Add Charge</button>
+          </div>
+          <div class="settings-section-body">
+            <div id="chargesList">
+              <div class="charge-row">
+                <span class="charge-label">Marine Tax</span>
+                <input class="field-input charge-amount" type="number" placeholder="0" id="marine_tax_amount">
+                <div class="charge-type-toggle">
+                  <button class="charge-type-btn active" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                  <button class="charge-type-btn" onclick="setChargeType(this,'per_day')">Per Day</button>
+                </div>
+              </div>
+              <div class="charge-row">
+                <span class="charge-label">Shark Fee</span>
+                <input class="field-input charge-amount" type="number" placeholder="0" id="shark_fee_amount">
+                <div class="charge-type-toggle">
+                  <button class="charge-type-btn active" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                  <button class="charge-type-btn" onclick="setChargeType(this,'per_day')">Per Day</button>
+                </div>
+              </div>
+              <div class="charge-row">
+                <span class="charge-label">Fuel Charge — Medium</span>
+                <input class="field-input charge-amount" type="number" placeholder="0" id="fuel_charge_medium_amount">
+                <div class="charge-type-toggle">
+                  <button class="charge-type-btn active" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                  <button class="charge-type-btn" onclick="setChargeType(this,'per_day')">Per Day</button>
+                </div>
+              </div>
+              <div class="charge-row">
+                <span class="charge-label">Fuel Charge — High</span>
+                <input class="field-input charge-amount" type="number" placeholder="0" id="fuel_charge_high_amount">
+                <div class="charge-type-toggle">
+                  <button class="charge-type-btn active" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                  <button class="charge-type-btn" onclick="setChargeType(this,'per_day')">Per Day</button>
+                </div>
+              </div>
+              <div class="charge-row">
+                <span class="charge-label">Dive Computer</span>
+                <input class="field-input charge-amount" type="number" placeholder="0" id="computer_amount">
+                <div class="charge-type-toggle">
+                  <button class="charge-type-btn active" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                  <button class="charge-type-btn" onclick="setChargeType(this,'per_day')">Per Day</button>
+                </div>
+              </div>
+              <div class="charge-row">
+                <span class="charge-label">Torch</span>
+                <input class="field-input charge-amount" type="number" placeholder="0" id="torch_amount">
+                <div class="charge-type-toggle">
+                  <button class="charge-type-btn active" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                  <button class="charge-type-btn" onclick="setChargeType(this,'per_day')">Per Day</button>
+                </div>
+              </div>
+              <div id="customChargesList"></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:1rem;" onclick="saveCharges()">Save Charges</button>
+          </div>
+        </div>
+
+        <!-- Nitrox Tier Rates -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <div>
+              <div class="settings-section-title">Nitrox Rates</div>
+              <div class="settings-section-sub">Tiered add-on rate based on total number of dives</div>
+            </div>
+            <button class="btn btn-navy" onclick="addTierRow('nitrox')">+ Add Nitrox Tier</button>
+          </div>
+          <div class="settings-section-body">
+            <table class="tier-table">
+              <thead><tr><th>From Dive</th><th>To Dive</th><th>Nitrox Rate (PHP)</th><th></th></tr></thead>
+              <tbody id="nitroxTierTableBody"></tbody>
+            </table>
+            <button class="btn btn-ghost btn-sm" style="margin-top:1rem;" onclick="saveTiers('nitrox')">Save Nitrox Tiers</button>
+          </div>
+        </div>
+
+        <!-- 15L Tank Tier Rates -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <div>
+              <div class="settings-section-title">15L Tank Rates</div>
+              <div class="settings-section-sub">Tiered add-on rate for large tank requests</div>
+            </div>
+            <button class="btn btn-navy" onclick="addTierRow('tank_15l')">+ Add 15L Tier</button>
+          </div>
+          <div class="settings-section-body">
+            <table class="tier-table">
+              <thead><tr><th>From Dive</th><th>To Dive</th><th>15L Rate (PHP)</th><th></th></tr></thead>
+              <tbody id="tank15TierTableBody"></tbody>
+            </table>
+            <button class="btn btn-ghost btn-sm" style="margin-top:1rem;" onclick="saveTiers('tank_15l')">Save 15L Tiers</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB: COURSES -->
+    <div class="tab-content" id="tab-courses">
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Course Rates</div>
+            <div class="settings-section-sub">Fixed prices for all dive courses — not affected by pricing mode</div>
+          </div>
+          <button class="btn btn-navy" onclick="openCourseModal()">+ Add Course</button>
+        </div>
+        <div class="settings-section-body">
+          <div id="courseList"><div class="empty-state">Loading courses...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: DIVE SITES -->
+    <div class="tab-content" id="tab-sites">
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Dive Sites</div>
+            <div class="settings-section-sub">Active sites appear as dropdown in Scheduling</div>
+          </div>
+          <button class="btn btn-navy" onclick="openSiteModal()">+ Add Site</button>
+        </div>
+        <div class="settings-section-body">
+          <div id="siteList"><div class="empty-state">Loading dive sites...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: EQUIPMENT -->
+    <div class="tab-content" id="tab-equipment">
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Equipment Rental Rates</div>
+            <div class="settings-section-sub">Auto-added to bill when diver requested equipment on registration</div>
+          </div>
+          <button class="btn btn-navy" onclick="openEquipmentModal()">+ Add Item</button>
+        </div>
+        <div class="settings-section-body">
+          <div id="equipmentRateList">
+            <div class="charge-row">
+              <span class="charge-label">BCD</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_bcd">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Wetsuit</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_wetsuit">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Fins</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_fins">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Mask</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_mask">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Boots</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_boots">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Regulator</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_regulator">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Weights</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_weights">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Full Set</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_fullset">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Torch</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_torch">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Snorkel</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_snorkel">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div class="charge-row">
+              <span class="charge-label">Dive Computer</span>
+              <input class="field-input charge-amount" type="number" placeholder="0" id="equip_computer">
+              <div class="charge-type-toggle">
+                <button class="charge-type-btn active" onclick="setChargeType(this,'per_dive')">Per Dive</button>
+                <button class="charge-type-btn" onclick="setChargeType(this,'per_day')">Per Day</button>
+              </div>
+            </div>
+            <div id="customEquipList"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:1rem;" onclick="saveEquipmentRates()">Save Equipment Rates</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: EXCHANGE RATES -->
+    <div class="tab-content" id="tab-exchange">
+
+      <!-- Surcharges -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Payment Surcharges</div>
+            <div class="settings-section-sub">Auto-added to bill when payment method is selected</div>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">Credit Card Surcharge (%)</label>
+              <input class="field-input" type="number" id="ccSurcharge" placeholder="3.5" step="0.1">
+            </div>
+            <div class="form-group">
+              <label class="field-label">Online Payment Surcharge (%)</label>
+              <input class="field-input" type="number" id="onlineSurcharge" placeholder="2.0" step="0.1">
+            </div>
+          </div>
+          <button class="btn btn-navy btn-sm" onclick="saveSurcharges()">Save Surcharges</button>
+        </div>
+      </div>
+
+      <!-- Exchange Rates -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Exchange Rates</div>
+            <div class="settings-section-sub">Auto-fills on Diver Form — secretary can still override per transaction</div>
+          </div>
+          <button class="btn btn-navy" onclick="openCurrencyModal()">+ Add Currency</button>
+        </div>
+        <div class="settings-section-body">
+          <table class="currency-table">
+            <thead>
+              <tr>
+                <th>Currency</th>
+                <th>Rate (1 unit = PHP)</th>
+                <th>Active</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="currencyTableBody"></tbody>
+          </table>
+          <button class="btn btn-ghost btn-sm" style="margin-top:1rem;" onclick="saveExchangeRates()">Save All Rates</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: WAIVER -->
+    <div class="tab-content" id="tab-waiver">
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Liability Waiver</div>
+            <div class="settings-section-sub">Appears on the diver registration form — updating does not affect already-signed waivers</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-ghost btn-sm" onclick="openWaiverPreview()">👁 Preview</button>
+            <button class="btn btn-navy btn-sm" onclick="saveWaiverContent()">Save Waiver</button>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div class="info-box">ℹ️ This text is shown to divers before they sign the waiver during registration. Updating it here does not change already-signed waivers on file.</div>
+          <div style="font-size:0.78rem;color:var(--gray-400);margin-bottom:0.75rem;" id="waiverLastUpdated"></div>
+
+          <!-- Rich text toolbar -->
+          <div style="display:flex;gap:0.35rem;flex-wrap:wrap;padding:0.5rem;background:var(--gray-100);border:1.5px solid var(--gray-200);border-bottom:none;border-radius:8px 8px 0 0;">
+            <button type="button" class="btn btn-ghost btn-sm" style="font-weight:700;" onmousedown="event.preventDefault()" onclick="waiverExec('bold')">B</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="font-style:italic;" onmousedown="event.preventDefault()" onclick="waiverExec('italic')">I</button>
+            <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="waiverExec('insertParagraph')">¶ Paragraph</button>
+            <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="waiverExec('insertUnorderedList')">• List</button>
+            <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="waiverExec('insertOrderedList')">1. List</button>
+            <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="waiverExec('indent')">→ Indent</button>
+            <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="waiverExec('outdent')">← Outdent</button>
+          </div>
+          <div id="waiverEditor" contenteditable="true" style="min-height:260px;padding:1rem 1.1rem;border:1.5px solid var(--gray-200);border-radius:0 0 8px 8px;background:var(--white);font-size:0.9rem;line-height:1.65;outline:none;" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--gray-200)'"></div>
+        </div>
+      </div>
+
+      <!-- Medical Questions -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Medical Questions</div>
+            <div class="settings-section-sub">Each question appears as a Yes/No radio button in the diver registration form</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-ghost btn-sm" onclick="openMedicalPreview()">👁 Preview</button>
+            <button class="btn btn-navy" onclick="openMedicalModal()">+ Add Question</button>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div class="info-box">🚨 If a diver answers <strong>Yes</strong> to any question, they are flagged in red on the whiteboard. The secretary must acknowledge the flag before proceeding.</div>
+          <div id="medicalQuestionsList">
+            <div class="empty-state">Loading medical questions...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: INVENTORY -->
+    <div class="tab-content" id="tab-inventory">
+
+      <!-- Tanks -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Tanks</div>
+            <div class="settings-section-sub">Dashboard alerts fire when available count drops to or below the threshold</div>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <table class="tier-table">
+            <thead>
+              <tr>
+                <th>Tank Type</th>
+                <th>Total Count</th>
+                <th>Available</th>
+                <th>In Use</th>
+                <th>Low Alert Threshold</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tanksTableBody">
+              <tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--gray-400);">Loading tanks...</td></tr>
+            </tbody>
+          </table>
+          <button class="btn btn-ghost btn-sm" style="margin-top:1rem;" onclick="saveTanks()">Save Tanks</button>
+        </div>
+      </div>
+
+      <!-- Fuel -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Fuel</div>
+            <div class="settings-section-sub">Secretary updates current level manually after refueling</div>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <table class="tier-table" style="margin-bottom:1.25rem">
+            <thead>
+              <tr>
+                <th style="width:130px">Fuel Type</th>
+                <th>Current Level (L)</th>
+                <th>Low Alert Threshold (L)</th>
+                <th>Consumed (L)</th>
+                <th style="width:60px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:500;color:var(--navy)">Gasoline</td>
+                <td><input class="tier-input" type="number" id="fuelGasolineLevel" placeholder="e.g. 200" min="0"></td>
+                <td><input class="tier-input" type="number" id="fuelGasolineThreshold" placeholder="e.g. 50" min="0"></td>
+                <td><input class="tier-input" type="number" id="fuelGasolineConsumed" readonly style="background:var(--gray-100);color:var(--gray-600);cursor:default" placeholder="0"></td>
+                <td><button class="btn btn-ghost btn-sm" onclick="resetFuelConsumed('gasoline')" title="Reset gasoline consumed counter">Reset</button></td>
+              </tr>
+              <tr>
+                <td style="font-weight:500;color:var(--navy)">Diesel</td>
+                <td><input class="tier-input" type="number" id="fuelDieselLevel" placeholder="e.g. 200" min="0"></td>
+                <td><input class="tier-input" type="number" id="fuelDieselThreshold" placeholder="e.g. 50" min="0"></td>
+                <td><input class="tier-input" type="number" id="fuelDieselConsumed" readonly style="background:var(--gray-100);color:var(--gray-600);cursor:default" placeholder="0"></td>
+                <td><button class="btn btn-ghost btn-sm" onclick="resetFuelConsumed('diesel')" title="Reset diesel consumed counter">Reset</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="btn btn-navy btn-sm" onclick="saveFuel()">Save Fuel Settings</button>
+        </div>
+      </div>
+
+      <!-- Gear -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Rental Gear</div>
+            <div class="settings-section-sub">Track counts for each gear item — alerts fire when count drops to or below threshold</div>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <table class="tier-table">
+            <thead>
+              <tr>
+                <th>Gear Item</th>
+                <th>Total Count</th>
+                <th>Low Alert Threshold</th>
+              </tr>
+            </thead>
+            <tbody id="gearTableBody">
+              <tr><td colspan="3" style="text-align:center;padding:1rem;color:var(--gray-400);">Loading gear inventory...</td></tr>
+            </tbody>
+          </table>
+          <button class="btn btn-ghost btn-sm" style="margin-top:1rem;" onclick="saveGear()">Save Gear Counts</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: PASSWORDS -->
+    <div class="tab-content" id="tab-passwords">
+
+      <!-- Billing Password -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Billing Password</div>
+            <div class="settings-section-sub">Used by owner and secretary to mark bills as paid or unlock paid bills</div>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div class="info-box">ℹ️ Share this password with your secretaries. They will need it to mark bills as paid and to unlock paid bills for editing.</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">Current Password</label>
+              <input class="field-input" type="password" id="billingCurrentPwd" placeholder="Current billing password">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">New Password</label>
+              <input class="field-input" type="password" id="billingNewPwd" placeholder="New password">
+            </div>
+            <div class="form-group">
+              <label class="field-label">Confirm New Password</label>
+              <input class="field-input" type="password" id="billingConfirmPwd" placeholder="Confirm new password">
+            </div>
+          </div>
+          <button class="btn btn-navy" onclick="updateBillingPassword()">Update Billing Password</button>
+        </div>
+      </div>
+
+      <!-- Owner Password -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Owner Password</div>
+            <div class="settings-section-sub">Used only to switch pricing mode — keep this private</div>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div class="warning-box">⚠️ Keep this password private. It is required to switch your pricing mode between Package and Tier. Do not share with secretaries or staff.</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">Current Password</label>
+              <input class="field-input" type="password" id="ownerCurrentPwd" placeholder="Current owner password">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">New Password</label>
+              <input class="field-input" type="password" id="ownerNewPwd" placeholder="New password">
+            </div>
+            <div class="form-group">
+              <label class="field-label">Confirm New Password</label>
+              <input class="field-input" type="password" id="ownerConfirmPwd" placeholder="Confirm new password">
+            </div>
+          </div>
+          <button class="btn btn-navy" onclick="updateOwnerPassword()">Update Owner Password</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB: ACCESS & PERMISSIONS -->
+    <div class="tab-content" id="tab-access">
+
+      <!-- Create Secretary Form -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Create Secretary Account</div>
+            <div class="settings-section-sub">Add a new secretary login. They will receive temporary password: aquadesk123</div>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div class="info-box">🔐 Secretary accounts are managed here only. Divemasters and instructors are added in the Staff tab — they do not get system access.</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">Full Name <span class="req">*</span></label>
+              <input class="field-input" type="text" id="accessNewName" placeholder="e.g. Maria Santos">
+            </div>
+            <div class="form-group">
+              <label class="field-label">Email Address <span class="req">*</span></label>
+              <input class="field-input" type="email" id="accessNewEmail" placeholder="maria@yourdivecenter.com">
+            </div>
+          </div>
+          <button class="btn btn-teal" onclick="createSecretaryAccount()">🔑 Create Account</button>
+        </div>
+      </div>
+
+      <!-- Secretary List -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div>
+            <div class="settings-section-title">Secretary Accounts</div>
+            <div class="settings-section-sub">Manage login access and permissions for each secretary</div>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div id="accessList"><div class="empty-state">Loading...</div></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
+<!-- STAFF MODAL -->
+<div class="modal-overlay" id="staffModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="staffModalTitle">Add Staff Member</div>
+      <button class="modal-close" onclick="closeModal('staffModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Full Name <span class="req">*</span></label>
+          <input class="field-input" type="text" id="staffName" placeholder="Juan Santos">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Email <span style="color:var(--gray-400);font-weight:500;">(optional)</span></label>
+          <input class="field-input" type="email" id="staffEmail" placeholder="juan@email.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Position <span class="req">*</span></label>
+          <select class="field-select" id="staffPosition">
+            <option value="">Select position</option>
+            <option>Secretary</option>
+            <option>Divemaster</option>
+            <option>Instructor</option>
+            <option>Crew</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Employment Status</label>
+          <select class="field-select" id="staffStatus">
+            <option>Full Time</option>
+            <option>Part Time</option>
+            <option>Freelance</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Date Hired</label>
+          <input class="field-input" type="date" id="staffDateHired">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Daily Rate (PHP)</label>
+          <input class="field-input" type="number" id="staffDailyRate" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Phone</label>
+          <input class="field-input" type="tel" id="staffPhone" placeholder="09171234567">
+        </div>
+        <div class="form-group">
+          <label class="field-label">WhatsApp</label>
+          <input class="field-input" type="tel" id="staffWhatsapp" placeholder="09171234567">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Nitrox Certified</label>
+        <div class="charge-type-toggle" style="display:inline-flex;">
+          <button type="button" class="charge-type-btn" id="staffNitroxYes" onclick="setStaffNitrox(true)">Yes</button>
+          <button type="button" class="charge-type-btn active" id="staffNitroxNo" onclick="setStaffNitrox(false)">No</button>
+        </div>
+        <div style="font-size:0.75rem;color:var(--gray-400);margin-top:0.35rem;">Feeds into scheduling tank tally — nitrox-certified staff are counted separately.</div>
+      </div>
+      <div id="secretaryAuthNotice" style="display:none;" class="info-box" style="margin-top:0.5rem;">🔐 A Secretary login account will be created automatically with a temporary password <strong>aquadesk123</strong>. They must change it on first login.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('staffModal')">Cancel</button>
+      <button class="btn btn-navy" onclick="saveStaff()">Save Staff</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOAT MODAL -->
+<div class="modal-overlay" id="boatModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="boatModalTitle">Add Boat</div>
+      <button class="modal-close" onclick="closeModal('boatModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Boat Name <span class="req">*</span></label>
+          <input class="field-input" type="text" id="boatName" placeholder="Big Boat 1">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Boat Type</label>
+          <select class="field-select" id="boatType">
+            <option>Outrigger</option>
+            <option>Flat Boat</option>
+            <option>Chase Boat</option>
+            <option>Speed Boat</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Fuel Type</label>
+          <select class="field-select" id="boatFuelType">
+            <option>Gasoline</option>
+            <option>Diesel</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Diver Capacity</label>
+          <input class="field-input" type="number" id="boatCapacity" placeholder="15">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Captain</label>
+        <input class="field-input" type="text" id="boatCaptain" placeholder="Captain name (optional)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('boatModal')">Cancel</button>
+      <button class="btn btn-navy" onclick="saveBoat()">Save Boat</button>
+    </div>
+  </div>
+</div>
+
+<!-- PACKAGE MODAL -->
+<div class="modal-overlay" id="packageModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="packageModalTitle">Add Package</div>
+      <button class="modal-close" onclick="closeModal('packageModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="field-label">Package Name <span class="req">*</span></label>
+        <input class="field-input" type="text" id="packageName" placeholder="Shark Trip">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Dive Site Combination <span class="req">*</span></label>
+          <input class="field-input" type="text" id="packageSite" placeholder="e.g. Kimud, Kimud, Monad">
+          <div style="font-size:0.76rem;color:var(--gray-500);margin-top:0.35rem;">List all dive sites for this package, comma-separated and in order. Example: Kimud, Kimud, Monad. This combination must exactly match what scheduling uses when Boat Return fires.</div>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Package Price (PHP) <span class="req">*</span></label>
+          <input class="field-input" type="number" id="packagePrice" placeholder="5500">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Equipment</label>
+        <div style="display:flex;gap:1rem;margin-top:0.35rem;">
+          <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;cursor:pointer;">
+            <input type="radio" name="packageEquip" value="false" checked> Not included
+          </label>
+          <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;cursor:pointer;">
+            <input type="radio" name="packageEquip" value="true"> Included
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('packageModal')">Cancel</button>
+      <button class="btn btn-navy" onclick="savePackage()">Save Package</button>
+    </div>
+  </div>
+</div>
+
+<!-- COURSE MODAL -->
+<div class="modal-overlay" id="courseModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="courseModalTitle">Add Course</div>
+      <button class="modal-close" onclick="closeModal('courseModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Course Name <span class="req">*</span></label>
+          <input class="field-input" type="text" id="courseName" placeholder="Open Water Diver">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Price (PHP) <span class="req">*</span></label>
+          <input class="field-input" type="number" id="coursePrice" placeholder="19500">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('courseModal')">Cancel</button>
+      <button class="btn btn-navy" onclick="saveCourse()">Save Course</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIVE SITE MODAL -->
+<div class="modal-overlay" id="siteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="siteModalTitle">Add Dive Site</div>
+      <button class="modal-close" onclick="closeModal('siteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="field-label">Site Name <span class="req">*</span></label>
+        <input class="field-input" type="text" id="siteName" placeholder="Kimud Shoal (Shark Point)">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Distance from Malapascua</label>
+          <input class="field-input" type="text" id="siteDistance" placeholder="30 mins">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Fuel Estimate</label>
+          <select class="field-select" id="siteFuel">
+            <option>Low</option>
+            <option>Medium</option>
+            <option selected>High</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Shark Fee Applies</label>
+        <div class="charge-type-toggle" id="siteSharkFeeToggle" style="display:inline-flex;">
+          <button type="button" class="charge-type-btn" id="siteSharkFeeYes" onclick="setSiteSharkFee(true)">Yes</button>
+          <button type="button" class="charge-type-btn active" id="siteSharkFeeNo" onclick="setSiteSharkFee(false)">No</button>
+        </div>
+      </div>
+      <div class="form-group" id="sitePackageGroup" style="display:none;">
+        <label class="field-label">Linked Package</label>
+        <select class="field-select" id="sitePackage">
+          <option value="">None</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('siteModal')">Cancel</button>
+      <button class="btn btn-navy" onclick="saveSite()">Save Dive Site</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MEDICAL QUESTION MODAL -->
+<div class="modal-overlay" id="medicalModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="medicalModalTitle">Add Medical Question</div>
+      <button class="modal-close" onclick="closeModal('medicalModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="field-label">Question Text <span class="req">*</span></label>
+        <textarea class="field-textarea" id="medicalQuestionText" placeholder="e.g. Do you have or have you ever had asthma or any other breathing condition?" style="min-height:100px;"></textarea>
+        <div style="font-size:0.76rem;color:var(--gray-400);margin-top:0.35rem;">This will appear as a Yes/No radio button in the registration form. A Yes answer flags the diver.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('medicalModal')">Cancel</button>
+      <button class="btn btn-navy" onclick="saveMedicalQuestion()">Save Question</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title" id="confirmModalTitle">Confirm Delete</div>
+      <button class="modal-close" onclick="closeModal('confirmModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmModalMessage" style="margin:0;font-size:0.9rem;color:var(--dark);line-height:1.6;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn" id="confirmModalBtn" style="background:var(--red);color:white;border-color:var(--red);">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHARGE MODAL -->
+<div class="modal-overlay" id="chargeModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Charge</div><button class="modal-close" onclick="closeModal('chargeModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="field-label">Charge Name <span class="req">*</span></label><input class="field-input" type="text" id="chargeName" placeholder="Marine Tax"></div>
+        <div class="form-group"><label class="field-label">Amount (PHP)</label><input class="field-input" type="number" id="chargeAmount" placeholder="0"></div>
+      </div>
+      <div class="form-group"><label class="field-label">Charge Type</label><select class="field-select" id="chargeType"><option value="per_dive">Per Dive</option><option value="per_day">Per Day</option><option value="fixed">Fixed</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('chargeModal')">Cancel</button><button class="btn btn-navy" onclick="saveCustomCharge()">Save Charge</button></div>
+  </div>
+</div>
+
+<!-- EQUIPMENT MODAL -->
+<div class="modal-overlay" id="equipmentModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Equipment Item</div><button class="modal-close" onclick="closeModal('equipmentModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="field-label">Item Name <span class="req">*</span></label><input class="field-input" type="text" id="equipmentName" placeholder="Torch"></div>
+        <div class="form-group"><label class="field-label">Rate (PHP)</label><input class="field-input" type="number" id="equipmentRate" placeholder="0"></div>
+      </div>
+      <div class="form-group"><label class="field-label">Charge Type</label><select class="field-select" id="equipmentChargeType"><option value="per_day">Per Day</option><option value="per_dive">Per Dive</option><option value="fixed">Fixed</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('equipmentModal')">Cancel</button><button class="btn btn-navy" onclick="saveCustomEquipment()">Save Item</button></div>
+  </div>
+</div>
+
+<!-- CURRENCY MODAL -->
+<div class="modal-overlay" id="currencyModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Currency</div><button class="modal-close" onclick="closeModal('currencyModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="field-label">Currency Code <span class="req">*</span></label><input class="field-input" type="text" id="currencyCode" placeholder="USD" maxlength="3"></div>
+        <div class="form-group"><label class="field-label">Rate to PHP</label><input class="field-input" type="number" id="currencyRate" placeholder="57.00" step="0.001"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('currencyModal')">Cancel</button><button class="btn btn-navy" onclick="saveCustomCurrency()">Save Currency</button></div>
+  </div>
+</div>
+
+<!-- SWITCH MODE MODAL -->
+<div class="modal-overlay" id="switchModeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Change Pricing Mode</div>
+      <button class="modal-close" onclick="closeModal('switchModeModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="warning-box">⚠️ Switching pricing mode affects your entire billing system. All open bills must be closed before switching. Historical records are preserved.</div>
+      <div class="form-group" style="margin-top:1rem;">
+        <label class="field-label">Owner Password</label>
+        <input class="field-input" type="password" id="switchModePassword" placeholder="Owner password">
+        <div id="switchModeError" style="font-size:0.78rem;color:var(--red);margin-top:0.3rem;display:none;">Incorrect password</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('switchModeModal')">Cancel</button>
+      <button class="btn btn-red" onclick="confirmSwitchMode()">Confirm Change</button>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTRATION PREVIEW MODAL (Waiver / Medical Questions) -->
+<div class="modal-overlay" id="regPreviewModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <div class="modal-title" id="regPreviewTitle">Preview</div>
+      <button class="modal-close" onclick="closeModal('regPreviewModal')">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto;background:var(--off-white);">
+      <div style="background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:1.5rem;">
+        <div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--gray-200);" id="regPreviewHeader"></div>
+        <div id="regPreviewBody" style="font-size:0.9rem;line-height:1.65;color:var(--dark);"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('regPreviewModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://xaabndtaevwgicibzcqm.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+const{createClient}=supabase;
+const client=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let currentUser=null,diveCenterId=null,dcData=null;
+let insuranceOffered=false;
+let staffData=[],boatData=[],siteData=[],packageData=[],courseData=[],tierData=[],chargeData=[],equipmentData=[],currencyData=[];
+let pricingMode=null,editingStaffId=null,editingBoatId=null,editingPackageId=null,editingCourseId=null,editingSiteId=null;
+
+const DEFAULT_COURSES=[
+  {name:'Open Water Diver',price:19500},
+  {name:'Advanced Open Water',price:16500},
+  {name:'Rescue Diver',price:11000},
+  {name:'Divemaster',price:100000},
+  {name:'Instructor',price:150000},
+  {name:'Nitrox',price:11000},
+  {name:'Deep Dive Specialty',price:11000},
+];
+
+const DEFAULT_CURRENCIES=[
+  {code:'USD',name:'US Dollar',flag:'🇺🇸',rate:57.00},
+  {code:'EUR',name:'Euro',flag:'🇪🇺',rate:62.00},
+  {code:'AUD',name:'Australian Dollar',flag:'🇦🇺',rate:38.00},
+  {code:'GBP',name:'British Pound',flag:'🇬🇧',rate:72.00},
+  {code:'JPY',name:'Japanese Yen',flag:'🇯🇵',rate:0.38},
+  {code:'KRW',name:'Korean Won',flag:'🇰🇷',rate:0.043},
+  {code:'CNY',name:'Chinese Yuan',flag:'🇨🇳',rate:7.90},
+  {code:'SGD',name:'Singapore Dollar',flag:'🇸🇬',rate:43.00},
+  {code:'HKD',name:'Hong Kong Dollar',flag:'🇭🇰',rate:7.30},
+  {code:'CHF',name:'Swiss Franc',flag:'🇨🇭',rate:65.00},
+  {code:'CAD',name:'Canadian Dollar',flag:'🇨🇦',rate:42.00},
+  {code:'NZD',name:'New Zealand Dollar',flag:'🇳🇿',rate:35.00},
+  {code:'THB',name:'Thai Baht',flag:'🇹🇭',rate:1.60},
+  {code:'MYR',name:'Malaysian Ringgit',flag:'🇲🇾',rate:12.00},
+  {code:'INR',name:'Indian Rupee',flag:'🇮🇳',rate:0.68},
+];
+
+// ── INIT ────────────────────────────────────────────────────────────────
+async function init(){
+  const{data:{session}}=await client.auth.getSession();
+  if(!session){window.location.href='/login.html';return;}
+  currentUser=session.user;
+  const{data:ud,error:userErr}=await client.from('users').select('*').eq('id',currentUser.id).single();
+  if(userErr){showToast('Could not load user profile: '+userErr.message,'error');return;}
+  if(ud){
+    diveCenterId=ud.dive_center_id;
+    const {data:dc,error:dcErr}=await client.from('dive_centers').select('*').eq('id',diveCenterId).single();
+    if(dcErr){showToast('Could not load dive center settings: '+dcErr.message,'error');return;}
+    dcData=dc||{};
+    document.getElementById('dcName').textContent=dcData?.name||'My Dive Center';
+    document.getElementById('userRole').textContent='👑 Owner';
+    document.getElementById('userName').textContent=ud.full_name||'Owner';
+    document.getElementById('userEmail').textContent=currentUser.email;
+    document.getElementById('userAvatar').textContent=(ud.full_name||'O')[0].toUpperCase();
+    pricingMode=normalizePricingMode(dcData?.pricing_mode||null);
+    loadProfile();
+    await Promise.all([loadStaff(),loadBoats(),loadSites(),loadPackages(),loadCourses(),loadTiers(),loadCharges(),loadEquipmentRates(),loadCurrencies(),loadWaiver(),loadSurcharges(),loadMedicalQuestions(),loadInventory()]);
+    renderPricingMode();
+  }
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const panel=document.getElementById('tab-'+tab);
+  if(panel)panel.classList.add('active');
+  const btn=[...document.querySelectorAll('.tab-btn')].find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+tab+"'"));
+  if(btn)btn.classList.add('active');
+  if(tab==='profile')loadProfile();
+  if(tab==='courses')loadCourses();
+  if(tab==='sites')loadSites();
+  if(tab==='rates'){renderPricingMode();loadTiers();loadCharges();loadSurcharges();}
+  if(tab==='waiver'){loadWaiver();loadMedicalQuestions();}
+  if(tab==='inventory'){loadInventory();}
+  if(tab==='access'){loadAccess();}
+}
+
+// ── STAFF ─────────────────────────────────────────────────────────────────
+async function loadStaff(){
+  const{data}=await client.from('staff').select('*').eq('dive_center_id',diveCenterId).order('created_at');
+  staffData=data||[];
+  renderStaff();
+}
+
+function renderStaff(){
+  const list=document.getElementById('staffList');
+  if(staffData.length===0){list.innerHTML='<div class="empty-state">No staff members yet. Add your first team member.</div>';return;}
+  list.innerHTML=staffData.map(s=>`
+    <div class="staff-card">
+      <div class="staff-avatar">${(s.first_name||'?')[0].toUpperCase()}</div>
+      <div class="staff-info">
+        <div class="staff-name">${esc(s.first_name||'')} ${esc(s.last_name||'')}${s.nitrox_certified?` <span style="font-size:0.7rem;background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:99px;font-weight:600;vertical-align:middle;">N2</span>`:''}</div>
+        <div class="staff-meta">
+          <span class="status-dot ${s.is_active?'status-active':'status-inactive'}"></span>
+          ${esc(s.employment_status||'Full Time')} · Hired ${esc(s.date_hired||'—')} · PHP ${(s.daily_rate||0).toLocaleString()}/day
+          ${s.email?` · ${esc(s.email)}`:''}
+        </div>
+      </div>
+      <span class="access-badge access-${(s.access_level||'crew').toLowerCase().replace(' ','')}">
+        ${esc(s.access_level||s.role||'crew')}
+      </span>
+      <div class="staff-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editStaff('${s.id}')">✏️ Edit</button>
+        ${s.access_level==='secretary'&&s.auth_user_id?`<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:#FECACA;" onclick="deactivateSecretary('${s.id}','${esc(s.first_name||'')}')">🚫 Deactivate</button>`:''}
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:#FECACA;" onclick="deleteStaff('${s.id}','${esc((s.first_name||'')+' '+(s.last_name||''))}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function setStaffNitrox(val){
+  document.getElementById('staffNitroxYes').classList.toggle('active',val===true);
+  document.getElementById('staffNitroxNo').classList.toggle('active',val===false);
+}
+
+function onStaffPositionChange(){
+  const pos=document.getElementById('staffPosition').value;
+  const notice=document.getElementById('secretaryAuthNotice');
+  const emailLabel=document.querySelector('label[for="staffEmailLabel"]');
+  if(pos==='Secretary'){
+    notice.style.display='block';
+    // Email becomes required for secretary
+    document.querySelector('#staffEmail').closest('.form-group').querySelector('.field-label').innerHTML='Email <span class="req">*</span>';
+  } else {
+    notice.style.display='none';
+    document.querySelector('#staffEmail').closest('.form-group').querySelector('.field-label').innerHTML='Email <span style="color:var(--gray-400);font-weight:500;">(optional)</span>';
+  }
+}
+
+function openStaffModal(id){
+  editingStaffId=id||null;
+  document.getElementById('staffModalTitle').textContent=id?'Edit Staff Member':'Add Staff Member';
+  if(!id){
+    document.getElementById('staffName').value='';
+    document.getElementById('staffEmail').value='';
+    document.getElementById('staffPosition').value='';
+    document.getElementById('staffStatus').value='Full Time';
+    document.getElementById('staffDateHired').value='';
+    document.getElementById('staffDailyRate').value='';
+    document.getElementById('staffPhone').value='';
+    document.getElementById('staffWhatsapp').value='';
+    setStaffNitrox(false);
+    document.getElementById('secretaryAuthNotice').style.display='none';
+  }
+  document.getElementById('staffPosition').onchange=onStaffPositionChange;
+  document.getElementById('staffModal').classList.add('show');
+}
+
+function editStaff(id){
+  const s=staffData.find(x=>x.id===id);
+  if(!s)return;
+  editingStaffId=id;
+  document.getElementById('staffModalTitle').textContent='Edit Staff Member';
+  document.getElementById('staffName').value=(s.first_name||'')+' '+(s.last_name||'');
+  document.getElementById('staffEmail').value=s.email||'';
+  document.getElementById('staffPosition').value=s.role||'';
+  document.getElementById('staffStatus').value=s.employment_status||'Full Time';
+  document.getElementById('staffDateHired').value=s.date_hired||'';
+  document.getElementById('staffDailyRate').value=s.daily_rate||'';
+  document.getElementById('staffPhone').value=s.phone||'';
+  document.getElementById('staffWhatsapp').value=s.whatsapp||'';
+  setStaffNitrox(s.nitrox_certified===true);
+  document.getElementById('secretaryAuthNotice').style.display='none';
+  document.getElementById('staffPosition').onchange=onStaffPositionChange;
+  document.getElementById('staffModal').classList.add('show');
+}
+
+async function saveStaff(){
+  const fullName=document.getElementById('staffName').value.trim();
+  const email=document.getElementById('staffEmail').value.trim();
+  const position=document.getElementById('staffPosition').value;
+  if(!fullName||!position){showToast('Please fill in required fields','error');return;}
+  if(position==='Secretary'&&!editingStaffId&&!email){showToast('Email is required to create a Secretary account','error');return;}
+  const parts=fullName.split(' ');
+  const firstName=parts[0];
+  const lastName=parts.slice(1).join(' ');
+  const accessMap={Secretary:'secretary',Divemaster:'divemaster',Instructor:'instructor',Crew:'crew'};
+  const nitroxCertified=document.getElementById('staffNitroxYes').classList.contains('active');
+  const data={
+    dive_center_id:diveCenterId,
+    first_name:firstName,last_name:lastName,
+    email:email,role:position,
+    employment_status:document.getElementById('staffStatus').value,
+    date_hired:document.getElementById('staffDateHired').value||null,
+    daily_rate:parseFloat(document.getElementById('staffDailyRate').value)||0,
+    phone:document.getElementById('staffPhone').value,
+    whatsapp:document.getElementById('staffWhatsapp').value,
+    access_level:accessMap[position]||'crew',
+    nitrox_certified:nitroxCertified,
+    is_active:true,
+  };
+  if(editingStaffId){
+    const{error}=await client.from('staff').update(data).eq('id',editingStaffId);
+    if(error){showToast('Could not save staff: '+error.message,'error');return;}
+    showToast('Staff member updated','success');
+  } else {
+    const{data:inserted,error}=await client.from('staff').insert(data).select().single();
+    if(error){showToast('Could not save staff: '+error.message,'error');return;}
+    // If Secretary, create Supabase Auth account via Edge Function
+    if(position==='Secretary'&&email&&inserted){
+      const ok=await createSecretaryAuth(email,inserted.id);
+      if(!ok)showToast('Staff saved but login account could not be created — check Edge Function deployment','error');
+      else showToast('Secretary added and login account created. Temporary password: aquadesk123','success');
+    } else {
+      showToast('Staff member added','success');
+    }
+  }
+  closeModal('staffModal');
+  loadStaff();
+}
+
+async function createSecretaryAuth(email,staffId){
+  try{
+    const res=await fetch(`${SUPABASE_URL}/functions/v1/create-secretary`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+((await client.auth.getSession()).data.session?.access_token||'')},
+      body:JSON.stringify({email,staffId,diveCenterId,tempPassword:'aquadesk123'})
+    });
+    const json=await res.json();
+    if(!res.ok){console.error('create-secretary error:',json);return false;}
+    return true;
+  }catch(e){console.error('create-secretary fetch error:',e);return false;}
+}
+
+async function deactivateSecretary(staffId,name){
+  showConfirm(`Deactivate ${name}'s login account? They will no longer be able to log in.`, async()=>{
+    try{
+      const s=staffData.find(x=>x.id===staffId);
+      if(!s?.auth_user_id){showToast('No login account found for this secretary','error');return;}
+      const res=await fetch(`${SUPABASE_URL}/functions/v1/create-secretary`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+((await client.auth.getSession()).data.session?.access_token||'')},
+        body:JSON.stringify({action:'deactivate',authUserId:s.auth_user_id,staffId})
+      });
+      const json=await res.json();
+      if(!res.ok){showToast('Could not deactivate account: '+(json.error||'unknown error'),'error');return;}
+      await client.from('staff').update({is_active:false}).eq('id',staffId);
+      showToast(`${name}'s account deactivated`,'success');
+      loadStaff();
+    }catch(e){showToast('Could not deactivate account: '+e.message,'error');}
+  });
+}
+
+// ── PROFILE ───────────────────────────────────────────────────────────────
+function loadProfile(){
+  if(!dcData)return;
+  const name=document.getElementById('profileName');
+  const email=document.getElementById('profileEmail');
+  const phone=document.getElementById('profilePhone');
+  const address=document.getElementById('profileAddress');
+  const sub=document.getElementById('profileSubscription');
+  const preview=document.getElementById('logoPreview');
+  if(name)name.value=dcData.name||'';
+  if(email)email.value=dcData.email||'';
+  if(phone)phone.value=dcData.phone||'';
+  if(address)address.value=dcData.address||'';
+  if(sub)sub.value=dcData.subscription_status||'Active';
+  if(preview&&dcData.logo_url){
+    preview.innerHTML=`<img src="${dcData.logo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius);">`;
+  }
+  setInsuranceOffered(dcData.offers_dive_insurance===true);
+  const refLink=document.getElementById('insuranceReferralLink');
+  if(refLink)refLink.value=dcData.insurance_referral_link||'';
+}
+
+function setInsuranceOffered(val){
+  insuranceOffered=val;
+  document.getElementById('insuranceOfferedYes').classList.toggle('active',val===true);
+  document.getElementById('insuranceOfferedNo').classList.toggle('active',val!==true);
+  document.getElementById('insuranceReferralGroup').style.display=val?'block':'none';
+}
+
+function previewLogo(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const preview=document.getElementById('logoPreview');
+    preview.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius);">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProfile(){
+  const name=document.getElementById('profileName').value.trim();
+  if(!name){showToast('Dive center name is required','error');return;}
+  let logoUrl=dcData?.logo_url||null;
+  // Upload logo if a new file was selected
+  const fileInput=document.getElementById('logoFile');
+  if(fileInput.files[0]){
+    const file=fileInput.files[0];
+    const ext=file.name.split('.').pop();
+    const path=`logos/${diveCenterId}.${ext}`;
+    const{error:uploadErr}=await client.storage.from('dive-center-assets').upload(path,file,{upsert:true});
+    if(uploadErr){showToast('Could not upload logo: '+uploadErr.message,'error');return;}
+    const{data:urlData}=client.storage.from('dive-center-assets').getPublicUrl(path);
+    logoUrl=urlData?.publicUrl||logoUrl;
+  }
+  const payload={
+    name,
+    email:document.getElementById('profileEmail').value.trim()||null,
+    phone:document.getElementById('profilePhone').value.trim()||null,
+    address:document.getElementById('profileAddress').value.trim()||null,
+    logo_url:logoUrl,
+    offers_dive_insurance:insuranceOffered,
+    insurance_referral_link:insuranceOffered?(document.getElementById('insuranceReferralLink').value.trim()||null):null,
+  };
+  const{error}=await client.from('dive_centers').update(payload).eq('id',diveCenterId);
+  if(error){showToast('Could not save profile: '+error.message,'error');return;}
+  // Update local cache and header name
+  dcData={...dcData,...payload};
+  document.getElementById('dcName').textContent=name;
+  showToast('Profile saved','success');
+}
+
+// ── BOATS ─────────────────────────────────────────────────────────────────
+async function loadBoats(){
+  const{data}=await client.from('boats').select('*').eq('dive_center_id',diveCenterId).order('created_at');
+  boatData=data||[];
+  renderBoats();
+}
+
+function renderBoats(){
+  const list=document.getElementById('boatList');
+  if(boatData.length===0){list.innerHTML='<div class="empty-state">No boats yet. Add your first boat.</div>';return;}
+  list.innerHTML=boatData.map(b=>`
+    <div class="boat-card">
+      <div class="boat-icon">🚤</div>
+      <div class="boat-info">
+        <div class="boat-name">${b.name}</div>
+        <div class="boat-meta">${b.boat_type||'Outrigger'} · ${b.fuel_type||'Gasoline'} · ${b.capacity||0} divers · Captain: ${b.captain||'—'}</div>
+      </div>
+      <span class="access-badge ${b.is_active?'access-secretary':'access-crew'}">${b.is_active?'Active':'Inactive'}</span>
+      <div class="staff-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editBoat('${b.id}')">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:#FECACA;" onclick="deleteBoat('${b.id}','${b.name||''}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openBoatModal(){editingBoatId=null;document.getElementById('boatModalTitle').textContent='Add Boat';document.getElementById('boatName').value='';document.getElementById('boatCapacity').value='';document.getElementById('boatCaptain').value='';document.getElementById('boatModal').classList.add('show');}
+
+function editBoat(id){
+  const b=boatData.find(x=>x.id===id);
+  if(!b)return;
+  editingBoatId=id;
+  document.getElementById('boatModalTitle').textContent='Edit Boat';
+  document.getElementById('boatName').value=b.name||'';
+  document.getElementById('boatType').value=b.boat_type||'Outrigger';
+  document.getElementById('boatFuelType').value=b.fuel_type||'Gasoline';
+  document.getElementById('boatCapacity').value=b.capacity||'';
+  document.getElementById('boatCaptain').value=b.captain||'';
+  document.getElementById('boatModal').classList.add('show');
+}
+
+async function saveBoat(){
+  const name=document.getElementById('boatName').value.trim();
+  if(!name){showToast('Boat name is required','error');return;}
+  const data={dive_center_id:diveCenterId,name,boat_type:document.getElementById('boatType').value,fuel_type:document.getElementById('boatFuelType').value,capacity:parseInt(document.getElementById('boatCapacity').value)||0,captain:document.getElementById('boatCaptain').value,is_active:true};
+  const res=editingBoatId?await client.from('boats').update(data).eq('id',editingBoatId):await client.from('boats').insert(data);
+  if(res.error){showToast('Could not save boat: '+res.error.message,'error');return;}
+  showToast(editingBoatId?'Boat updated':'Boat added','success');
+  closeModal('boatModal');await loadBoats();
+}
+
+// ── PRICING MODE ──────────────────────────────────────────────────────────
+function normalizePricingMode(mode){
+  if(!mode)return null;
+  const m=String(mode).toLowerCase().trim().replace(/[_-]+/g,' ');
+  if(['package','package based','packagebased'].includes(m))return 'package';
+  if(['tier','tier based','tier rate based','tiered','tier based pricing'].includes(m))return 'tier';
+  return m;
+}
+
+function pricingModeLabel(mode){
+  const m=normalizePricingMode(mode);
+  if(m==='package')return 'Package Based';
+  if(m==='tier')return 'Tier Based';
+  return 'Not configured';
+}
+
+function handlePricingModeCardClick(mode){
+  if(pricingMode){
+    showToast('Pricing mode is locked. Use Change Pricing Mode and owner password to switch.','error');
+    return;
+  }
+  selectMode(mode);
+}
+
+function renderPricingMode(){
+  pricingMode=normalizePricingMode(dcData?.pricing_mode || pricingMode);
+  const cards=document.getElementById('modeCards');
+  const pkg=document.getElementById('modePackage');
+  const tier=document.getElementById('modeTier');
+  const confirmBtn=document.getElementById('modeConfirmBtn');
+  const locked=document.getElementById('modeLocked');
+  const switchBtn=document.getElementById('switchModeBtn');
+  const pkgSection=document.getElementById('packageSection');
+  const tierSection=document.getElementById('tierSection');
+  if(!cards||!pkg||!tier||!confirmBtn||!locked||!switchBtn||!pkgSection||!tierSection)return;
+
+  // First-time setup only: show the two choice cards when no pricing mode is saved.
+  if(!pricingMode){
+    cards.style.display='grid';
+    pkg.className='mode-card';
+    tier.className='mode-card';
+    confirmBtn.style.display='none';
+    locked.style.display='block';
+    locked.innerHTML='<div class="info-box">Pricing mode is not configured yet. Choose one mode, confirm it, then AquaDesk will lock it for daily use.</div>';
+    switchBtn.style.display='none';
+    pkgSection.style.display='none';
+    tierSection.style.display='none';
+    return;
+  }
+
+  // Locked daily-use state: the cards must be hidden so secretaries are not asked to choose again.
+  cards.style.display='none';
+  confirmBtn.style.display='none';
+  locked.style.display='block';
+  locked.innerHTML=`<div class="warning-box">🔒 Current Pricing Mode: <strong>${pricingModeLabel(pricingMode)}</strong>. This is locked after setup so secretaries cannot accidentally change billing behavior. Use Change Pricing Mode and owner password only when the dive center officially switches pricing method.</div>`;
+  switchBtn.style.display='flex';
+  pkgSection.style.display=pricingMode==='package'?'block':'none';
+  tierSection.style.display=pricingMode==='tier'?'block':'none';
+}
+function selectMode(mode){
+  if(pricingMode){showToast('Pricing mode is locked. Use Change Pricing Mode and owner password to switch.','error');return;}
+  document.getElementById('modePackage').className='mode-card'+(mode==='package'?' selected':'');
+  document.getElementById('modeTier').className='mode-card'+(mode==='tier'?' selected':'');
+  document.getElementById('modeConfirmBtn').style.display='block';
+  document.getElementById('modeConfirmBtn').dataset.mode=mode;
+}
+
+async function confirmPricingMode(){
+  const mode=normalizePricingMode(document.getElementById('modeConfirmBtn').dataset.mode);
+  if(!mode)return;
+  const {error}=await client.from('dive_centers').update({pricing_mode:mode}).eq('id',diveCenterId);
+  if(error){showToast('Could not save pricing mode: '+error.message,'error');return;}
+  pricingMode=mode;
+  dcData={...(dcData||{}),pricing_mode:mode};
+  if(mode==='tier')await seedDefaultCourses();
+  renderPricingMode();
+  showToast('Pricing mode set to '+pricingModeLabel(mode),'success');
+}
+
+function openSwitchModeModal(){
+  if(!dcData?.owner_password){showToast('Set your owner password first under Passwords.','error');return;}
+  document.getElementById('switchModePassword').value='';
+  document.getElementById('switchModeError').style.display='none';
+  document.getElementById('switchModeModal').classList.add('show');
+}
+
+async function confirmSwitchMode(){
+  const pwd=document.getElementById('switchModePassword').value;
+  const stored=dcData?.owner_password;
+  if(!stored){closeModal('switchModeModal');showToast('Set your owner password first under Passwords.','error');return;}
+  if(pwd!==stored){document.getElementById('switchModeError').style.display='block';return;}
+  const {data:openBills,error:billErr}=await client.from('visits').select('id').eq('dive_center_id',diveCenterId).eq('is_active',true).eq('is_paid',false);
+  if(billErr){closeModal('switchModeModal');showToast('Could not check open bills: '+billErr.message,'error');return;}
+  if(openBills&&openBills.length>0){closeModal('switchModeModal');showToast(`Cannot switch — ${openBills.length} open bill(s) must be closed first`,'error');return;}
+  const current=normalizePricingMode(pricingMode);
+  const newMode=current==='package'?'tier':'package';
+  const {error}=await client.from('dive_centers').update({pricing_mode:newMode}).eq('id',diveCenterId);
+  if(error){showToast('Could not switch pricing mode: '+error.message,'error');return;}
+  pricingMode=newMode;
+  dcData={...(dcData||{}),pricing_mode:newMode};
+  closeModal('switchModeModal');
+  renderPricingMode();
+  showToast('Pricing mode updated to '+pricingModeLabel(newMode),'success');
+}
+
+// ── PACKAGES ──────────────────────────────────────────────────────────────
+async function loadPackages(){
+  const{data,error}=await client.from('packages').select('*').eq('dive_center_id',diveCenterId).order('created_at');
+  if(error){showToast('Could not load packages: '+error.message,'error');packageData=[];}else{packageData=data||[];}
+  renderPackages();
+}
+
+function renderPackages(){
+  const list=document.getElementById('packageList');
+  if(packageData.length===0){list.innerHTML='<div class="empty-state">No packages yet</div>';return;}
+  list.innerHTML=packageData.map(p=>`
+    <div class="rate-card">
+      <div class="rate-info">
+        <div class="rate-name">${esc(p.package_name||'Untitled Package')}</div>
+        <div class="rate-meta">Dive Site Combination: ${esc(p.dive_site||'—')} · Equipment: ${p.equipment_included?'Included':'Not included'}</div>
+      </div>
+      <div class="rate-price">₱${parseFloat(p.price||0).toLocaleString()}</div>
+      <span class="access-badge ${p.is_active?'access-secretary':'access-crew'}">${p.is_active?'Active':'Inactive'}</span>
+      <div class="staff-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openPackageModal('${p.id}')">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:#FECACA;" onclick="deletePackage('${p.id}','${esc(p.package_name||'')}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openPackageModal(id){
+  editingPackageId=id||null;
+  const pkg=id?packageData.find(p=>p.id===id):null;
+  const title=document.getElementById('packageModalTitle');if(title)title.textContent=id?'Edit Package':'Add Package';
+  document.getElementById('packageName').value=pkg?.package_name||'';
+  document.getElementById('packageSite').value=pkg?.dive_site||'';
+  document.getElementById('packagePrice').value=pkg?.price||'';
+  const equip=String(!!pkg?.equipment_included);
+  document.querySelectorAll('input[name="packageEquip"]').forEach(r=>{r.checked=(r.value===equip);});
+  if(!id){const noEquip=document.querySelector('input[name="packageEquip"][value="false"]');if(noEquip)noEquip.checked=true;}
+  document.getElementById('packageModal').classList.add('show');
+}
+
+async function savePackage(){
+  const name=document.getElementById('packageName').value.trim();
+  const price=parseFloat(document.getElementById('packagePrice').value)||0;
+  const site=document.getElementById('packageSite').value.trim();
+  if(!name||!price){showToast('Package name and price are required','error');return;}
+  if(!site){showToast('Dive site combination is required','error');return;}
+  const equipIncluded=document.querySelector('input[name="packageEquip"]:checked')?.value==='true';
+  const payload={dive_center_id:diveCenterId,package_name:name,dive_site:site,price,equipment_included:equipIncluded,is_active:true};
+  const result=editingPackageId?await client.from('packages').update(payload).eq('id',editingPackageId):await client.from('packages').insert(payload);
+  if(result.error){showToast('Could not save package: '+result.error.message,'error');return;}
+  showToast(editingPackageId?'Package updated':'Package added','success');
+  editingPackageId=null;
+  closeModal('packageModal');await loadPackages();
+}
+
+// ── TIERS ─────────────────────────────────────────────────────────────────
+async function loadTiers(){
+  const{data,error}=await client.from('rate_tiers').select('*').eq('dive_center_id',diveCenterId).order('tier_from');
+  if(error){showToast('Could not load rate tiers: '+error.message,'error');tierData=[];}
+  else{tierData=data||[];}
+  renderTiers();
+}
+
+function tiersByType(type){return tierData.filter(t=>(t.rate_type||'base_dive')===type).sort((a,b)=>(a.tier_from||0)-(b.tier_from||0));}
+function tierBodyId(type){return type==='nitrox'?'nitroxTierTableBody':(type==='tank_15l'?'tank15TierTableBody':'tierTableBody');}
+
+function renderTiers(){
+  renderTierTable('base_dive');
+  renderTierTable('nitrox');
+  renderTierTable('tank_15l');
+}
+
+function renderTierTable(type){
+  const tbody=document.getElementById(tierBodyId(type));
+  if(!tbody)return;
+  const rows=tiersByType(type);
+  if(rows.length===0){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--gray-400);">No tiers yet — add your first tier</td></tr>';return;}
+  tbody.innerHTML=rows.map(t=>`
+    <tr>
+      <td><input class="tier-input" type="number" value="${t.tier_from??''}" onchange="updateTierLocal('${t.id}','tier_from',this.value)"></td>
+      <td><input class="tier-input" type="number" value="${t.tier_to??''}" placeholder="Above" onchange="updateTierLocal('${t.id}','tier_to',this.value)"></td>
+      <td><input class="tier-input" type="number" value="${t.base_rate??0}" onchange="updateTierLocal('${t.id}','base_rate',this.value)"></td>
+      <td><button class="btn btn-ghost btn-sm btn-icon" style="color:var(--red);" onclick="deleteTier('${t.id}','${type}')">✕</button></td>
+    </tr>`).join('');
+}
+
+function updateTierLocal(id,field,value){
+  const t=tierData.find(x=>x.id===id);
+  if(t)t[field]=field==='tier_to'&&value===''?null:(parseFloat(value)||0);
+}
+
+function addTierRow(type='base_dive'){
+  const rows=tiersByType(type);
+  const last=rows[rows.length-1];
+  const from=last&&last.tier_to?Number(last.tier_to)+1:1;
+  tierData.push({id:'new-'+Date.now()+Math.random().toString(16).slice(2),dive_center_id:diveCenterId,tier_from:from,tier_to:null,base_rate:0,rate_type:type,isNew:true});
+  renderTierTable(type);
+}
+
+async function saveTiers(type='base_dive'){
+  const rows=tiersByType(type);
+  for(const t of rows){
+    const payload={dive_center_id:diveCenterId,tier_from:t.tier_from||0,tier_to:t.tier_to||null,base_rate:t.base_rate||0,rate_type:type};
+    let res;
+    if(t.isNew){res=await client.from('rate_tiers').insert(payload).select().single();if(!res.error&&res.data){t.id=res.data.id;delete t.isNew;}}
+    else{res=await client.from('rate_tiers').update(payload).eq('id',t.id);}
+    if(res?.error){showToast('Could not save tier: '+res.error.message,'error');return;}
+  }
+  showToast('Tiers saved','success');
+  await loadTiers();
+}
+
+async function deleteTier(id,type='base_dive'){
+  if(id.startsWith('new-')){tierData=tierData.filter(t=>t.id!==id);renderTierTable(type);return;}
+  const{error}=await client.from('rate_tiers').delete().eq('id',id);
+  if(error){showToast('Could not remove tier: '+error.message,'error');return;}
+  showToast('Tier removed','success');
+  loadTiers();
+}
+
+// ── COURSES ───────────────────────────────────────────────────────────────
+async function loadCourses(){
+  const{data,error}=await client.from('course_rates').select('*').eq('dive_center_id',diveCenterId).order('course_name');
+  if(error){showToast('Could not load course_rates: '+error.message,'error');courseData=[];}else{courseData=data||[];}
+  renderCourses();
+}
+
+async function seedDefaultCourses(){
+  const{data:existing}=await client.from('course_rates').select('id').eq('dive_center_id',diveCenterId);
+  if(existing&&existing.length>0)return;
+  for(const c of DEFAULT_COURSES){
+    await client.from('course_rates').insert({dive_center_id:diveCenterId,course_name:c.name,price:c.price,is_active:true});
+  }
+  loadCourses();
+}
+
+function renderCourses(){
+  const list=document.getElementById('courseList');
+  if(courseData.length===0){
+    list.innerHTML=`<div class="empty-state"><div style="margin-bottom:1rem;">No courses yet.</div><button class="btn btn-ghost btn-sm" onclick="seedDefaultCourses()">Load Default Courses</button></div>`;
+    return;
+  }
+  list.innerHTML=courseData.map(c=>`
+    <div class="rate-card">
+      <div class="rate-info"><div class="rate-name">${esc(c.course_name||'Untitled Course')}</div></div>
+      <div class="rate-price">₱${parseFloat(c.price||0).toLocaleString()}</div>
+      <span class="access-badge ${c.is_active?'access-secretary':'access-crew'}">${c.is_active?'Active':'Inactive'}</span>
+      <div class="staff-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openCourseModal('${c.id}')">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:#FECACA;" onclick="deleteCourse('${c.id}','${esc(c.course_name||'')}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openCourseModal(id){
+  editingCourseId=id||null;
+  const c=id?courseData.find(x=>x.id===id):null;
+  const title=document.getElementById('courseModalTitle');if(title)title.textContent=id?'Edit Course':'Add Course';
+  document.getElementById('courseName').value=c?.course_name||'';
+  document.getElementById('coursePrice').value=c?.price||'';
+  document.getElementById('courseModal').classList.add('show');
+}
+
+async function saveCourse(){
+  const name=document.getElementById('courseName').value.trim();
+  const price=parseFloat(document.getElementById('coursePrice').value)||0;
+  if(!name){showToast('Course name is required','error');return;}
+  const payload={dive_center_id:diveCenterId,course_name:name,price,is_active:true};
+  const result=editingCourseId?await client.from('course_rates').update(payload).eq('id',editingCourseId):await client.from('course_rates').insert(payload);
+  if(result.error){showToast('Could not save course: '+result.error.message,'error');return;}
+  showToast(editingCourseId?'Course updated':'Course added','success');
+  editingCourseId=null;
+  closeModal('courseModal');await loadCourses();
+}
+
+// ── DIVE SITES ────────────────────────────────────────────────────────────
+async function loadSites(){
+  const{data,error}=await client.from('dive_sites').select('*').eq('dive_center_id',diveCenterId).order('site_name');
+  if(error){showToast('Could not load dive sites: '+error.message,'error');siteData=[];}else{siteData=data||[];}
+  renderSites();
+}
+
+function renderSites(){
+  const list=document.getElementById('siteList');
+  if(siteData.length===0){list.innerHTML='<div class="empty-state">No dive sites yet. Add your local sites.</div>';return;}
+  list.innerHTML=siteData.map(s=>{
+    const linked=s.linked_package_id?packageData.find(p=>p.id===s.linked_package_id)?.package_name:'—';
+    return `<div class="rate-card">
+      <div class="rate-info">
+        <div class="rate-name">${esc(s.site_name||'Untitled Site')}</div>
+        <div class="rate-meta">Distance: ${esc(s.distance||'—')} · Fuel: ${esc(s.fuel_estimate||'—')} · Shark Fee: ${s.shark_fee?'Yes':'No'} · Linked Package: ${esc(linked||'—')}</div>
+      </div>
+      <span class="access-badge ${s.is_active?'access-secretary':'access-crew'}">${s.is_active?'Active':'Inactive'}</span>
+      <div class="staff-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openSiteModal('${s.id}')">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:#FECACA;" onclick="deleteSite('${s.id}','${esc(s.site_name||'')}')">🗑 Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function populateSitePackageSelect(selected){
+  const sel=document.getElementById('sitePackage');if(!sel)return;
+  sel.innerHTML='<option value="">None</option>'+packageData.map(p=>`<option value="${p.id}">${esc(p.package_name||'Package')}</option>`).join('');
+  sel.value=selected||'';
+}
+
+function setSiteSharkFee(val){
+  document.getElementById('siteSharkFeeYes').classList.toggle('active',val===true);
+  document.getElementById('siteSharkFeeNo').classList.toggle('active',val===false);
+}
+
+function openSiteModal(id){
+  editingSiteId=id||null;
+  const site=id?siteData.find(s=>s.id===id):null;
+  const title=document.getElementById('siteModalTitle');if(title)title.textContent=id?'Edit Dive Site':'Add Dive Site';
+  document.getElementById('siteName').value=site?.site_name||'';
+  document.getElementById('siteDistance').value=site?.distance||'';
+  document.getElementById('siteFuel').value=site?.fuel_estimate||'High';
+  setSiteSharkFee(site?.shark_fee===true);
+  const pkgGroup=document.getElementById('sitePackageGroup');
+  if(pricingMode==='package'){
+    pkgGroup.style.display='block';
+    populateSitePackageSelect(site?.linked_package_id||'');
+  }else{pkgGroup.style.display='none';}
+  document.getElementById('siteModal').classList.add('show');
+}
+
+async function saveSite(){
+  const name=document.getElementById('siteName').value.trim();
+  if(!name){showToast('Site name is required','error');return;}
+  const sharkFee=document.getElementById('siteSharkFeeYes').classList.contains('active');
+  const payload={dive_center_id:diveCenterId,site_name:name,distance:document.getElementById('siteDistance').value,fuel_estimate:document.getElementById('siteFuel').value,shark_fee:sharkFee,linked_package_id:document.getElementById('sitePackage')?.value||null,is_active:true};
+  const result=editingSiteId?await client.from('dive_sites').update(payload).eq('id',editingSiteId):await client.from('dive_sites').insert(payload);
+  if(result.error){showToast('Could not save dive site: '+result.error.message,'error');return;}
+  showToast(editingSiteId?'Dive site updated':'Dive site added','success');
+  editingSiteId=null;
+  closeModal('siteModal');await loadSites();
+}
+
+// ── EQUIPMENT RATES ───────────────────────────────────────────────────────
+const DEFAULT_EQUIP=[
+  {name:'BCD',id:'equip_bcd'},{name:'Wetsuit',id:'equip_wetsuit'},{name:'Fins',id:'equip_fins'},
+  {name:'Mask',id:'equip_mask'},{name:'Boots',id:'equip_boots'},{name:'Regulator',id:'equip_regulator'},
+  {name:'Weights',id:'equip_weights'},{name:'Full Set',id:'equip_fullset'},{name:'Torch',id:'equip_torch'},
+  {name:'Snorkel',id:'equip_snorkel'},{name:'Dive Computer',id:'equip_computer'},
+];
+async function loadEquipmentRates(){
+  const{data,error}=await client.from('equipment_rental_rates').select('*').eq('dive_center_id',diveCenterId).order('item_name');
+  if(error){showToast('Could not load equipment rates: '+error.message,'error');equipmentData=[];return;}
+  equipmentData=data||[];
+  for(const item of DEFAULT_EQUIP){
+    const found=equipmentData.find(e=>e.item_name===item.name);
+    const el=document.getElementById(item.id);
+    if(el&&found)el.value=found.rate||0;
+  }
+  renderCustomEquipment();
+}
+function renderCustomEquipment(){
+  const box=document.getElementById('customEquipList');if(!box)return;
+  const defaults=DEFAULT_EQUIP.map(x=>x.name);
+  const custom=equipmentData.filter(e=>!defaults.includes(e.item_name));
+  box.innerHTML=custom.map(e=>`<div class="charge-row"><span class="charge-label">${esc(e.item_name)}</span><input class="field-input charge-amount" type="number" value="${e.rate||0}" onchange="quickUpdateEquipment('${e.id}',this.value)"><span class="access-badge ${e.is_active?'access-secretary':'access-crew'}">${e.is_active?'Active':'Inactive'}</span></div>`).join('');
+}
+async function quickUpdateEquipment(id,rate){const{error}=await client.from('equipment_rental_rates').update({rate:parseFloat(rate)||0}).eq('id',id);if(error)showToast('Could not update item: '+error.message,'error');}
+async function saveEquipmentRates(){
+  for(const item of DEFAULT_EQUIP){
+    const el=document.getElementById(item.id);if(!el)continue;
+    const rate=parseFloat(el.value)||0;
+    const row=el.closest('.charge-row');const activeBtn=row?.querySelector('.charge-type-btn.active');
+    const chargeType=activeBtn?.textContent.toLowerCase().includes('dive')?'per_dive':'per_day';
+    const existing=equipmentData.find(e=>e.item_name===item.name);
+    const res=existing?await client.from('equipment_rental_rates').update({rate,charge_type:chargeType,is_active:true}).eq('id',existing.id):await client.from('equipment_rental_rates').insert({dive_center_id:diveCenterId,item_name:item.name,rate,charge_type:chargeType,is_active:true});
+    if(res.error){showToast('Could not save equipment item: '+res.error.message,'error');return;}
+  }
+  showToast('Equipment rates saved','success');await loadEquipmentRates();
+}
+function openEquipmentModal(){document.getElementById('equipmentName').value='';document.getElementById('equipmentRate').value='';document.getElementById('equipmentModal').classList.add('show');}
+async function saveCustomEquipment(){
+  const name=document.getElementById('equipmentName').value.trim();const rate=parseFloat(document.getElementById('equipmentRate').value)||0;const chargeType=document.getElementById('equipmentChargeType').value;
+  if(!name){showToast('Equipment name is required','error');return;}
+  const{error}=await client.from('equipment_rental_rates').insert({dive_center_id:diveCenterId,item_name:name,rate,charge_type:chargeType,is_active:true});
+  if(error){showToast('Could not save equipment item: '+error.message,'error');return;}
+  closeModal('equipmentModal');showToast('Equipment item added','success');await loadEquipmentRates();
+}
+
+// ── CHARGES ───────────────────────────────────────────────────────────────
+const DEFAULT_CHARGES=[
+  {name:'Marine Tax',id:'marine_tax_amount'},{name:'Shark Fee',id:'shark_fee_amount'},
+  {name:'Fuel Charge — Medium',id:'fuel_charge_medium_amount',sub_type:'medium'},
+  {name:'Fuel Charge — High',id:'fuel_charge_high_amount',sub_type:'high'},
+  {name:'Dive Computer',id:'computer_amount'},
+  {name:'Torch',id:'torch_amount'},
+];
+function setChargeType(btn,type){const toggle=btn.closest('.charge-type-toggle');toggle.querySelectorAll('.charge-type-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+async function loadCharges(){
+  const{data,error}=await client.from('other_charges').select('*').eq('dive_center_id',diveCenterId).order('charge_name');
+  if(error){showToast('Could not load charges: '+error.message,'error');chargeData=[];return;}
+  chargeData=data||[];
+  for(const c of DEFAULT_CHARGES){
+    // Match by sub_type for fuel charges, otherwise by charge_name
+    let found;
+    if(c.sub_type){found=chargeData.find(x=>x.sub_type===c.sub_type)||(chargeData.find(x=>x.charge_name===c.name&&!x.sub_type));}
+    else{found=chargeData.find(x=>x.charge_name===c.name&&!x.sub_type);}
+    const el=document.getElementById(c.id);
+    if(el&&found){
+      el.value=found.amount||0;
+      // Restore toggle state
+      const row=el.closest('.charge-row');
+      if(row&&found.charge_type){
+        const btns=row.querySelectorAll('.charge-type-btn');
+        btns.forEach(b=>b.classList.remove('active'));
+        const target=found.charge_type==='per_day'?1:0;
+        if(btns[target])btns[target].classList.add('active');
+      }
+    }
+  }
+  renderCustomCharges();
+}
+function renderCustomCharges(){
+  const box=document.getElementById('customChargesList');if(!box)return;
+  const defaults=DEFAULT_CHARGES.map(x=>x.name);
+  const custom=chargeData.filter(c=>!defaults.includes(c.charge_name)&&c.charge_name!=='Fuel Charge');
+  box.innerHTML=custom.map(c=>`<div class="charge-row"><span class="charge-label">${esc(c.charge_name)}</span><input class="field-input charge-amount" type="number" value="${c.amount||0}" onchange="quickUpdateCharge('${c.id}',this.value)"><div class="staff-actions"><button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:#FECACA;" onclick="deleteCharge('${c.id}','${esc(c.charge_name||'')}')">🗑</button></div></div>`).join('');
+}
+async function quickUpdateCharge(id,amount){const{error}=await client.from('other_charges').update({amount:parseFloat(amount)||0}).eq('id',id);if(error)showToast('Could not update charge: '+error.message,'error');}
+async function saveCharges(){
+  for(const c of DEFAULT_CHARGES){
+    const el=document.getElementById(c.id);if(!el)continue;const amount=parseFloat(el.value)||0;
+    const row=el.closest('.charge-row');const activeBtn=row?.querySelector('.charge-type-btn.active');
+    const chargeType=activeBtn?.textContent.toLowerCase().includes('dive')?'per_dive':'per_day';
+    let existing;
+    if(c.sub_type){existing=chargeData.find(x=>x.sub_type===c.sub_type);}
+    else{existing=chargeData.find(x=>x.charge_name===c.name&&!x.sub_type);}
+    const payload={dive_center_id:diveCenterId,charge_name:c.name,amount,charge_type:chargeType,is_active:true};
+    if(c.sub_type)payload.sub_type=c.sub_type;
+    const res=existing?await client.from('other_charges').update(payload).eq('id',existing.id):await client.from('other_charges').insert(payload);
+    if(res.error){showToast('Could not save charge: '+res.error.message,'error');return;}
+  }
+  showToast('Charges saved','success');await loadCharges();
+}
+function openChargeModal(){document.getElementById('chargeName').value='';document.getElementById('chargeAmount').value='';document.getElementById('chargeModal').classList.add('show');}
+async function saveCustomCharge(){
+  const name=document.getElementById('chargeName').value.trim();const amount=parseFloat(document.getElementById('chargeAmount').value)||0;const chargeType=document.getElementById('chargeType').value;
+  if(!name){showToast('Charge name is required','error');return;}
+  const{error}=await client.from('other_charges').insert({dive_center_id:diveCenterId,charge_name:name,amount,charge_type:chargeType,is_active:true});
+  if(error){showToast('Could not save charge: '+error.message,'error');return;}
+  closeModal('chargeModal');showToast('Charge added','success');await loadCharges();
+}
+async function saveNitrox(){await saveTiers('nitrox');}
+function addNitroxRow(){addTierRow('nitrox');}
+
+
+
+// ── PAYMENT SURCHARGES ───────────────────────────────────────────────────
+async function loadSurcharges(){
+  const cc=document.getElementById('ccSurcharge');
+  const online=document.getElementById('onlineSurcharge');
+  if(!cc||!online)return;
+  const {data,error}=await client.from('payment_surcharges').select('*').eq('dive_center_id',diveCenterId);
+  if(error){showToast('Could not load surcharges: '+error.message,'error');return;}
+  const rows=data||[];
+  const cardRow=rows.find(r=>String(r.surcharge_type||'').toLowerCase().includes('card')||String(r.surcharge_type||'').toLowerCase().includes('credit'));
+  const onlineRow=rows.find(r=>String(r.surcharge_type||'').toLowerCase().includes('online'));
+  if(cardRow)cc.value=cardRow.percentage??'';
+  if(onlineRow)online.value=onlineRow.percentage??'';
+}
+
+async function saveSurcharges(){
+  const cc=parseFloat(document.getElementById('ccSurcharge')?.value)||0;
+  const online=parseFloat(document.getElementById('onlineSurcharge')?.value)||0;
+  const {data,error}=await client.from('payment_surcharges').select('*').eq('dive_center_id',diveCenterId);
+  if(error){showToast('Could not check surcharge: '+error.message,'error');return;}
+  const rows=data||[];
+  async function saveOne(type,percentage){
+    const existing=rows.find(r=>String(r.surcharge_type||'').toLowerCase()===type || (type==='card'&&String(r.surcharge_type||'').toLowerCase().includes('card')) || (type==='online'&&String(r.surcharge_type||'').toLowerCase().includes('online')));
+    if(existing){
+      return await client.from('payment_surcharges').update({percentage}).eq('id',existing.id);
+    }
+    return await client.from('payment_surcharges').insert({dive_center_id:diveCenterId,surcharge_type:type,percentage});
+  }
+  let res=await saveOne('card',cc);
+  if(res.error){showToast('Could not save card surcharge: '+res.error.message,'error');return;}
+  res=await saveOne('online',online);
+  if(res.error){showToast('Could not save online surcharge: '+res.error.message,'error');return;}
+  showToast('Payment surcharges saved','success');
+  await loadSurcharges();
+}
+
+// ── EXCHANGE RATES ────────────────────────────────────────────────────────
+async function loadCurrencies(){
+  const{data,error}=await client.from('exchange_rates').select('*').eq('dive_center_id',diveCenterId).order('currency_code');
+  if(error){showToast('Could not load currencies: '+error.message,'error');currencyData=[];return;}
+  const existing=data||[];currencyData=existing;
+  const tbody=document.getElementById('currencyTableBody');
+  const merged=DEFAULT_CURRENCIES.map(dc=>{const found=existing.find(e=>e.currency_code===dc.code);return{...dc,dbRate:found?.rate_to_php||dc.rate,active:found?.is_active!==false,dbId:found?.id||null,isDefault:true};});
+  const custom=existing.filter(e=>!DEFAULT_CURRENCIES.some(dc=>dc.code===e.currency_code)).map(e=>({code:e.currency_code,name:'Custom Currency',flag:'💱',dbRate:e.rate_to_php||0,active:e.is_active!==false,dbId:e.id,isDefault:false}));
+  const rows=merged.concat(custom);
+  tbody.innerHTML=rows.map(c=>`<tr><td><span class="currency-flag">${c.flag}</span><strong>${esc(c.code)}</strong> — ${esc(c.name)}</td><td><input class="tier-input" type="number" id="rate_${c.code}" value="${c.dbRate}" step="0.001"></td><td><label class="toggle"><input type="checkbox" ${c.active?'checked':''} id="active_${c.code}"><span class="toggle-slider"></span></label></td><td></td></tr>`).join('');
+}
+async function saveExchangeRates(){
+  const allCodes=[...new Set(DEFAULT_CURRENCIES.map(c=>c.code).concat(currencyData.map(c=>c.currency_code)))];
+  for(const code of allCodes){
+    const def=DEFAULT_CURRENCIES.find(c=>c.code===code);const rate=parseFloat(document.getElementById('rate_'+code)?.value)||(def?.rate||0);const active=document.getElementById('active_'+code)?.checked||false;
+    const existing=currencyData.find(e=>e.currency_code===code);
+    const res=existing?await client.from('exchange_rates').update({rate_to_php:rate,is_active:active,updated_at:new Date().toISOString()}).eq('id',existing.id):await client.from('exchange_rates').insert({dive_center_id:diveCenterId,currency_code:code,rate_to_php:rate,is_active:active,updated_at:new Date().toISOString()});
+    if(res.error){showToast('Could not save currency: '+res.error.message,'error');return;}
+  }
+  showToast('Exchange rates saved','success');await loadCurrencies();
+}
+function openCurrencyModal(){document.getElementById('currencyCode').value='';document.getElementById('currencyRate').value='';document.getElementById('currencyModal').classList.add('show');}
+async function saveCustomCurrency(){
+  const code=document.getElementById('currencyCode').value.trim().toUpperCase();const rate=parseFloat(document.getElementById('currencyRate').value)||0;
+  if(!code){showToast('Currency code is required','error');return;}
+  const{error}=await client.from('exchange_rates').insert({dive_center_id:diveCenterId,currency_code:code,rate_to_php:rate,is_active:true,updated_at:new Date().toISOString()});
+  if(error){showToast('Could not save currency: '+error.message,'error');return;}
+  closeModal('currencyModal');showToast('Currency added','success');await loadCurrencies();
+}
+
+// ── WAIVER ────────────────────────────────────────────────────────────────
+// Allow-list for saved waiver HTML. Kept deliberately minimal — no headings,
+// links, images, or tables. This is the INPUT-side sanitize pass; register.html
+// MUST also sanitize on render (defense in depth) — do not treat this as the
+// only line of defense since this content is later shown to the public.
+const WAIVER_ALLOWED_TAGS=['p','br','b','strong','i','em','ul','ol','li'];
+const WAIVER_ALLOWED_ATTR=[];
+
+function sanitizeWaiverHtml(rawHtml){
+  if(window.DOMPurify){
+    return DOMPurify.sanitize(rawHtml||'',{ALLOWED_TAGS:WAIVER_ALLOWED_TAGS,ALLOWED_ATTR:WAIVER_ALLOWED_ATTR});
+  }
+  // DOMPurify failed to load (CDN blocked) — fail closed, do not save unsanitized HTML.
+  showToast('Sanitizer library did not load — cannot save waiver text right now.','error');
+  return null;
+}
+
+function waiverExec(cmd){
+  document.getElementById('waiverEditor').focus();
+  document.execCommand(cmd,false,null);
+}
+
+async function loadWaiver(){
+  const{data,error}=await client.from('dive_centers').select('waiver_content,waiver_updated_at').eq('id',diveCenterId).single();
+  const editor=document.getElementById('waiverEditor');
+  const updatedEl=document.getElementById('waiverLastUpdated');
+  if(error){showToast('Could not load waiver text: '+error.message,'error');return;}
+  if(editor)editor.innerHTML=data?.waiver_content||'';
+  if(updatedEl){
+    updatedEl.textContent=data?.waiver_updated_at
+      ?'Last updated: '+new Date(data.waiver_updated_at).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'})
+      :'Not set yet.';
+  }
+}
+
+async function saveWaiverContent(){
+  const editor=document.getElementById('waiverEditor');
+  if(!editor)return;
+  const clean=sanitizeWaiverHtml(editor.innerHTML);
+  if(clean===null)return;
+  const now=new Date().toISOString();
+  const{error}=await client.from('dive_centers').update({
+    waiver_content:clean,
+    waiver_updated_at:now,
+    waiver_content_updated_by:currentUser?.id||null
+  }).eq('id',diveCenterId);
+  if(error){showToast('Could not save waiver: '+error.message,'error');return;}
+  editor.innerHTML=clean;
+  const updatedEl=document.getElementById('waiverLastUpdated');
+  if(updatedEl)updatedEl.textContent='Last updated: '+new Date(now).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
+  showToast('Waiver saved.','success');
+}
+
+// ── SETTINGS-TAB PREVIEWS (Waiver / Medical Questions) ─────────────────────
+// These mirror what register.html Screens 7/6 will show, but are rendered
+// independently here — register.html has its own render pass and its own
+// sanitize-on-render pass, not reused from this file.
+function regPreviewHeaderHtml(){
+  const name=esc(dcData?.name||'Your Dive Center');
+  const logo=dcData?.logo_url
+    ?`<img src="${dcData.logo_url}" alt="" style="width:40px;height:40px;border-radius:9px;object-fit:cover;flex-shrink:0;">`
+    :`<div style="width:40px;height:40px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;color:white;font-size:1.1rem;flex-shrink:0;">🌊</div>`;
+  return `${logo}<div style="font-family:var(--font-display);font-size:1.15rem;color:var(--navy);">${name}</div>`;
+}
+
+function openWaiverPreview(){
+  const editor=document.getElementById('waiverEditor');
+  document.getElementById('regPreviewTitle').textContent='Waiver Preview';
+  document.getElementById('regPreviewHeader').innerHTML=regPreviewHeaderHtml();
+  const clean=sanitizeWaiverHtml(editor?.innerHTML||'');
+  document.getElementById('regPreviewBody').innerHTML=clean||'<span style="color:var(--gray-400);">No waiver text yet.</span>';
+  document.getElementById('regPreviewModal').classList.add('show');
+}
+
+function openMedicalPreview(){
+  document.getElementById('regPreviewTitle').textContent='Medical Questions Preview';
+  document.getElementById('regPreviewHeader').innerHTML=regPreviewHeaderHtml();
+  const body=document.getElementById('regPreviewBody');
+  if(!medicalData||medicalData.length===0){
+    body.innerHTML='<span style="color:var(--gray-400);">No medical questions added yet.</span>';
+  }else{
+    body.innerHTML=medicalData.map(q=>`
+      <div style="border:1px solid var(--gray-200);border-radius:9px;padding:0.85rem 1rem;margin-bottom:0.65rem;">
+        <div style="font-size:0.88rem;color:var(--dark);margin-bottom:0.6rem;">${esc(q.question_text||'')}</div>
+        <div style="display:flex;gap:0.6rem;">
+          <span style="padding:0.4rem 0.9rem;border:1.5px solid var(--gray-200);border-radius:8px;font-size:0.82rem;color:var(--gray-600);">Yes</span>
+          <span style="padding:0.4rem 0.9rem;border:1.5px solid var(--gray-200);border-radius:8px;font-size:0.82rem;color:var(--gray-600);">No</span>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('regPreviewModal').classList.add('show');
+}
+
+// ── PASSWORDS ─────────────────────────────────────────────────────────────
+async function updateBillingPassword(){
+  const current=document.getElementById('billingCurrentPwd').value;
+  const newPwd=document.getElementById('billingNewPwd').value;
+  const confirm=document.getElementById('billingConfirmPwd').value;
+  if(!current||!newPwd||!confirm){showToast('Please fill in all fields','error');return;}
+  if(newPwd!==confirm){showToast('Passwords do not match','error');return;}
+  if(current!==dcData?.billing_password){showToast('Current password is incorrect','error');return;}
+  await client.from('dive_centers').update({billing_password:newPwd}).eq('id',diveCenterId);
+  document.getElementById('billingCurrentPwd').value='';
+  document.getElementById('billingNewPwd').value='';
+  document.getElementById('billingConfirmPwd').value='';
+  dcData.billing_password = newPwd;
+  showToast('Billing password updated','success');
+}
+
+async function updateOwnerPassword(){
+  const current=document.getElementById('ownerCurrentPwd').value;
+  const newPwd=document.getElementById('ownerNewPwd').value;
+  const confirm=document.getElementById('ownerConfirmPwd').value;
+  if(!current||!newPwd||!confirm){showToast('Please fill in all fields','error');return;}
+  if(newPwd!==confirm){showToast('Passwords do not match','error');return;}
+  if(current!==dcData?.owner_password){showToast('Current password is incorrect','error');return;}
+  await client.from('dive_centers').update({owner_password:newPwd}).eq('id',diveCenterId);
+  document.getElementById('ownerCurrentPwd').value='';
+  document.getElementById('ownerNewPwd').value='';
+  document.getElementById('ownerConfirmPwd').value='';
+  dcData.owner_password = newPwd;
+  showToast('Owner password updated','success');
+}
+
+// ── CONFIRM HELPER ────────────────────────────────────────────────────────
+function showConfirm(message, onConfirm){
+  document.getElementById('confirmModalMessage').textContent = message;
+  const btn = document.getElementById('confirmModalBtn');
+  // Remove any previous listener by cloning
+  const fresh = btn.cloneNode(true);
+  btn.parentNode.replaceChild(fresh, btn);
+  fresh.addEventListener('click', () => {
+    closeModal('confirmModal');
+    onConfirm();
+  });
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+// ── DELETE FUNCTIONS ──────────────────────────────────────────────────────
+async function deleteStaff(id,name){
+  showConfirm(`Delete staff member "${name}"? This cannot be undone.`, async()=>{
+    const{error}=await client.from('staff').delete().eq('id',id);
+    if(error){showToast('Could not delete staff: '+error.message,'error');return;}
+    showToast('Staff member deleted','success');loadStaff();
+  });
+}
+async function deleteBoat(id,name){
+  showConfirm(`Delete boat "${name}"? This cannot be undone.`, async()=>{
+    const{error}=await client.from('boats').delete().eq('id',id);
+    if(error){showToast('Could not delete boat: '+error.message,'error');return;}
+    showToast('Boat deleted','success');loadBoats();
+  });
+}
+async function deletePackage(id,name){
+  showConfirm(`Delete package "${name}"? This cannot be undone.`, async()=>{
+    const{error}=await client.from('packages').delete().eq('id',id);
+    if(error){showToast('Could not delete package: '+error.message,'error');return;}
+    showToast('Package deleted','success');loadPackages();
+  });
+}
+async function deleteCourse(id,name){
+  showConfirm(`Delete course "${name}"? This cannot be undone.`, async()=>{
+    const{error}=await client.from('course_rates').delete().eq('id',id);
+    if(error){showToast('Could not delete course: '+error.message,'error');return;}
+    showToast('Course deleted','success');loadCourses();
+  });
+}
+async function deleteSite(id,name){
+  showConfirm(`Delete dive site "${name}"? This cannot be undone.`, async()=>{
+    const{error}=await client.from('dive_sites').delete().eq('id',id);
+    if(error){showToast('Could not delete dive site: '+error.message,'error');return;}
+    showToast('Dive site deleted','success');loadSites();
+  });
+}
+async function deleteCharge(id,name){
+  showConfirm(`Delete charge "${name}"? This cannot be undone.`, async()=>{
+    const{error}=await client.from('other_charges').delete().eq('id',id);
+    if(error){showToast('Could not delete charge: '+error.message,'error');return;}
+    showToast('Charge deleted','success');loadCharges();
+  });
+}
+
+// ── MEDICAL QUESTIONS ─────────────────────────────────────────────────────
+let medicalData=[];
+let editingMedicalId=null;
+
+async function loadMedicalQuestions(){
+  const el=document.getElementById('medicalQuestionsList');
+  if(!el||!diveCenterId)return;
+  const{data,error}=await client.from('medical_questions').select('*').eq('dive_center_id',diveCenterId).order('created_at');
+  if(error){el.innerHTML='<div class="empty-state">No medical questions yet. Add your first question.</div>';medicalData=[];return;}
+  medicalData=data||[];
+  renderMedicalQuestions();
+}
+
+function renderMedicalQuestions(){
+  const el=document.getElementById('medicalQuestionsList');if(!el)return;
+  if(medicalData.length===0){el.innerHTML='<div class="empty-state">No medical questions yet. Add your first question.</div>';return;}
+  el.innerHTML=medicalData.map(q=>`
+    <div class="charge-row" style="align-items:flex-start;gap:1rem;">
+      <div style="flex:1;">
+        <div style="font-size:0.875rem;font-weight:500;color:var(--dark);line-height:1.5;">${esc(q.question_text||'')}</div>
+        <div style="font-size:0.75rem;color:var(--gray-400);margin-top:0.25rem;">Renders as: <strong>Yes / No</strong> in registration form</div>
+      </div>
+      <div class="staff-actions" style="flex-shrink:0;">
+        <button class="btn btn-ghost btn-sm" onclick="openMedicalModal('${q.id}')">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:#FECACA;" onclick="deleteMedicalQuestion('${q.id}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openMedicalModal(id){
+  editingMedicalId=id||null;
+  const q=id?medicalData.find(x=>x.id===id):null;
+  document.getElementById('medicalModalTitle').textContent=id?'Edit Medical Question':'Add Medical Question';
+  document.getElementById('medicalQuestionText').value=q?.question_text||'';
+  document.getElementById('medicalModal').classList.add('show');
+}
+
+async function saveMedicalQuestion(){
+  const text=document.getElementById('medicalQuestionText').value.trim();
+  if(!text){showToast('Question text is required','error');return;}
+  const payload={dive_center_id:diveCenterId,question_text:text,is_active:true};
+  const result=editingMedicalId
+    ?await client.from('medical_questions').update(payload).eq('id',editingMedicalId)
+    :await client.from('medical_questions').insert(payload);
+  if(result.error){showToast('Could not save question: '+result.error.message,'error');return;}
+  showToast(editingMedicalId?'Question updated':'Question added','success');
+  editingMedicalId=null;
+  closeModal('medicalModal');await loadMedicalQuestions();
+}
+
+async function deleteMedicalQuestion(id){
+  showConfirm('Delete this medical question? This cannot be undone.', async()=>{
+    const{error}=await client.from('medical_questions').delete().eq('id',id);
+    if(error){showToast('Could not delete question: '+error.message,'error');return;}
+    showToast('Question deleted','success');loadMedicalQuestions();
+  });
+}
+
+// ── INVENTORY ─────────────────────────────────────────────────────────────
+const GEAR_ITEMS=['BCD','Wetsuit','Fins','Boots','Mask','Regulator'];
+let tanksData=[],gearData=[];
+
+async function loadInventory(){
+  await Promise.all([loadTanks(),loadGear(),loadFuelSettings()]);
+}
+
+async function loadTanks(){
+  if(!diveCenterId)return;
+  const{data,error}=await client.from('tanks').select('*').eq('dive_center_id',diveCenterId).order('type');
+  if(error){showToast('Could not load tanks: '+error.message,'error');tanksData=[];}
+  else{tanksData=data||[];}
+  renderTanks();
+}
+
+function renderTanks(){
+  const tbody=document.getElementById('tanksTableBody');if(!tbody)return;
+  const TANK_TYPES=['Air 12L','Air 15L','Nitrox'];
+  const rows=TANK_TYPES.map((type,i)=>{
+    const existing=tanksData.find(t=>t.type===type)||{};
+    return {type,id:existing.id||'',total_count:existing.total_count||0,available_count:existing.available_count||0,in_use_count:existing.in_use_count||0,low_alert_threshold:existing.low_alert_threshold||0,idx:i};
+  });
+  tbody.innerHTML=rows.map(r=>`
+    <tr>
+      <td style="font-weight:500;color:var(--navy);">${esc(r.type)}<input type="hidden" id="tank_id_${r.idx}" value="${r.id}"><input type="hidden" id="tank_type_${r.idx}" value="${esc(r.type)}"></td>
+      <td><input class="tier-input" type="number" id="tank_total_${r.idx}" value="${r.total_count}" min="0"></td>
+      <td><input class="tier-input" type="number" id="tank_avail_${r.idx}" value="${r.available_count}" min="0"></td>
+      <td><input class="tier-input" type="number" id="tank_inuse_${r.idx}" value="${r.in_use_count}" min="0"></td>
+      <td><input class="tier-input" type="number" id="tank_threshold_${r.idx}" value="${r.low_alert_threshold}" min="0"></td>
+      <td></td>
+    </tr>`).join('');
+}
+
+async function saveTanks(){
+  const TANK_TYPES=['Air 12L','Air 15L','Nitrox'];
+  for(let i=0;i<TANK_TYPES.length;i++){
+    const rawId=document.getElementById('tank_id_'+i)?.value||'';
+    const id=rawId.trim()===''?null:rawId;
+    const payload={
+      dive_center_id:diveCenterId,
+      type:document.getElementById('tank_type_'+i)?.value||TANK_TYPES[i],
+      total_count:parseInt(document.getElementById('tank_total_'+i)?.value)||0,
+      available_count:parseInt(document.getElementById('tank_avail_'+i)?.value)||0,
+      in_use_count:parseInt(document.getElementById('tank_inuse_'+i)?.value)||0,
+      low_alert_threshold:parseInt(document.getElementById('tank_threshold_'+i)?.value)||0,
+    };
+    const res=id
+      ?await client.from('tanks').update(payload).eq('id',id)
+      :await client.from('tanks').insert(payload);
+    if(res.error){showToast('Could not save tanks: '+res.error.message,'error');return;}
+  }
+  showToast('Tank inventory saved','success');await loadTanks();
+}
+
+async function loadFuelSettings(){
+  if(!diveCenterId)return;
+  const{data,error}=await client.from('dive_centers').select('fuel_current_level,fuel_low_threshold,fuel_gasoline_level,fuel_gasoline_threshold,fuel_gasoline_last_reset_at,fuel_diesel_level,fuel_diesel_threshold,fuel_diesel_last_reset_at').eq('id',diveCenterId).single();
+  if(error){showToast('Could not load fuel settings: '+error.message,'error');return;}
+  if(!data)return;
+
+  const setVal=(id,val)=>{const el=document.getElementById(id);if(el&&val!==null&&val!==undefined)el.value=val;};
+  setVal('fuelGasolineLevel',data.fuel_gasoline_level);
+  setVal('fuelGasolineThreshold',data.fuel_gasoline_threshold);
+  setVal('fuelDieselLevel',data.fuel_diesel_level);
+  setVal('fuelDieselThreshold',data.fuel_diesel_threshold);
+
+  await loadFuelConsumed('gasoline',data.fuel_gasoline_last_reset_at);
+  await loadFuelConsumed('diesel',data.fuel_diesel_last_reset_at);
+}
+
+async function loadFuelConsumed(fuelType,lastResetAt){
+  let query=client.from('fuel_logs').select('liters_consumed').eq('dive_center_id',diveCenterId).eq('fuel_type',fuelType);
+  if(lastResetAt)query=query.gte('created_at',lastResetAt);
+  const{data,error}=await query;
+  if(error)return;
+  const total=(data||[]).reduce((sum,row)=>sum+(parseFloat(row.liters_consumed)||0),0);
+  const el=document.getElementById(fuelType==='gasoline'?'fuelGasolineConsumed':'fuelDieselConsumed');
+  if(el)el.value=total.toFixed(2);
+}
+
+async function saveFuel(){
+  if(!diveCenterId){showToast('Not ready — please wait','error');return;}
+  const toNum=id=>{const el=document.getElementById(id);return el&&el.value!==''?parseFloat(el.value):null;};
+  const payload={
+    fuel_gasoline_level:toNum('fuelGasolineLevel'),
+    fuel_gasoline_threshold:toNum('fuelGasolineThreshold'),
+    fuel_diesel_level:toNum('fuelDieselLevel'),
+    fuel_diesel_threshold:toNum('fuelDieselThreshold'),
+  };
+  const{error}=await client.from('dive_centers').update(payload).eq('id',diveCenterId);
+  if(error){showToast('Could not save fuel settings: '+error.message,'error');return;}
+  showToast('Fuel settings saved','success');
+}
+
+async function resetFuelConsumed(fuelType){
+  const label=fuelType==='gasoline'?'Gasoline':'Diesel';
+  showConfirm(`Reset the ${label} consumed counter to 0? This marks a new tracking start point — no log records are deleted.`,async()=>{
+    const col=fuelType==='gasoline'?'fuel_gasoline_last_reset_at':'fuel_diesel_last_reset_at';
+    const now=new Date().toISOString();
+    const{error}=await client.from('dive_centers').update({[col]:now}).eq('id',diveCenterId);
+    if(error){showToast('Could not reset counter: '+error.message,'error');return;}
+    const el=document.getElementById(fuelType==='gasoline'?'fuelGasolineConsumed':'fuelDieselConsumed');
+    if(el)el.value='0.00';
+    showToast(`${label} consumed counter reset to 0`,'success');
+  });
+}
+
+async function loadGear(){
+  if(!diveCenterId)return;
+  const{data,error}=await client.from('equipment').select('*').eq('dive_center_id',diveCenterId);
+  if(error){showToast('Could not load gear: '+error.message,'error');gearData=[];}
+  else{gearData=data||[];}
+  renderGear();
+}
+
+function renderGear(){
+  const tbody=document.getElementById('gearTableBody');if(!tbody)return;
+  tbody.innerHTML=GEAR_ITEMS.map(item=>{
+    const rows=gearData.filter(e=>e.type===item||e.name===item);
+    const total=rows[0]?.total_count??0;
+    const threshold=rows[0]?.low_alert_threshold||0;
+    const key=item.replace(/\s+/g,'_');
+    return `<tr>
+      <td style="font-weight:500;color:var(--navy);">${esc(item)}</td>
+      <td><input class="tier-input" type="number" id="gear_total_${key}" value="${total}" min="0"></td>
+      <td><input class="tier-input" type="number" id="gear_threshold_${key}" value="${threshold}" min="0"></td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveGear(){
+  for(const item of GEAR_ITEMS){
+    const key=item.replace(/\s+/g,'_');
+    const total=parseInt(document.getElementById('gear_total_'+key)?.value)||0;
+    const threshold=parseInt(document.getElementById('gear_threshold_'+key)?.value)||0;
+    const rows=gearData.filter(e=>e.type===item||e.name===item);
+    let res;
+    if(rows.length>0){
+      res=await client.from('equipment').update({total_count:total,low_alert_threshold:threshold}).eq('id',rows[0].id);
+    } else {
+      res=await client.from('equipment').insert({dive_center_id:diveCenterId,type:item,name:item,total_count:total,low_alert_threshold:threshold});
+    }
+    if(res.error){showToast('Could not save gear: '+res.error.message,'error');return;}
+  }
+  showToast('Gear inventory saved','success');await loadGear();
+}
+
+// ── ACCESS & PERMISSIONS ──────────────────────────────────────────────────
+let accessUsers=[];   // merged secretary access rows for this dive center
+let accessLoadIssues=[];
+
+function normalizeAccessRole(value){
+  return String(value||'').trim().toLowerCase();
+}
+
+function isSecretaryLoginUser(u){
+  const role=normalizeAccessRole(u?.role);
+  // Login treats any non-owner user as operational access. Keep owner out, and show
+  // imperfect legacy role values like "staff" instead of hiding a working account.
+  return role!=='owner';
+}
+
+function isSecretaryStaffRow(s,userRows){
+  const access=normalizeAccessRole(s?.access_level);
+  const role=normalizeAccessRole(s?.role);
+  if(access==='secretary'||role==='secretary')return true;
+
+  // Legacy safety: some secretary profiles were created as staff records with
+  // auth_user_id or email, but without a clean secretary access_level. Keep
+  // divemasters/instructors/crew out unless they are linked to a login user.
+  const clearlyOperationalOnly=['divemaster','instructor','crew'];
+  const staffEmail=accessEmail(s);
+  const linkedUser=(userRows||[]).find(u=>
+    isSecretaryLoginUser(u)&&
+    ((s?.auth_user_id&&s.auth_user_id===u.id)||(staffEmail&&accessEmail(u)===staffEmail))
+  );
+  if(linkedUser)return true;
+  if(s?.auth_user_id&&!clearlyOperationalOnly.includes(access)&&!clearlyOperationalOnly.includes(role))return true;
+  return false;
+}
+
+function staffFullName(s){
+  return `${s?.first_name||''} ${s?.last_name||''}`.trim();
+}
+
+function accessEmail(row){
+  return String(row?.email||'').trim().toLowerCase();
+}
+
+function accessDomKey(key){
+  return String(key||'').replace(/[^a-zA-Z0-9_-]/g,'_');
+}
+
+function getAccessAccount(key){
+  return accessUsers.find(x=>x.key===key);
+}
+
+function buildAccessAccounts(userRows,staffRows){
+  const users=(userRows||[]).filter(isSecretaryLoginUser);
+  const secretaryStaff=(staffRows||[]).filter(s=>isSecretaryStaffRow(s,userRows));
+  const usedStaffIds=new Set();
+  const accounts=[];
+
+  users.forEach(u=>{
+    const userEmail=accessEmail(u);
+    let staff=secretaryStaff.find(s=>s.auth_user_id&&s.auth_user_id===u.id);
+    if(!staff&&userEmail){
+      staff=secretaryStaff.find(s=>!usedStaffIds.has(s.id)&&accessEmail(s)===userEmail);
+    }
+    if(staff?.id)usedStaffIds.add(staff.id);
+    accounts.push({
+      key:'user:'+u.id,
+      user:u,
+      staff:staff||null,
+      source:'user',
+    });
+  });
+
+  secretaryStaff.forEach(s=>{
+    if(usedStaffIds.has(s.id))return;
+    const staffEmail=accessEmail(s);
+    const matchedUser=staffEmail?users.find(u=>accessEmail(u)===staffEmail):null;
+    if(matchedUser)return;
+    accounts.push({
+      key:'staff:'+s.id,
+      user:null,
+      staff:s,
+      source:'staff',
+    });
+  });
+
+  accounts.sort((a,b)=>{
+    const an=(a.user?.full_name||staffFullName(a.staff)||a.user?.email||a.staff?.email||'').toLowerCase();
+    const bn=(b.user?.full_name||staffFullName(b.staff)||b.user?.email||b.staff?.email||'').toLowerCase();
+    return an.localeCompare(bn);
+  });
+  return accounts;
+}
+
+async function loadAccess(){
+  const list=document.getElementById('accessList');
+  if(!list||!diveCenterId)return;
+  list.innerHTML='<div class="empty-state">Loading...</div>';
+  accessLoadIssues=[];
+
+  const [usersRes,staffRes]=await Promise.all([
+    client.from('users')
+      .select('id,full_name,email,is_active,can_view_revenue,role,created_at')
+      .eq('dive_center_id',diveCenterId)
+      .order('full_name'),
+    client.from('staff')
+      .select('id,dive_center_id,first_name,last_name,email,role,access_level,is_active,auth_user_id,created_at')
+      .eq('dive_center_id',diveCenterId)
+      .order('created_at')
+  ]);
+
+  if(usersRes.error){
+    accessLoadIssues.push('Login account records could not be loaded from users. Staff records are shown when available.');
+  }
+  if(staffRes.error){
+    accessLoadIssues.push('Staff profile links could not be loaded. Login accounts are shown without staff profile details.');
+  }
+  if(usersRes.error&&staffRes.error){
+    list.innerHTML='<div class="empty-state">Could not load secretary accounts. Please try again.</div>';
+    return;
+  }
+
+  const visibleUserRows=usersRes.data||[];
+  const visibleStaffRows=staffRes.data||[];
+  const visibleLoginAccounts=visibleUserRows.filter(isSecretaryLoginUser);
+  const visibleAccessStaff=visibleStaffRows.filter(s=>isSecretaryStaffRow(s,visibleUserRows));
+  const onlyOwnerVisible=visibleUserRows.length===1&&visibleUserRows[0]?.id===currentUser?.id;
+
+  if(!usersRes.error&&!staffRes.error&&visibleLoginAccounts.length===0&&visibleAccessStaff.length===0&&onlyOwnerVisible){
+    accessLoadIssues.push('Only the owner login is visible right now. If a secretary can already log in, the account is being blocked from this Settings view by access policy sync.');
+  }
+
+  accessUsers=buildAccessAccounts(visibleUserRows,visibleStaffRows);
+  renderAccess();
+}
+
+function renderAccess(){
+  const list=document.getElementById('accessList');
+  if(!list)return;
+
+  if(accessUsers.length===0){
+    const issueHtml=accessLoadIssues.length?`<div class="warning-box">⚠️ ${accessLoadIssues.map(esc).join('<br>')}</div>`:'';
+    list.innerHTML=issueHtml+'<div class="empty-state">No secretary accounts are visible yet. Use the form above to create one, or reload this tab after access-policy sync if a secretary account already exists.</div>';
+    return;
+  }
+
+  const issueHtml=accessLoadIssues.length?`<div class="warning-box">⚠️ ${accessLoadIssues.map(esc).join('<br>')}</div>`:'';
+
+  list.innerHTML=issueHtml+accessUsers.map(acc=>{
+    const u=acc.user;
+    const s=acc.staff;
+    const domKey=accessDomKey(acc.key);
+    const rawName=u?.full_name||staffFullName(s)||'Unnamed Secretary';
+    const displayName=esc(rawName);
+    const email=esc(u?.email||s?.email||'—');
+    const initials=(rawName||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
+    const hasLogin=!!u;
+    const hasStaff=!!s;
+    const isActive=hasLogin?(u.is_active!==false):(s?.is_active!==false);
+    const canRevenue=hasLogin&&u.can_view_revenue===true;
+    const roleMeta=hasLogin?`Login role: ${esc(u.role||'secretary')}`:'Staff profile only';
+    const staffMeta=hasStaff?`Staff: ${esc(s.access_level||s.role||'secretary')}`:' Secretary profile linked';
+    const activeSub=hasLogin?'Inactive secretaries cannot log in':'No linked login account yet; this only updates the staff profile status';
+    const revenueSub=hasLogin?'Allow this secretary to see revenue on the dashboard':'Create or link a login account before assigning revenue visibility';
+    const linkNotice=!hasLogin
+      ? `<div class="warning-box" style="grid-column:1/-1;margin:0 0 0.25rem 0;">⚠️ No login account linked. This staff profile is visible, but they cannot log in until a login account is created or linked.</div>`
+      : (!hasStaff?`<div class="info-box" style="grid-column:1/-1;margin:0 0 0.25rem 0;">ℹ️ Secretary profile linked. Toggle revenue visibility, or deactivate access.</div>`:'');
+    const actions=hasLogin
+      ? `<button class="btn btn-ghost btn-sm" onclick="resetSecretaryPasswordForAccount('${acc.key}')">🔄 Reset Password</button>`
+      : (s?.email?`<button class="btn btn-teal btn-sm" onclick="createSecretaryLoginForStaff('${acc.key}')">🔑 Create Login</button>`:'<span class="perm-sublabel">Add an email to create a login account.</span>');
+
+    return `
+    <div class="secretary-card" id="sec-card-${domKey}">
+      <div class="secretary-card-header">
+        <div class="secretary-avatar">${initials}</div>
+        <div>
+          <div class="secretary-name">${displayName}</div>
+          <div class="secretary-email-display">${email}</div>
+          <div class="secretary-email-display">${roleMeta} · ${staffMeta}</div>
+        </div>
+        <div style="margin-left:auto;">
+          <span class="access-badge ${isActive?'access-secretary':'access-crew'}" id="badge-${domKey}">${isActive?'Active':'Inactive'}</span>
+        </div>
+      </div>
+
+      <div class="secretary-card-body">
+        ${linkNotice}
+        <div>
+          <div class="perm-row">
+            <div>
+              <div class="perm-label">Account Status</div>
+              <div class="perm-sublabel">${activeSub}</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="toggle-active-${domKey}" ${isActive?'checked':''} onchange="toggleIsActive('${acc.key}',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="perm-row">
+            <div>
+              <div class="perm-label">Revenue Visibility</div>
+              <div class="perm-sublabel">${revenueSub}</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="toggle-revenue-${domKey}" ${canRevenue?'checked':''} ${hasLogin?'':'disabled'} onchange="toggleRevenueVisibility('${acc.key}',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div></div>
+
+        <div class="secretary-card-actions">
+          ${actions}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleIsActive(accountKey,isActive){
+  const acc=getAccessAccount(accountKey);
+  if(!acc)return;
+  const domKey=accessDomKey(accountKey);
+  const displayName=acc.user?.full_name||staffFullName(acc.staff)||acc.user?.email||acc.staff?.email||'secretary';
+
+  if(acc.user){
+    const{error}=await client.from('users').update({is_active:isActive}).eq('id',acc.user.id);
+    if(error){
+      showToast('Could not update account status: '+error.message,'error');
+      const el=document.getElementById('toggle-active-'+domKey);
+      if(el)el.checked=!isActive;
+      return;
+    }
+    acc.user.is_active=isActive;
+  }
+
+  if(acc.staff?.id){
+    const{error:staffErr}=await client.from('staff').update({is_active:isActive}).eq('id',acc.staff.id);
+    if(staffErr){
+      showToast('Login status saved, but staff profile status could not update: '+staffErr.message,'error');
+    } else {
+      acc.staff.is_active=isActive;
+    }
+  }
+
+  const badge=document.getElementById('badge-'+domKey);
+  if(badge){
+    badge.className='access-badge '+(isActive?'access-secretary':'access-crew');
+    badge.textContent=isActive?'Active':'Inactive';
+  }
+  showToast('Account '+(isActive?'activated':'deactivated')+' for '+displayName,'success');
+}
+
+async function toggleRevenueVisibility(accountKey,enabled){
+  const acc=getAccessAccount(accountKey);
+  const domKey=accessDomKey(accountKey);
+  if(!acc?.user){
+    showToast('No linked login account for revenue visibility.','error');
+    const el=document.getElementById('toggle-revenue-'+domKey);
+    if(el)el.checked=false;
+    return;
+  }
+  const displayName=acc.user.full_name||acc.user.email||'secretary';
+  const{error}=await client.from('users').update({can_view_revenue:enabled}).eq('id',acc.user.id);
+  if(error){
+    showToast('Could not update revenue visibility: '+error.message,'error');
+    const el=document.getElementById('toggle-revenue-'+domKey);
+    if(el)el.checked=!enabled;
+    return;
+  }
+  acc.user.can_view_revenue=enabled;
+  showToast('Revenue visibility '+(enabled?'enabled':'disabled')+' for '+displayName,'success');
+}
+
+async function createSecretaryAccount(){
+  const name=document.getElementById('accessNewName').value.trim();
+  const email=document.getElementById('accessNewEmail').value.trim().toLowerCase();
+  if(!name){showToast('Full name is required','error');return;}
+  if(!email){showToast('Email address is required','error');return;}
+
+  try{
+    const existing=accessUsers.find(acc=>accessEmail(acc.user||acc.staff)===email&&acc.user);
+    if(existing){
+      showToast('This secretary already has a login account. No duplicate was created.','error');
+      return;
+    }
+
+    const session=(await client.auth.getSession()).data.session;
+    const res=await fetch(`${SUPABASE_URL}/functions/v1/create-secretary`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||'')},
+      body:JSON.stringify({action:'create',email,full_name:name,dive_center_id:diveCenterId,tempPassword:'aquadesk123'})
+    });
+    const json=await res.json();
+    if(!res.ok){
+      const msg=json.error||'Unknown error';
+      if(msg.toLowerCase().includes('already')||msg.toLowerCase().includes('exists')){
+        showToast('An account with this email already exists. No duplicate was created.','error');
+        await loadAccess();
+      } else {
+        showToast('Could not create account: '+msg,'error');
+      }
+      return;
+    }
+
+    const authUserId=json.userId;
+    if(!authUserId){
+      showToast('Account created in Auth but no user ID returned — contact support.','error');
+      return;
+    }
+    const{error:insertErr}=await client.from('users').insert({
+      id:authUserId,
+      dive_center_id:diveCenterId,
+      email,
+      full_name:name,
+      role:'secretary',
+      is_active:true,
+      can_view_revenue:false,
+    });
+    if(insertErr){
+      showToast('Account created in Auth but could not save to system: '+insertErr.message,'error');
+      return;
+    }
+
+    document.getElementById('accessNewName').value='';
+    document.getElementById('accessNewEmail').value='';
+    showToast('Account created. Share the temporary password aquadesk123 with '+name+'.','success');
+    await loadAccess();
+  }catch(e){
+    showToast('Could not create account: '+e.message,'error');
+  }
+}
+
+async function createSecretaryLoginForStaff(accountKey){
+  const acc=getAccessAccount(accountKey);
+  const staff=acc?.staff;
+  if(!staff){showToast('No staff profile found for this action.','error');return;}
+  const email=accessEmail(staff);
+  const name=staffFullName(staff)||staff.email||'Secretary';
+  if(!email){showToast('Add an email to this staff profile before creating a login.','error');return;}
+  if(acc.user){showToast('This secretary already has a login account. No duplicate was created.','error');return;}
+
+  showConfirm('Create a login account for '+name+' with temporary password aquadesk123?',async()=>{
+    try{
+      const existing=accessUsers.find(item=>accessEmail(item.user)===email&&item.user);
+      if(existing){showToast('This email already has a login account. No duplicate was created.','error');await loadAccess();return;}
+
+      const session=(await client.auth.getSession()).data.session;
+      const res=await fetch(`${SUPABASE_URL}/functions/v1/create-secretary`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||'')},
+        body:JSON.stringify({action:'create',email,full_name:name,dive_center_id:diveCenterId,diveCenterId,staffId:staff.id,tempPassword:'aquadesk123'})
+      });
+      const json=await res.json();
+      if(!res.ok){showToast('Could not create login: '+(json.error||'Unknown error'),'error');return;}
+      const authUserId=json.userId;
+      if(!authUserId){showToast('Login created in Auth but no user ID returned — contact support.','error');return;}
+
+      const {data:existingUser}=await client.from('users').select('id').eq('id',authUserId).maybeSingle();
+      if(!existingUser){
+        const{error:insertErr}=await client.from('users').insert({
+          id:authUserId,
+          dive_center_id:diveCenterId,
+          email,
+          full_name:name,
+          role:'secretary',
+          is_active:true,
+          can_view_revenue:false,
+        });
+        if(insertErr){showToast('Login created but could not save users row: '+insertErr.message,'error');return;}
+      }
+
+      await client.from('staff').update({auth_user_id:authUserId,is_active:true}).eq('id',staff.id);
+      showToast('Login account created for '+name+'. Temporary password: aquadesk123','success');
+      await loadAccess();
+    }catch(e){
+      showToast('Could not create login: '+e.message,'error');
+    }
+  });
+}
+
+function resetSecretaryPasswordForAccount(accountKey){
+  const acc=getAccessAccount(accountKey);
+  const email=acc?.user?.email||acc?.staff?.email||'';
+  const displayName=acc?.user?.full_name||staffFullName(acc?.staff)||email||'secretary';
+  resetSecretaryPassword(email,displayName);
+}
+
+async function resetSecretaryPassword(email,displayName){
+  if(!email){showToast('No email on file for this secretary.','error');return;}
+
+  showConfirm('Reset '+displayName+'\'s password back to aquadesk123? They will need to change it on next login.',async()=>{
+    try{
+      const session=(await client.auth.getSession()).data.session;
+      const res=await fetch(`${SUPABASE_URL}/functions/v1/create-secretary`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||'')},
+        body:JSON.stringify({action:'reset',email,tempPassword:'aquadesk123'})
+      });
+      const json=await res.json();
+      if(!res.ok){showToast('Could not reset password: '+(json.error||'Unknown error'),'error');return;}
+      showToast('Password reset. Share the temporary password aquadesk123 with '+displayName+'.','success');
+    }catch(e){
+      showToast('Could not reset password: '+e.message,'error');
+    }
+  });
+}
+
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]||c));}
+function money(v){return '₱'+(parseFloat(v||0)||0).toLocaleString();}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+(type||'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+async function handleLogout(){await client.auth.signOut();window.location.href='/login.html';}
+
+const _sidebar=document.getElementById('sidebar');
+const _overlay=document.getElementById('sidebarOverlay');
+_sidebar.addEventListener('click',function(e){if(window.innerWidth<=760&&!_sidebar.classList.contains('open')){e.preventDefault();_sidebar.classList.add('open');_overlay.classList.add('open');document.body.style.overflow='hidden';}});
+_overlay.addEventListener('click',function(){_sidebar.classList.remove('open');_overlay.classList.remove('open');document.body.style.overflow='';});
+
+init();
+</script>
+</body>
+</html>

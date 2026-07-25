@@ -1,0 +1,8 @@
+# aquadesk-app/ is its own separate git repo — tracked there, not here
+aquadesk-app/
+
+# Supabase CLI local cache/state — machine-specific, regenerates on `supabase link`
+supabase/.temp/
+
+# Claude Code local permission state — machine-specific
+.claude/settings.local.json

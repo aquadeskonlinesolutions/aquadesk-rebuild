@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaDesk — Dashboard</title>
+<link rel="icon" href="/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:      #1A3C5E;
+    --navy-dark: #0F2540;
+    --navy-mid:  #244d73;
+    --teal:      #00A8AB;
+    --teal-light:#E0F7F8;
+    --white:     #FFFFFF;
+    --off-white: #F8FAFC;
+    --gray-100:  #F1F5F9;
+    --gray-200:  #E2E8F0;
+    --gray-300:  #CBD5E1;
+    --gray-400:  #94A3B8;
+    --gray-600:  #475569;
+    --gray-700:  #334155;
+    --dark:      #0F172A;
+    --red:       #DC2626;
+    --red-light: #FEF2F2;
+    --green:     #16A34A;
+    --green-light:#F0FDF4;
+    --orange:    #D97706;
+    --orange-light:#FFFBEB;
+    --font-display: 'DM Serif Display', serif;
+    --font-body:    'DM Sans', sans-serif;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    --radius:    12px;
+    --sidebar-w: 260px;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--off-white);
+    color: var(--dark);
+    min-height: 100vh;
+    display: flex;
+    font-size: 15px;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--navy);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    z-index: 100;
+    overflow-y: auto;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 0;
+    padding-left: calc((var(--sidebar-collapsed) - 38px) / 2);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    overflow: hidden;
+    min-width: var(--sidebar-w);
+  }
+
+  .brand-icon {
+    width: 38px; height: 38px;
+    background: var(--teal);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .brand-img {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+
+  .brand-name span { color: var(--teal); }
+
+  /* Dive center name */
+  .sidebar-dc {
+    padding: 0.75rem 0 0.75rem calc((var(--sidebar-collapsed) - 22px) / 2);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    min-width: var(--sidebar-w);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .dc-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 0.3rem;
+  }
+
+  .dc-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--white);
+  }
+
+  .dc-role {
+    font-size: 0.75rem;
+    color: var(--teal);
+    margin-top: 0.2rem;
+  }
+
+  /* Nav */
+  .sidebar-nav {
+    padding: 1rem 0;
+    flex: 1;
+  }
+
+  .nav-section-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    padding: 0.75rem 1.25rem 0.4rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    padding-left: calc((var(--sidebar-collapsed) - 22px) / 2);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+    position: relative;
+    min-width: var(--sidebar-w);
+    white-space: nowrap;
+  }
+
+  .nav-item:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--white);
+  }
+
+  .nav-item.active {
+    background: rgba(0,168,171,0.12);
+    color: var(--white);
+    border-left-color: var(--teal);
+    font-weight: 500;
+  }
+
+  .nav-icon {
+    font-size: 1.1rem;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--red);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .owner-only {
+    display: none;
+  }
+
+  /* Sidebar footer */
+  .sidebar-footer {
+    padding: 0.75rem 0;
+    padding-left: calc((var(--sidebar-collapsed) - 36px) / 2);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    min-width: var(--sidebar-w);
+    overflow: hidden;
+  }
+
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .user-avatar {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--white);
+    flex-shrink: 0;
+  }
+
+  .user-info { flex: 1; min-width: 0; }
+
+  .user-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-email {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.35);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .btn-logout {
+    width: 100%;
+    padding: 0.6rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.5);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .btn-logout:hover {
+    background: rgba(220,38,38,0.15);
+    border-color: rgba(220,38,38,0.2);
+    color: #FCA5A5;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top bar */
+  .topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-left { }
+
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    font-size: 0.85rem;
+    color: var(--gray-400);
+    margin-top: 0.1rem;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .topbar-date {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    background: var(--gray-100);
+    padding: 0.4rem 0.875rem;
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
+  }
+
+  .topbar-btn {
+    padding: 0.5rem 1.25rem;
+    background: var(--navy);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .topbar-btn:hover { background: var(--navy-dark); }
+
+  /* Content area */
+  .content {
+    padding: 2rem;
+    flex: 1;
+  }
+
+  /* ── ALERT BAR ── */
+  .alert-bar {
+    background: var(--orange-light);
+    border: 1px solid #FCD34D;
+    border-radius: var(--radius);
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--orange);
+  }
+
+  .alert-bar strong { font-weight: 600; }
+
+  /* ── STAT CARDS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+
+  .stat-card:hover { box-shadow: var(--shadow-md); }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--teal);
+  }
+
+  .stat-card.red::before { background: var(--red); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.orange::before { background: var(--orange); }
+
+  .stat-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 0.75rem;
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 2.25rem;
+    color: var(--navy);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-change {
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .stat-change.up { color: var(--green); }
+  .stat-change.down { color: var(--red); }
+  .stat-change.neutral { color: var(--gray-400); }
+
+  .stat-icon {
+    position: absolute;
+    right: 1.25rem;
+    top: 1.25rem;
+    font-size: 1.75rem;
+    opacity: 0.12;
+  }
+
+  /* ── GRID LAYOUT ── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .grid-3-1 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  .card-subtitle {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    margin-top: 0.15rem;
+  }
+
+  .card-action {
+    font-size: 0.82rem;
+    color: var(--teal);
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .card-action:hover { color: var(--navy); }
+
+  .card-body { padding: 1.25rem 1.5rem; }
+
+  /* ── BOATS STATUS ── */
+  .boat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .boat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--gray-100);
+  }
+
+  .boat-item:last-child { border-bottom: none; }
+
+  .boat-status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .boat-status-dot.out { background: var(--orange); box-shadow: 0 0 0 3px var(--orange-light); }
+  .boat-status-dot.available { background: var(--green); box-shadow: 0 0 0 3px var(--green-light); }
+
+  .boat-info { flex: 1; }
+
+  .boat-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 0.2rem;
+  }
+
+  .boat-detail {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+  }
+
+  .boat-meta {
+    text-align: right;
+  }
+
+  .boat-time {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  .boat-divers {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+    margin-top: 0.15rem;
+  }
+
+  /* ── ACTIVE DIVERS TABLE ── */
+  .divers-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .divers-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    background: var(--gray-100);
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .divers-table td {
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+    color: var(--gray-700);
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+  }
+
+  .divers-table tr:last-child td { border-bottom: none; }
+
+  .divers-table tr:hover td { background: var(--gray-100); }
+
+  .diver-name {
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  .diver-cert {
+    font-size: 0.78rem;
+    color: var(--gray-400);
+    margin-top: 0.1rem;
+  }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-diving { background: var(--orange-light); color: var(--orange); }
+  .badge-surface { background: var(--green-light); color: var(--green); }
+  .badge-pending { background: var(--teal-light); color: var(--teal); }
+  .badge-overdue { background: var(--red-light); color: var(--red); }
+  .badge-owner { background: rgba(26,60,94,0.08); color: var(--navy); }
+  .badge-secretary { background: var(--teal-light); color: var(--teal); }
+
+  /* Bill amount */
+  .bill-amount {
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  .bill-balance {
+    font-size: 0.78rem;
+    color: var(--red);
+    margin-top: 0.1rem;
+  }
+
+  /* Action button */
+  .btn-table {
+    padding: 0.4rem 0.875rem;
+    background: var(--navy);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-table:hover { background: var(--navy-dark); }
+
+  .btn-table.ghost {
+    background: transparent;
+    color: var(--teal);
+    border: 1px solid var(--teal);
+  }
+
+  .btn-table.ghost:hover {
+    background: var(--teal-light);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(18px);
+    background: var(--navy);
+    color: var(--white);
+    padding: 0.75rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    z-index: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    box-shadow: var(--shadow-md);
+    max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--green); }
+  .toast.error { background: var(--red); }
+
+  /* ── REVENUE CHART ── */
+  .revenue-owner { display: none; }
+
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    height: 120px;
+    padding: 0 0.5rem;
+  }
+
+  .chart-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .chart-bar {
+    width: 100%;
+    background: var(--teal);
+    border-radius: 4px 4px 0 0;
+    transition: height 0.8s ease;
+    min-height: 4px;
+    position: relative;
+  }
+
+  .chart-bar.today { background: var(--navy); }
+
+  .chart-bar:hover::after {
+    content: attr(data-value);
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--navy);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .chart-label {
+    font-size: 0.7rem;
+    color: var(--gray-400);
+    text-align: center;
+  }
+
+  /* ── ALERTS SECTION ── */
+  .alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--gray-100);
+  }
+
+  .alert-item:last-child { border-bottom: none; }
+
+  .alert-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .alert-icon.warning { background: var(--orange-light); }
+  .alert-icon.danger { background: var(--red-light); }
+  .alert-icon.info { background: var(--teal-light); }
+  .alert-icon.success { background: var(--green-light); }
+
+  .alert-text {
+    flex: 1;
+  }
+
+  .alert-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--dark);
+    margin-bottom: 0.15rem;
+  }
+
+  .alert-desc {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+  }
+
+  .alert-time {
+    font-size: 0.75rem;
+    color: var(--gray-300);
+    white-space: nowrap;
+    margin-top: 0.15rem;
+  }
+
+  .alert-link {
+    display: inline-block;
+    margin-top: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--teal);
+    text-decoration: none;
+  }
+  .alert-link:hover { text-decoration: underline; }
+
+  /* ── QUICK SEARCH ── */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.875rem 1rem 0.875rem 3rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--dark);
+    background: var(--white);
+    border: 2px solid var(--gray-200);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 4px rgba(0,168,171,0.1);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    font-size: 1.1rem;
+    pointer-events: none;
+  }
+
+  /* ── COLLECTIONS SUMMARY (All Roles) ── */
+
+
+  /* ── REVENUE SUMMARY (Owner) ── */
+  .revenue-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .revenue-card {
+    background: var(--gray-100);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--gray-200);
+  }
+
+  .revenue-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gray-400);
+    margin-bottom: 0.4rem;
+  }
+
+  .revenue-value {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+  }
+
+  .revenue-change {
+    font-size: 0.75rem;
+    color: var(--green);
+    margin-top: 0.2rem;
+  }
+
+
+  .payment-channel-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+  }
+
+  .payment-channel-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .payment-channel-item {
+    background: var(--off-white);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .payment-channel-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 0.45rem;
+  }
+
+  .payment-channel-value {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+  }
+
+  .payment-channel-sub {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+    margin-top: 0.25rem;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 1024px) {
+    .payment-channel-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 640px) {
+    .payment-channel-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--gray-400);
+  }
+
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.4; }
+  .empty-text { font-size: 0.95rem; }
+
+  /* Animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeIn 0.5s ease forwards;
+  }
+
+  .fade-in:nth-child(1) { animation-delay: 0.05s; }
+  .fade-in:nth-child(2) { animation-delay: 0.1s; }
+  .fade-in:nth-child(3) { animation-delay: 0.15s; }
+  .fade-in:nth-child(4) { animation-delay: 0.2s; }
+
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── COLLAPSIBLE HOVER SIDEBAR ── */
+  :root { --sidebar-collapsed: 54px; }
+
+  .sidebar {
+    width: var(--sidebar-collapsed);
+    transition: width 0.25s ease;
+    overflow: hidden;
+    z-index: 200;
+  }
+
+  .sidebar:hover,
+  .sidebar.open {
+    width: var(--sidebar-w);
+  }
+
+  /* Hide labels when collapsed */
+  .brand-name,
+  .sidebar-dc,
+  .nav-section-label,
+  .user-info,
+  .btn-logout,
+  .nav-item-label {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .sidebar:hover .brand-name,
+  .sidebar:hover .sidebar-dc,
+  .sidebar:hover .nav-section-label,
+  .sidebar:hover .user-info,
+  .sidebar:hover .btn-logout,
+  .sidebar:hover .nav-item-label,
+  .sidebar.open .brand-name,
+  .sidebar.open .sidebar-dc,
+  .sidebar.open .nav-section-label,
+  .sidebar.open .user-info,
+  .sidebar.open .btn-logout,
+  .sidebar.open .nav-item-label {
+    opacity: 1;
+  }
+
+  .sidebar-brand,
+  .sidebar-footer { overflow: hidden; }
+
+  /* Overlay (mobile tap-to-close) */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+  }
+  .sidebar-overlay.open { display: block; }
+
+  /* Main content always full width */
+  .main { margin-left: var(--sidebar-collapsed); }
+
+  @media (max-width: 1024px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-3-1 { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .content { padding: 1rem; }
+    .topbar { padding: 1rem; }
+    .topbar-date { display: none; }
+    /* Mobile: disable hover, use tap instead */
+    .sidebar:hover { width: var(--sidebar-collapsed); }
+    .sidebar.open { width: var(--sidebar-w); }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .page-title { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <img src="/logo.png" class="brand-img" alt="AquaDesk Logo" onerror="this.outerHTML='<div class=\'brand-icon\'>🌊</div>'">
+    <div class="brand-name">Aqua<span>Desk</span></div>
+  </div>
+
+  <div class="sidebar-dc">
+    <div class="dc-label">Dive Center</div>
+    <div class="dc-name" id="dcName">Loading...</div>
+    <div class="dc-role" id="userRole">—</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Operations</div>
+
+    <a class="nav-item active" href="/dashboard.html">
+      <span class="nav-icon">📊</span>
+      <span class="nav-item-label">Dashboard</span>
+    </a>
+    <a class="nav-item" href="/divers.html">
+      <span class="nav-icon">🤿</span>
+      <span class="nav-item-label">Divers</span>
+    </a>
+    <a class="nav-item" href="/diver-form.html">
+      <span class="nav-icon">📋</span>
+      <span class="nav-item-label">Diver Form</span>
+    </a>
+    <a class="nav-item" href="/scheduling.html">
+      <span class="nav-icon">🚤</span>
+      <span class="nav-item-label">Scheduling</span>
+    </a>
+    <a class="nav-item" href="/boat-manifest.html">
+      <span class="nav-icon">🚢</span>
+      <span class="nav-item-label">Boat Manifest</span>
+    </a>
+
+    <div class="nav-section-label">Management</div>
+    <a class="nav-item" href="/reports.html">
+      <span class="nav-icon">📈</span>
+      <span class="nav-item-label">Reports</span>
+    </a>
+    <a class="nav-item owner-only" href="/settings.html">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-item-label">Settings</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Loading...</div>
+        <div class="user-email" id="userEmail">—</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()">
+      <span>↩</span> Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="page-title" id="pageTitle">Dashboard</div>
+      <div class="page-subtitle" id="pageSubtitle">Good morning — here's today's overview</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="todayDate">—</div>
+      <button class="topbar-btn" onclick="openRegistrationForm()">
+        + Register New Diver
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- Alert bar -->
+    <div class="alert-bar" id="alertBar" style="display:none;">
+      ⚠️ <span id="alertText"></span>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card fade-in">
+        <div class="stat-icon">🤿</div>
+        <div class="stat-label">Active Divers</div>
+        <div class="stat-value" id="statActiveDivers">—</div>
+        <div class="stat-change neutral" id="statActiveDiversSub">Open visits / checked in</div>
+      </div>
+      <div class="stat-card orange fade-in">
+        <div class="stat-icon">🚤</div>
+        <div class="stat-label">Boats Out Today</div>
+        <div class="stat-value" id="statBoatsOut">—</div>
+        <div class="stat-change neutral" id="statBoatsOutSub">Currently on the water</div>
+      </div>
+      <div class="stat-card green fade-in revenue-owner">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Revenue Today</div>
+        <div class="stat-value" id="statRevenue">—</div>
+        <div class="stat-change up" id="statRevenueSub">PHP — today</div>
+      </div>
+      <div class="stat-card red fade-in">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-label">Pending Bills</div>
+        <div class="stat-value" id="statPendingBills">—</div>
+        <div class="stat-change neutral">Unsettled payments</div>
+      </div>
+    </div>
+
+
+    <!-- Owner Revenue Summary -->
+    <div class="revenue-owner" id="revenueSummary">
+      <div class="revenue-grid">
+        <div class="revenue-card">
+          <div class="revenue-label">Today</div>
+          <div class="revenue-value" id="revToday">PHP 0</div>
+          <div class="revenue-change" id="revTodayChange"></div>
+        </div>
+        <div class="revenue-card">
+          <div class="revenue-label">This Week</div>
+          <div class="revenue-value" id="revWeek">PHP 0</div>
+          <div class="revenue-change" id="revWeekChange"></div>
+        </div>
+        <div class="revenue-card">
+          <div class="revenue-label">This Month</div>
+          <div class="revenue-value" id="revMonth">PHP 0</div>
+          <div class="revenue-change" id="revMonthChange"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Payment Channel Summary — visible to all roles -->
+    <div class="payment-channel-card" id="paymentChannelSummary">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Today’s Payment Channels</div>
+          <div class="card-subtitle">All money received today — open and closed bills</div>
+        </div>
+      </div>
+      <div class="payment-channel-grid">
+        <div class="payment-channel-item">
+          <div class="payment-channel-label">Cash</div>
+          <div class="payment-channel-value" id="payCashToday">₱0</div>
+          <div class="payment-channel-sub">PHP equivalent</div>
+        </div>
+        <div class="payment-channel-item">
+          <div class="payment-channel-label">Card</div>
+          <div class="payment-channel-value" id="payCardToday">₱0</div>
+          <div class="payment-channel-sub">Includes card surcharge</div>
+        </div>
+        <div class="payment-channel-item">
+          <div class="payment-channel-label">Online</div>
+          <div class="payment-channel-value" id="payOnlineToday">₱0</div>
+          <div class="payment-channel-sub">Includes online surcharge</div>
+        </div>
+        <div class="payment-channel-item total">
+          <div class="payment-channel-label">Total Today</div>
+          <div class="payment-channel-value" id="payTotalToday">₱0</div>
+          <div class="payment-channel-sub">All methods combined</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boats + Alerts -->
+    <div class="grid-3-1">
+
+      <!-- Active Divers Table -->
+      <div class="card fade-in">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Active Divers</div>
+            <div class="card-subtitle">Checked-in divers with open visits</div>
+          </div>
+          <a class="card-action" href="/divers.html">View all →</a>
+        </div>
+
+        <!-- Search -->
+        <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--gray-200);">
+          <div class="search-wrap" style="margin-bottom:0;">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" type="text" placeholder="Search diver by name..." id="diverSearch" oninput="filterDivers()" style="padding: 0.65rem 1rem 0.65rem 3rem; font-size: 0.9rem;">
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="divers-table" id="diversTable">
+            <thead>
+              <tr>
+                <th>Diver</th>
+                <th>Status</th>
+                <th>Trip Type</th>
+                <th>Bill</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="diversTableBody">
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">
+                    <div class="empty-icon">🤿</div>
+                    <div class="empty-text">Loading divers...</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+
+        <!-- Boats Status -->
+        <div class="card fade-in">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Boats Today</div>
+              <div class="card-subtitle">Current status</div>
+            </div>
+          </div>
+          <div class="boat-list" id="boatsList">
+            <div class="boat-item">
+              <div class="empty-state" style="padding: 1.5rem;">
+                <div class="empty-text">Loading...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="card fade-in">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Alerts</div>
+              <div class="card-subtitle">Items needing attention</div>
+            </div>
+          </div>
+          <div class="alerts-list" id="alertsList">
+            <div class="alert-item">
+              <div class="alert-icon info">ℹ️</div>
+              <div class="alert-text">
+                <div class="alert-title">Loading alerts...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Owner: Weekly Revenue Chart -->
+    <div class="card revenue-owner fade-in" id="revenueChart">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Weekly Revenue</div>
+          <div class="card-subtitle">Last 7 days</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-bars" id="chartBars">
+          <!-- Generated by JS -->
+        </div>
+        <div style="display:flex; gap:0.5rem; margin-top:0.5rem;" id="chartLabels">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ── SUPABASE ──────────────────────────────────────────────────────────────
+  const SUPABASE_URL = 'https://xaabndtaevwgicibzcqm.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+  const { createClient } = supabase;
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let currentUserData = null;
+  let currentRole = 'secretary';
+  let allDivers = [];
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  async function init() {
+    // Set today's date
+    const now = new Date();
+    document.getElementById('todayDate').textContent = now.toLocaleDateString('en-PH', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // Update greeting
+    const hour = now.getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('pageSubtitle').textContent = `${greeting} — here's today's overview`;
+
+    // Check session
+    const { data: { session } } = await client.auth.getSession();
+    if (!session) {
+      window.location.href = '/index.html';
+      return;
+    }
+
+    currentUser = session.user;
+
+    // Get user data
+    const { data: userData } = await client
+      .from('users')
+      .select('*, dive_centers(*)')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (!userData || !userData.dive_center_id) {
+      document.getElementById('dcName').textContent = 'Setup required';
+      document.getElementById('userRole').textContent = '—';
+      document.getElementById('userName').textContent = currentUser.email || 'User';
+      document.getElementById('userEmail').textContent = currentUser.email || '—';
+      document.getElementById('userAvatar').textContent = '?';
+      // Show a friendly error — do not proceed to loadDashboardData
+      setTimeout(() => {
+        showToast('Your account is not linked to a dive center. Please contact the dive center owner.', 'error');
+      }, 400);
+      return;
+    }
+
+    if (userData) {
+      currentUserData = userData;
+      currentRole = userData.role;
+
+      // Update UI
+      document.getElementById('dcName').textContent = userData.dive_centers?.name || 'My Dive Center';
+      document.getElementById('userRole').textContent = currentRole === 'owner' ? '👑 Owner' : '🗂️ Secretary';
+      document.getElementById('userName').textContent = userData.full_name || 'User';
+      document.getElementById('userEmail').textContent = currentUser.email;
+      document.getElementById('userAvatar').textContent = (userData.full_name || 'U')[0].toUpperCase();
+
+      // Show owner-only elements
+      const canViewRevenue = currentRole === 'owner' || userData.can_view_revenue === true;
+      if (currentRole === 'owner') {
+        document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'flex');
+      }
+      if (canViewRevenue) {
+        document.querySelectorAll('.revenue-owner').forEach(el => el.style.display = 'block');
+        document.getElementById('revenueSummary').style.display = 'block';
+        document.getElementById('revenueChart').style.display = 'block';
+      }
+
+      // Load dashboard data
+      await loadDashboardData(userData.dive_center_id);
+    }
+  }
+
+  // ── LOAD DATA ─────────────────────────────────────────────────────────────
+  async function loadDashboardData(diveCenterId) {
+    await Promise.all([
+      loadActiveDivers(diveCenterId),
+      loadBoats(diveCenterId),
+      loadAlerts(diveCenterId),
+      loadPaymentChannels(diveCenterId),
+      (currentRole === 'owner' || (currentUserData && currentUserData.can_view_revenue === true)) ? loadRevenue(diveCenterId) : Promise.resolve()
+    ]);
+  }
+
+  async function loadPaymentChannels(diveCenterId) {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: rows, error } = await client
+        .from('payments')
+        .select('cash_amount,cash_amount_foreign,cash_exchange_rate,card_amount,card_surcharge_amount,online_amount,online_surcharge_amount')
+        .eq('dive_center_id', diveCenterId)
+        .gte('paid_at', today + 'T00:00:00.000Z')
+        .lte('paid_at', today + 'T23:59:59.999Z');
+
+      if (error) throw error;
+
+      const safeNum = v => Number(v) || 0;
+      const all = rows || [];
+
+      const cash   = all.reduce((s, p) => s + safeNum(p.cash_amount) + (safeNum(p.cash_amount_foreign) * safeNum(p.cash_exchange_rate)), 0);
+      const card   = all.reduce((s, p) => s + safeNum(p.card_amount) + safeNum(p.card_surcharge_amount), 0);
+      const online = all.reduce((s, p) => s + safeNum(p.online_amount) + safeNum(p.online_surcharge_amount), 0);
+      const total  = cash + card + online;
+
+      document.getElementById('payCashToday').textContent  = '₱' + cash.toLocaleString();
+      document.getElementById('payCardToday').textContent  = '₱' + card.toLocaleString();
+      document.getElementById('payOnlineToday').textContent = '₱' + online.toLocaleString();
+      document.getElementById('payTotalToday').textContent  = '₱' + total.toLocaleString();
+
+      // Add deposits (advance payments) into the same channel totals
+      const { data: depRows, error: depErr } = await client
+        .from('deposits')
+        .select('amount, method')
+        .eq('dive_center_id', diveCenterId)
+        .eq('deposit_date', today);
+
+      if (depErr) throw depErr;
+
+      const deps = depRows || [];
+      const depCash   = deps.filter(d => d.method === 'cash').reduce((s, d) => s + (Number(d.amount) || 0), 0);
+      const depCard   = deps.filter(d => d.method === 'card').reduce((s, d) => s + (Number(d.amount) || 0), 0);
+      const depOnline = deps.filter(d => d.method === 'online').reduce((s, d) => s + (Number(d.amount) || 0), 0);
+
+      document.getElementById('payCashToday').textContent   = '₱' + (cash + depCash).toLocaleString();
+      document.getElementById('payCardToday').textContent   = '₱' + (card + depCard).toLocaleString();
+      document.getElementById('payOnlineToday').textContent = '₱' + (online + depOnline).toLocaleString();
+      document.getElementById('payTotalToday').textContent  = '₱' + (total + depCash + depCard + depOnline).toLocaleString();
+    } catch (err) {
+      console.error('Payment channels could not be loaded:', err);
+      // Fail silently — never break the rest of the dashboard
+    }
+  }
+
+  async function loadGroupDirectory(groupIds){
+    const ids=[...new Set((groupIds||[]).filter(Boolean))];
+    if(!ids.length)return {};
+    try{
+      const {data,error}=await client.from('groups').select('id,group_name,leader_name,expected_count,arrival_date,is_active').in('id',ids);
+      if(error)throw error;
+      return Object.fromEntries((data||[]).map(g=>[g.id,g]));
+    }catch(err){
+      console.warn('Group folders could not be loaded',err);
+      return {};
+    }
+  }
+
+
+  function getDashboardPaidAmount(payment) {
+    if (!payment) return 0;
+
+    const validPositiveNumber = value => {
+      if (value === null || value === undefined || value === '') return null;
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0 ? number : null;
+    };
+
+    const totalCollected = validPositiveNumber(payment.total_collected);
+    if (totalCollected !== null) return totalCollected;
+
+    const totalPaid = validPositiveNumber(payment.total_paid);
+    if (totalPaid !== null) return totalPaid;
+
+    return (Number(payment.cash_amount) || 0) +
+      (Number(payment.card_amount) || 0) +
+      (Number(payment.online_amount) || 0) +
+      (Number(payment.card_surcharge_amount) || 0) +
+      (Number(payment.online_surcharge_amount) || 0);
+  }
+
+
+  async function loadActiveDivers(diveCenterId) {
+    try {
+      // AquaDesk definition of Active Diver:
+      // A diver with an open/current visit and selected experience. They may have ₱0 bill if no activity has been added yet.
+      // Registered-only divers without an experience selected are not active operationally yet.
+      const { data: rawVisits, error: visitError } = await client
+        .from('visits')
+        .select('*')
+        .eq('dive_center_id', diveCenterId)
+        .eq('is_active', true)
+        .order('visit_start', { ascending: false });
+
+      if (visitError) throw visitError;
+
+      const visits = (rawVisits || []).filter(v => ((v.visit_status || 'open') === 'open') && v.experience_type);
+
+      if (!visits || visits.length === 0) {
+        allDivers = [];
+        document.getElementById('statActiveDivers').textContent = '0';
+        document.getElementById('statPendingBills').textContent = '0';
+        renderDiversTable([]);
+        return;
+      }
+
+      const diverIds = [...new Set(visits.map(v => v.diver_id).filter(Boolean))];
+      const visitIds = visits.map(v => v.id).filter(Boolean);
+
+      const { data: divers, error: diverError } = await client
+        .from('divers')
+        .select('*')
+        .in('id', diverIds);
+
+      if (diverError) throw diverError;
+
+      const groupDirectory = await loadGroupDirectory((divers || []).map(d => d.group_id));
+
+      const { data: activities, error: activityError } = await client
+        .from('activities')
+        .select('*')
+        .in('visit_id', visitIds);
+
+      if (activityError) throw activityError;
+
+      const { data: payments } = await client
+        .from('payments')
+        .select('*')
+        .in('visit_id', visitIds);
+
+      const active = visits.map(visit => {
+        const diver = (divers || []).find(d => d.id === visit.diver_id);
+        if (!diver) return null;
+
+        const visitActivities = (activities || []).filter(a => a.visit_id === visit.id);
+        const activityTotal = visitActivities.reduce((sum, a) => {
+          const rowTotal = Number(a.total) ||
+            ((Number(a.dive_rate) || 0) +
+             (Number(a.fuel_surcharge) || 0) +
+             (Number(a.marine_tax) || 0) +
+             (Number(a.nitrox_fee) || 0) +
+             (Number(a.equipment_rental) || 0) +
+             (Number(a.addons) || 0) -
+             (Number(a.discount) || 0));
+          return sum + Math.max(0, rowTotal);
+        }, 0);
+
+        const visitPayments = (payments || []).filter(p => p.visit_id === visit.id);
+        const paidAmount = visitPayments.reduce((sum, payment) => sum + getDashboardPaidAmount(payment), 0);
+        const balance = Math.max(0, activityTotal - paidAmount);
+
+        return {
+          ...diver,
+          active_visit: visit,
+          dashboard_total: activityTotal,
+          dashboard_balance: balance,
+          dashboard_status: visitActivities.some(a => a.status === 'Scheduled') ? 'Scheduled' : visitActivities.some(a => a.status === 'Planned') ? 'Planned' : visitActivities.some(a => a.status === 'Ongoing') ? 'Ongoing' : 'On Surface',
+          dashboard_trip_type: visit.experience_type === 'dive_course' ? 'Dive Course' : 'Fun Diving',
+          dashboard_group_name: diver.group_id && groupDirectory[diver.group_id] ? groupDirectory[diver.group_id].group_name : (diver.group_name || ''),
+          dashboard_has_bill: activityTotal > 0,
+          payments: visitPayments
+        };
+      }).filter(Boolean);
+
+      allDivers = active;
+
+      const pendingBillCount = active.filter(d => (Number(d.dashboard_total) || 0) > 0 && (Number(d.dashboard_balance) || 0) > 0).length;
+
+      document.getElementById('statActiveDivers').textContent = active.length;
+      document.getElementById('statPendingBills').textContent = pendingBillCount;
+
+      renderDiversTable(active);
+    } catch (err) {
+      console.error('Error loading active divers:', err);
+      allDivers = [];
+      document.getElementById('statActiveDivers').textContent = '0';
+      document.getElementById('statPendingBills').textContent = '0';
+      renderDiversTable([]);
+    }
+  }
+
+  async function loadBoats(diveCenterId) {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: schedules } = await client
+        .from('schedules')
+        .select('*, boats(*)')
+        .eq('dive_center_id', diveCenterId)
+        .eq('schedule_date', today);
+
+      const { data: allBoats } = await client
+        .from('boats')
+        .select('*')
+        .eq('dive_center_id', diveCenterId)
+        .eq('is_active', true);
+
+      const boatsList = document.getElementById('boatsList');
+      const todaySchedules = schedules || [];
+      const uniqueScheduledBoatIds = new Set(todaySchedules.map(s => s.boat_id).filter(Boolean));
+      const boatsOutCount = uniqueScheduledBoatIds.size;
+
+      document.getElementById('statBoatsOut').textContent = boatsOutCount;
+      document.getElementById('statBoatsOutSub').textContent = boatsOutCount === 1 ? '1 boat scheduled today' : `${boatsOutCount} boats scheduled today`;
+
+      if (!allBoats || allBoats.length === 0) {
+        boatsList.innerHTML = `
+          <div class="boat-item">
+            <div class="empty-state" style="padding:1rem; width:100%;">
+              <div class="empty-icon" style="font-size:1.5rem;">🚤</div>
+              <div class="empty-text">No boats configured yet</div>
+            </div>
+          </div>`;
+        return;
+      }
+
+      boatsList.innerHTML = allBoats.map(boat => {
+        const boatSchedules = todaySchedules
+          .filter(s => s.boat_id === boat.id)
+          .sort((a, b) => String(a.departure_time || '').localeCompare(String(b.departure_time || '')));
+        const schedule = boatSchedules[0];
+        const isOut = boatSchedules.length > 0;
+        const tripLabel = boatSchedules.length > 1 ? `${boatSchedules.length} trips today` : 'OUT TODAY';
+
+        return `
+          <div class="boat-item">
+            <div class="boat-status-dot ${isOut ? 'out' : 'available'}"></div>
+            <div class="boat-info">
+              <div class="boat-name">${boat.name}</div>
+              <div class="boat-detail">${isOut ? schedule.dive_site || 'Scheduled trip' : 'Available'}</div>
+            </div>
+            <div class="boat-meta">
+              <div class="boat-time">${isOut ? schedule.departure_time || '—' : '—'}</div>
+              <div class="boat-divers">${isOut ? tripLabel : 'Standby'}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+    } catch (err) {
+      console.error('Error loading boats:', err);
+    }
+  }
+
+  async function loadAlerts(diveCenterId) {
+    const alerts = [];
+    const today = new Date().toISOString().split('T')[0];
+
+    try {
+      // Check low fuel levels
+      try {
+        const { data: dcFuel } = await client
+          .from('dive_centers')
+          .select('fuel_gasoline_level, fuel_gasoline_threshold, fuel_diesel_level, fuel_diesel_threshold')
+          .eq('id', diveCenterId)
+          .single();
+
+        if (dcFuel) {
+          if (
+            dcFuel.fuel_gasoline_threshold !== null &&
+            dcFuel.fuel_gasoline_level !== null &&
+            dcFuel.fuel_gasoline_level <= dcFuel.fuel_gasoline_threshold
+          ) {
+            alerts.push({
+              type: 'danger',
+              icon: '⛽',
+              title: 'Low Gasoline',
+              desc: `Current level: ${dcFuel.fuel_gasoline_level} L — at or below threshold of ${dcFuel.fuel_gasoline_threshold} L`
+            });
+          }
+
+          if (
+            dcFuel.fuel_diesel_threshold !== null &&
+            dcFuel.fuel_diesel_level !== null &&
+            dcFuel.fuel_diesel_level <= dcFuel.fuel_diesel_threshold
+          ) {
+            alerts.push({
+              type: 'danger',
+              icon: '⛽',
+              title: 'Low Diesel',
+              desc: `Current level: ${dcFuel.fuel_diesel_level} L — at or below threshold of ${dcFuel.fuel_diesel_threshold} L`
+            });
+          }
+        }
+      } catch (fuelErr) {
+        console.error('Error checking fuel alerts:', fuelErr);
+      }
+
+      // Check low tanks
+      const { data: tanks } = await client
+        .from('tanks')
+        .select('*')
+        .eq('dive_center_id', diveCenterId);
+
+      (tanks || []).forEach(tank => {
+        if (tank.available_count <= tank.low_alert_threshold) {
+          alerts.push({
+            type: 'danger',
+            icon: '⚠️',
+            title: `Low ${tank.type} tanks`,
+            desc: `Only ${tank.available_count} tanks remaining — below threshold of ${tank.low_alert_threshold}`
+          });
+        }
+      });
+
+      // Check overdue bills (3+ days since last activity)
+      try {
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+        const { data: openVisits } = await client
+          .from('visits')
+          .select('id, diver_id, divers(first_name, last_name)')
+          .eq('dive_center_id', diveCenterId)
+          .eq('is_paid', false);
+
+        const overdue = [];
+        for (const visit of openVisits || []) {
+          const { data: lastActivity } = await client
+            .from('activities')
+            .select('date')
+            .eq('visit_id', visit.id)
+            .order('date', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (lastActivity && new Date(lastActivity.date) < threeDaysAgo) {
+            overdue.push(visit);
+          }
+        }
+
+        if (overdue.length > 0) {
+          alerts.push({
+            type: 'warning',
+            icon: '💰',
+            title: `${overdue.length} overdue bill${overdue.length > 1 ? 's' : ''}`,
+            desc: 'Divers with unsettled bills for 3 or more days'
+          });
+        }
+      } catch (overdueErr) {
+        console.error('Error checking overdue bills:', overdueErr);
+      }
+
+      // Alert 1 — Government Fees Not Logged
+      try {
+        const { data: completedToday } = await client
+          .from('activities')
+          .select('id')
+          .eq('dive_center_id', diveCenterId)
+          .eq('status', 'Completed')
+          .eq('date', today)
+          .limit(1);
+
+        if (completedToday && completedToday.length > 0) {
+          const { data: govtFeesToday } = await client
+            .from('govt_fees')
+            .select('id')
+            .eq('dive_center_id', diveCenterId)
+            .eq('date', today)
+            .limit(1);
+
+          if (!govtFeesToday || govtFeesToday.length === 0) {
+            alerts.push({
+              type: 'info',
+              icon: '🤿',
+              title: 'Great dives today!',
+              desc: 'Just a heads up — government fees for today aren\'t logged yet.',
+              link: 'reports.html?tab=govtfees',
+              linkText: 'Log them here →'
+            });
+          }
+        }
+      } catch (govtErr) {
+        console.error('Error checking govt fees alert:', govtErr);
+      }
+
+      // Alert 2 — We Joined Another Boat Today
+      try {
+        const { data: joinedBoat } = await client
+          .from('schedules')
+          .select('id, dive_site')
+          .eq('dive_center_id', diveCenterId)
+          .eq('schedule_date', today)
+          .eq('is_joiner', true)
+          .limit(1);
+
+        if (joinedBoat && joinedBoat.length > 0) {
+          const { data: joinedBoatLogged } = await client
+            .from('join_ride_records')
+            .select('id')
+            .eq('dive_center_id', diveCenterId)
+            .eq('date', today)
+            .eq('direction', 'we_joined_another_boat')
+            .limit(1);
+
+          if (!joinedBoatLogged || joinedBoatLogged.length === 0) {
+            alerts.push({
+              type: 'info',
+              icon: '🚤',
+              title: 'Looks like your crew hitched a ride today!',
+              desc: 'Pop it into Reports when you get a chance.',
+              link: 'reports.html?tab=join',
+              linkText: 'Go to Join Ride →'
+            });
+          }
+        }
+      } catch (joinedErr) {
+        console.error('Error checking join boat alert:', joinedErr);
+      }
+
+      // Alert 3 — Another Boat Joined Us Today
+      try {
+        const { data: todaySchedules } = await client
+          .from('schedules')
+          .select('id, notes')
+          .eq('dive_center_id', diveCenterId)
+          .eq('schedule_date', today);
+
+        const hasJoinerToday = (todaySchedules || []).some(s => {
+          let meta = {};
+          try { meta = JSON.parse(s.notes || '{}'); } catch (e) {}
+          return (Number(meta.joinerDivers) || 0) > 0 || String(meta.joinerDC || '').trim() !== '';
+        });
+
+        if (hasJoinerToday) {
+          const { data: joinedUsLogged } = await client
+            .from('join_ride_records')
+            .select('id')
+            .eq('dive_center_id', diveCenterId)
+            .eq('date', today)
+            .eq('direction', 'joined_our_boat')
+            .limit(1);
+
+          if (!joinedUsLogged || joinedUsLogged.length === 0) {
+            alerts.push({
+              type: 'info',
+              icon: '🚢',
+              title: 'Someone joined your boat today!',
+              desc: 'Don\'t forget to record it in Reports.',
+              link: 'reports.html?tab=join',
+              linkText: 'Go to Join Ride →'
+            });
+          }
+        }
+      } catch (joinedUsErr) {
+        console.error('Error checking joiner alert:', joinedUsErr);
+      }
+
+      // Alert 4 — Divers arriving tomorrow / equipment that may run short
+      try {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+        const { data: arrivingDivers } = await client
+          .from('divers')
+          .select('id, needs_equipment, equipment_requested')
+          .eq('dive_center_id', diveCenterId)
+          .eq('arrival_date', tomorrowStr);
+
+        const arriving = arrivingDivers || [];
+
+        if (arriving.length > 0) {
+          alerts.push({
+            type: 'info',
+            icon: '🤿',
+            title: `${arriving.length} diver${arriving.length > 1 ? 's' : ''} arriving tomorrow.`,
+            desc: `Arriving ${new Date(tomorrowStr + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}`,
+            link: `divers.html?mode=equipment&date=${tomorrowStr}`,
+            linkText: 'View Equipment Management →'
+          });
+
+          // Sum requested quantity per item across tomorrow's arrivals — read-only,
+          // recalculated each load, nothing stored.
+          const requestedCounts = {};
+          arriving.forEach(d => {
+            if (!d.needs_equipment || !d.equipment_requested) return;
+            try {
+              const eq = JSON.parse(d.equipment_requested);
+              if (eq.type === 'partial' && eq.items) {
+                Object.entries(eq.items).forEach(([item, val]) => {
+                  if (!val || item === 'computer' || item === 'weights_kg') return;
+                  const key = item.toLowerCase();
+                  requestedCounts[key] = (requestedCounts[key] || 0) + 1;
+                });
+                if (eq.items.computer) {
+                  requestedCounts['dive computer'] = (requestedCounts['dive computer'] || 0) + 1;
+                }
+              }
+            } catch (e) {}
+          });
+
+          const { data: stock } = await client
+            .from('equipment')
+            .select('name, total_count')
+            .eq('dive_center_id', diveCenterId);
+
+          let shortCount = 0;
+          (stock || []).forEach(item => {
+            const key = (item.name || '').toLowerCase();
+            const requested = requestedCounts[key] || 0;
+            const total = item.total_count;
+            if (total !== null && total !== undefined && requested >= total) {
+              shortCount++;
+            }
+          });
+
+          if (shortCount > 0) {
+            alerts.push({
+              type: 'warning',
+              icon: '🎽',
+              title: `${shortCount} equipment item${shortCount > 1 ? 's' : ''} may run short for tomorrow's arrivals.`,
+              desc: 'Requested quantity meets or exceeds tracked stock for tomorrow.',
+              link: `divers.html?mode=equipment&date=${tomorrowStr}`,
+              linkText: 'View Equipment Management →'
+            });
+          }
+        }
+      } catch (equipArrivalErr) {
+        console.error('Error checking equipment/arrivals alert:', equipArrivalErr);
+      }
+
+      if (alerts.length === 0) {
+        alerts.push({
+          type: 'success',
+          icon: '✅',
+          title: 'All clear',
+          desc: 'No alerts at this time'
+        });
+      }
+
+      const alertsList = document.getElementById('alertsList');
+      alertsList.innerHTML = alerts.map(a => `
+        <div class="alert-item">
+          <div class="alert-icon ${a.type}">${a.icon}</div>
+          <div class="alert-text">
+            <div class="alert-title">${a.title}</div>
+            <div class="alert-desc">${a.desc}</div>
+            ${a.link ? `<a href="${a.link}" class="alert-link">${a.linkText}</a>` : ''}
+          </div>
+        </div>`).join('');
+
+      // Show alert bar if critical
+      const critical = alerts.filter(a => a.type === 'danger');
+      if (critical.length > 0) {
+        document.getElementById('alertBar').style.display = 'flex';
+        document.getElementById('alertText').textContent = critical.map(a => a.title).join(' · ');
+      }
+
+    } catch (err) {
+      console.error('Error loading alerts:', err);
+    }
+  }
+
+  async function loadRevenue(diveCenterId) {
+    try {
+      // Build the month start in local time so the filter is timezone-aware.
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Only fetch payments from the current month and earlier this week —
+      // the chart needs 7 days which is always within the current month or the
+      // tail of last month, so we pull from 7 days ago at most.
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      const queryFrom = sevenDaysAgo < monthStart ? sevenDaysAgo : monthStart;
+
+      const { data: payments, error } = await client
+        .from('payments')
+        .select('paid_at, grand_total_php')
+        .eq('dive_center_id', diveCenterId)
+        .eq('is_paid', true)
+        .gte('paid_at', queryFrom.toISOString());
+
+      if (error) throw error;
+
+      const safeNum = value => Number(value) || 0;
+      const paidPayments = payments || [];
+
+      // Use local date strings for comparisons so midnight = local midnight.
+      const localDateStr = d => [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, '0'),
+        String(d.getDate()).padStart(2, '0')
+      ].join('-');
+
+      const todayStr = localDateStr(now);
+      const todayPayments = paidPayments.filter(p =>
+        p.paid_at && localDateStr(new Date(p.paid_at)) === todayStr
+      );
+
+      const sumDiveRevenue = list => list.reduce((sum, p) => sum + safeNum(p.grand_total_php), 0);
+
+      const todayRevenue = sumDiveRevenue(todayPayments);
+
+      document.getElementById('statRevenue').textContent = `₱${todayRevenue.toLocaleString()}`;
+      document.getElementById('revToday').textContent = `₱${todayRevenue.toLocaleString()}`;
+
+      // Weekly revenue
+      const weekPayments = paidPayments.filter(p =>
+        p.paid_at && new Date(p.paid_at) >= sevenDaysAgo
+      );
+      const weekRevenue = sumDiveRevenue(weekPayments);
+      document.getElementById('revWeek').textContent = `₱${weekRevenue.toLocaleString()}`;
+
+      // Monthly revenue
+      const monthPayments = paidPayments.filter(p =>
+        p.paid_at && new Date(p.paid_at) >= monthStart
+      );
+      const monthRevenue = sumDiveRevenue(monthPayments);
+      document.getElementById('revMonth').textContent = `₱${monthRevenue.toLocaleString()}`;
+
+      // Generate chart
+      generateChart(paidPayments);
+
+    } catch (err) {
+      console.error('Error loading revenue:', err);
+    }
+  }
+
+  function generateChart(payments) {
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      days.push(d);
+    }
+
+    // Helper: local YYYY-MM-DD so chart bars align with local midnight, not UTC.
+    const localDateStr = d => [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0')
+    ].join('-');
+
+    const dayRevenues = days.map(d => {
+      const dateStr = localDateStr(d);
+      const dayPayments = payments.filter(p =>
+        p.paid_at && localDateStr(new Date(p.paid_at)) === dateStr
+      );
+      return dayPayments.reduce((sum, p) => sum + (p.grand_total_php || 0), 0);
+    });
+
+    const maxRevenue = Math.max(...dayRevenues, 1);
+    const chartBars = document.getElementById('chartBars');
+    const chartLabels = document.getElementById('chartLabels');
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    chartBars.innerHTML = dayRevenues.map((rev, i) => {
+      const height = Math.max((rev / maxRevenue) * 100, 4);
+      const isToday = i === 6;
+      return `<div class="chart-bar-wrap">
+        <div class="chart-bar ${isToday ? 'today' : ''}"
+          style="height:${height}%"
+          data-value="₱${rev.toLocaleString()}">
+        </div>
+      </div>`;
+    }).join('');
+
+    chartLabels.innerHTML = days.map((d, i) => `
+      <div style="flex:1; text-align:center; font-size:0.7rem; color:${i===6 ? 'var(--navy)' : 'var(--gray-400)'}; font-weight:${i===6 ? '600' : '400'};">
+        ${dayNames[d.getDay()]}
+      </div>`).join('');
+  }
+
+  // ── HTML ESCAPE HELPER ────────────────────────────────────────────────────
+  // Always escape user-supplied strings before inserting into innerHTML.
+  function escHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── RENDER DIVERS TABLE ────────────────────────────────────────────────────
+  function renderDiversTable(divers) {
+    const tbody = document.getElementById('diversTableBody');
+
+    if (!divers || divers.length === 0) {
+      tbody.innerHTML = `
+        <tr><td colspan="5">
+          <div class="empty-state">
+            <div class="empty-icon">🤿</div>
+            <div class="empty-text">No active divers today</div>
+          </div>
+        </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = divers.map(d => {
+      const total = Number(d.dashboard_total) || 0;
+      const balance = Number(d.dashboard_balance) || 0;
+      const status = d.dashboard_status || 'On Surface';
+      const billHtml = total > 0
+        ? `<div class="bill-amount">₱${total.toLocaleString()}</div>
+           <div class="bill-balance">Balance: ₱${balance.toLocaleString()}</div>`
+        : `<div class="bill-amount">₱0</div>
+           <div style="font-size:0.75rem;color:var(--gray-400);margin-top:0.1rem;">No bill yet</div>`;
+
+      // escHtml() on every field that comes from the database.
+      const firstName   = escHtml(d.first_name);
+      const lastName    = escHtml(d.last_name);
+      const certLevel   = escHtml(d.certification_level || 'No cert on file');
+      const groupName   = d.dashboard_group_name ? ' · ' + escHtml(d.dashboard_group_name) : '';
+      const tripType    = escHtml(d.dashboard_trip_type || '—');
+      const statusLabel = escHtml(status);
+      const diverId     = escHtml(d.id);
+
+      return `
+        <tr>
+          <td>
+            <div class="diver-name">${firstName} ${lastName}</div>
+            <div class="diver-cert">${certLevel}${groupName}</div>
+          </td>
+          <td><span class="badge ${status.includes('Ongoing') ? 'badge-diving' : 'badge-surface'}">${statusLabel}</span></td>
+          <td style="color: var(--gray-600); font-size:0.85rem; font-weight:500;">${tripType}</td>
+          <td>${billHtml}</td>
+          <td>
+            <button class="btn-table" onclick="openDiverForm('${diverId}')">Open Form</button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  function filterDivers() {
+    const query = document.getElementById('diverSearch').value.toLowerCase();
+    const filtered = allDivers.filter(d =>
+      `${d.first_name || ''} ${d.last_name || ''} ${d.dashboard_group_name || ''}`.toLowerCase().includes(query)
+    );
+    renderDiversTable(filtered);
+  }
+
+  // ── NAVIGATION ────────────────────────────────────────────────────────────
+  function showPage(page) {
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    event?.currentTarget?.classList.add('active');
+
+    const titles = {
+      'dashboard': ['Dashboard', 'Real-time operations overview'],
+      'divers': ['Divers', 'Search and manage registered divers'],
+      'diver-form': ['Diver Form', 'Manage activities and billing'],
+      'scheduling': ['Scheduling', 'Plan tomorrow\'s dives'],
+      'inventory': ['Inventory', 'Equipment and tank management'],
+      'reports': ['Reports', 'Revenue and performance analytics'],
+      'settings': ['Settings', 'Dive center configuration'],
+    };
+
+    const [title, subtitle] = titles[page] || ['Dashboard', ''];
+    document.getElementById('pageTitle').textContent = title;
+    document.getElementById('pageSubtitle').textContent = subtitle;
+
+    // TODO: Show/hide page sections as we build each page
+    console.log(`Navigate to: ${page}`);
+  }
+
+  function openDiverForm(diverId) {
+    window.location.href = `/diver-form.html?diver=${encodeURIComponent(diverId)}`;
+  }
+
+  function openRegistrationForm() {
+    const diveCenterId = currentUserData?.dive_center_id;
+    if (!diveCenterId) {
+      showToast('Dive center is still loading. Please refresh and try again.','error');
+      return;
+    }
+    window.location.href = `/register.html?dc=${encodeURIComponent(diveCenterId)}`;
+  }
+
+
+  function showToast(msg, type = '') {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'toast show ' + type;
+    clearTimeout(window.dashboardToastTimer);
+    window.dashboardToastTimer = setTimeout(() => { el.className = 'toast'; }, 2800);
+  }
+
+  // ── LOGOUT ────────────────────────────────────────────────────────────────
+  async function handleLogout() {
+    await client.auth.signOut();
+    window.location.href = '/index.html';
+  }
+
+  // ── SIDEBAR TAP TO TOGGLE (mobile) ───────────────────────────────────────
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('sidebarOverlay');
+
+  // On mobile, sidebar doesn't respond to hover so we use tap
+  sidebar.addEventListener('click', function(e) {
+    if (window.innerWidth <= 768 && !sidebar.classList.contains('open')) {
+      e.preventDefault();
+      sidebar.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  });
+
+  overlay.addEventListener('click', function() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  });
+
+  // ── START ─────────────────────────────────────────────────────────────────
+  init();
+</script>
+</body>
+</html>

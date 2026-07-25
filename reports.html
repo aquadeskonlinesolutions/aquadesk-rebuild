@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports — AquaDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy:#1A3C5E;--navy-dark:#0F2540;--navy-mid:#244d73;
+  --teal:#00A8AB;--teal-light:#E0F7F8;--teal-mid:#007B7D;
+  --white:#FFFFFF;--off-white:#F8FAFC;--gray-50:#F8FAFC;--gray-100:#F1F5F9;
+  --gray-200:#E2E8F0;--gray-300:#CBD5E1;--gray-400:#94A3B8;--gray-500:#64748B;
+  --gray-600:#475569;--gray-700:#334155;--dark:#0F172A;
+  --red:#DC2626;--red-light:#FEF2F2;--green:#16A34A;--green-light:#F0FDF4;
+  --orange:#D97706;--orange-light:#FFFBEB;--purple:#7C3AED;--purple-light:#F5F3FF;
+  --blue:#2563EB;--blue-light:#EFF6FF;
+  --font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;
+  --shadow-sm:0 1px 3px rgba(15,23,42,.06);--shadow-md:0 10px 30px rgba(15,23,42,.08);
+  --radius:14px;--sidebar-w:260px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--off-white);color:var(--dark);min-height:100vh;display:flex;font-size:15px}
+.sidebar{width:var(--sidebar-w);background:var(--navy);min-height:100vh;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;overflow-y:auto}
+.sidebar-brand{display:flex;align-items:center;gap:.75rem;padding:1.5rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.brand-img{width:38px;height:38px;border-radius:9px;object-fit:contain;background:rgba(255,255,255,.05)}
+.brand-name{font-family:var(--font-display);font-size:1.3rem;color:var(--white);letter-spacing:-.02em}.brand-name span{color:var(--teal)}
+.sidebar-dc{padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.dc-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.3rem}
+.dc-name-el{font-size:.95rem;font-weight:600;color:var(--white)}.dc-role{font-size:.75rem;color:var(--teal);margin-top:.2rem}
+.sidebar-nav{padding:1rem 0;flex:1}.nav-section-label{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:.75rem 1.25rem .4rem}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;font-size:.95rem;color:rgba(255,255,255,.62);text-decoration:none;cursor:pointer;transition:all .2s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}.nav-item.active{background:rgba(0,168,171,.12);color:var(--white);border-left-color:var(--teal);font-weight:600}.nav-icon{font-size:1.08rem;width:22px;text-align:center;flex-shrink:0}
+.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,.07)}.sidebar-user{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}.user-avatar{width:36px;height:36px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:var(--white);flex-shrink:0}.user-info{flex:1;min-width:0}.user-name-el{font-size:.85rem;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.user-email-el{font-size:.72rem;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.btn-logout{width:100%;padding:.6rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:rgba(255,255,255,.55);font-family:var(--font-body);font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem}.btn-logout:hover{background:rgba(220,38,38,.15);color:#FCA5A5}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--gray-200);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}.page-title{font-family:var(--font-display);font-size:1.62rem;color:var(--navy);letter-spacing:-.02em}.page-subtitle{font-size:.86rem;color:var(--gray-500);margin-top:.1rem}.topbar-right{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}.content{padding:1.5rem 2rem 2rem;flex:1}
+.month-switch{display:flex;align-items:center;gap:.5rem;background:var(--white);border:1px solid var(--gray-200);border-radius:999px;padding:.35rem;box-shadow:var(--shadow-sm)}.month-label{min-width:145px;text-align:center;font-weight:700;color:var(--navy);font-size:.9rem}.icon-btn{border:none;background:var(--gray-100);color:var(--navy);width:34px;height:34px;border-radius:50%;cursor:pointer;font-weight:800}.icon-btn:hover{background:var(--teal-light);color:var(--teal-mid)}
+.btn{border:none;border-radius:10px;padding:.64rem 1rem;font-family:var(--font-body);font-size:.84rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;transition:all .18s;text-decoration:none}.btn-sm{padding:.42rem .75rem;font-size:.76rem;border-radius:8px}.btn-navy{background:var(--navy);color:var(--white)}.btn-navy:hover{background:var(--navy-dark)}.btn-teal{background:var(--teal);color:var(--white)}.btn-teal:hover{background:var(--teal-mid)}.btn-soft{background:var(--teal-light);color:var(--teal-mid)}.btn-soft:hover{filter:brightness(.97)}.btn-ghost{background:var(--white);border:1px solid var(--gray-200);color:var(--gray-600)}.btn-ghost:hover{border-color:var(--gray-300);color:var(--navy)}.btn-green{background:var(--green);color:var(--white)}.btn-orange{background:var(--orange);color:var(--white)}.btn-red{background:var(--red);color:var(--white)}
+.tabs{display:flex;gap:.5rem;flex-wrap:wrap;background:var(--white);border:1px solid var(--gray-200);border-radius:16px;padding:.45rem;margin-bottom:1.25rem;box-shadow:var(--shadow-sm)}.tab-btn{border:none;background:transparent;color:var(--gray-600);padding:.72rem 1rem;border-radius:12px;font-family:var(--font-body);font-size:.86rem;font-weight:700;cursor:pointer}.tab-btn.active{background:var(--navy);color:var(--white)}.tab-panel{display:none}.tab-panel.active{display:block}.sub-tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin:0 0 1rem}.sub-tab{border:1px solid var(--gray-200);background:var(--white);color:var(--gray-600);border-radius:999px;padding:.55rem .9rem;font-family:var(--font-body);font-size:.82rem;font-weight:700;cursor:pointer}.sub-tab.active{background:var(--teal-light);color:var(--teal-mid);border-color:rgba(0,168,171,.25)}
+.card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem}.card-header{padding:1rem 1.25rem;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:linear-gradient(180deg,var(--white),var(--gray-50))}.card-title{font-size:.98rem;font-weight:800;color:var(--navy)}.card-sub{font-size:.79rem;color:var(--gray-500);margin-top:.12rem}.card-body{padding:1.25rem}.card-actions{display:flex;gap:.5rem;flex-wrap:wrap}.grid{display:grid;gap:1rem}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.hero{background:radial-gradient(circle at 10% 10%,rgba(0,168,171,.25),transparent 35%),linear-gradient(135deg,var(--navy),var(--navy-dark));border-radius:22px;padding:1.4rem;color:var(--white);display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.8fr);gap:1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow-md);overflow:hidden}.hero-kicker{font-size:.76rem;text-transform:uppercase;letter-spacing:.13em;color:rgba(255,255,255,.55);font-weight:800;margin-bottom:.5rem}.hero-title{font-family:var(--font-display);font-size:2rem;line-height:1.08;letter-spacing:-.02em;margin-bottom:.55rem}.hero-story{font-size:.93rem;line-height:1.65;color:rgba(255,255,255,.82);max-width:760px}.story-highlight{color:var(--white);font-weight:800}.hero-mini{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:1rem;display:grid;gap:.75rem}.hero-mini-row{display:flex;justify-content:space-between;gap:1rem;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:.65rem}.hero-mini-row:last-child{border-bottom:0;padding-bottom:0}.hero-mini-label{font-size:.78rem;color:rgba(255,255,255,.55)}.hero-mini-value{font-weight:800;color:var(--white)}
+.summary-block{margin-bottom:1.1rem}.summary-block:last-child{margin-bottom:0}
+.summary-row{display:flex;justify-content:space-between;align-items:baseline;font-weight:800;color:var(--navy);font-size:.92rem;padding:.3rem 0}
+.summary-sub-row{display:flex;justify-content:space-between;padding:.4rem 0 .4rem 1rem;font-size:.85rem;color:var(--gray-600);border-bottom:1px dashed var(--gray-100)}
+.summary-sub-row:last-child{border-bottom:none}
+.summary-total{border-bottom:2px solid var(--gray-200);padding-bottom:.5rem;margin-bottom:.3rem}
+.summary-net-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-display);font-size:1.5rem;color:var(--navy);background:var(--teal-light);border-radius:12px;padding:.9rem 1.15rem;margin:.25rem 0 1.1rem}
+.summary-net-row.negative{background:var(--red-light);color:var(--red)}
+.summary-pending{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:.9rem 1.15rem .2rem}
+.summary-pending .summary-row{font-weight:800;color:var(--gray-600);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+
+.metric-card{background:var(--white);border:1px solid var(--gray-200);border-radius:16px;padding:1rem;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}.metric-card::after{content:'';position:absolute;right:-22px;top:-22px;width:86px;height:86px;border-radius:50%;background:var(--teal-light);opacity:.75}.metric-card.orange::after{background:var(--orange-light)}.metric-card.green::after{background:var(--green-light)}.metric-card.purple::after{background:var(--purple-light)}.metric-card.blue::after{background:var(--blue-light)}.metric-label{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-500);position:relative;z-index:1}.metric-value{font-family:var(--font-display);font-size:1.72rem;color:var(--navy);margin:.35rem 0 .1rem;position:relative;z-index:1}.metric-note{font-size:.76rem;color:var(--gray-500);position:relative;z-index:1}
+.chart-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:1rem}.bar-list{display:grid;gap:.82rem}.bar-row{display:grid;grid-template-columns:130px minmax(0,1fr) 60px;gap:.8rem;align-items:center}.bar-name{font-size:.82rem;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:10px;background:var(--gray-100);border-radius:99px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--navy-mid));border-radius:99px;min-width:2px}.bar-val{font-size:.78rem;font-weight:800;color:var(--gray-600);text-align:right}.donut-wrap{display:flex;align-items:center;gap:1rem;justify-content:center;height:100%}.donut{width:150px;height:150px;border-radius:50%;background:conic-gradient(var(--teal) 0deg,var(--teal) var(--donut-a,180deg),var(--orange) var(--donut-a,180deg),var(--orange) var(--donut-b,260deg),var(--gray-200) var(--donut-b,260deg));display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(15,23,42,.05)}.donut-inner{width:92px;height:92px;background:var(--white);border-radius:50%;display:grid;place-items:center;text-align:center;font-weight:800;color:var(--navy);font-family:var(--font-display);font-size:1.3rem}.legend{display:grid;gap:.5rem}.legend-item{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--gray-600)}.dot{width:10px;height:10px;border-radius:50%;background:var(--teal)}.dot.orange{background:var(--orange)}.dot.gray{background:var(--gray-300)}
+.table-wrap{overflow:auto;border:1px solid var(--gray-200);border-radius:12px;background:var(--white)}table{width:100%;border-collapse:collapse;min-width:800px}th{background:var(--gray-50);padding:.72rem .85rem;text-align:left;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-500);font-weight:900;border-bottom:1px solid var(--gray-200)}td{padding:.72rem .85rem;border-bottom:1px solid var(--gray-100);font-size:.84rem;color:var(--gray-700);vertical-align:middle}tr:last-child td{border-bottom:none}.num{text-align:right;font-variant-numeric:tabular-nums}.muted{color:var(--gray-500)}.strong{font-weight:800;color:var(--navy)}.status{display:inline-flex;align-items:center;gap:.32rem;padding:.22rem .55rem;border-radius:999px;font-size:.72rem;font-weight:800}.status.collect{background:var(--orange-light);color:var(--orange)}.status.ok{background:var(--green-light);color:var(--green)}.status.pay{background:var(--purple-light);color:var(--purple)}.status.printed{background:var(--blue-light);color:var(--blue)}.status.unpaid{background:var(--orange-light);color:var(--orange)}.status.paid{background:var(--green-light);color:var(--green)}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem}.form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.form-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}.field label{display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray-500);margin-bottom:.35rem}.input,.select,.textarea{width:100%;border:1.5px solid var(--gray-200);border-radius:10px;background:var(--white);padding:.66rem .8rem;font-family:var(--font-body);font-size:.88rem;color:var(--dark);outline:none}.input:focus,.select:focus,.textarea:focus{border-color:var(--teal)}.textarea{min-height:86px;resize:vertical}.inline-input{max-width:115px;text-align:right}.empty{padding:1.2rem;text-align:center;color:var(--gray-500);font-size:.9rem}.section-note{background:var(--teal-light);border:1px solid rgba(0,168,171,.18);border-radius:14px;padding:.9rem 1rem;color:var(--teal-mid);font-size:.86rem;line-height:1.5;margin-bottom:1rem}.warning{background:var(--orange-light);border:1px solid rgba(217,119,6,.2);color:var(--orange)}
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.54);z-index:300;display:none;align-items:center;justify-content:center;padding:1rem}.modal-overlay.show{display:flex}.modal{background:var(--white);border-radius:18px;box-shadow:0 24px 80px rgba(15,23,42,.28);width:min(760px,100%);max-height:92vh;overflow:auto}.modal.wide{width:min(980px,100%)}.modal-head{padding:1.15rem 1.25rem;border-bottom:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}.modal-title{font-family:var(--font-display);font-size:1.35rem;color:var(--navy)}.modal-sub{font-size:.84rem;color:var(--gray-500);margin-top:.15rem}.modal-body{padding:1.25rem}.modal-actions{display:flex;gap:.65rem;justify-content:flex-end;flex-wrap:wrap;padding:1rem 1.25rem;border-top:1px solid var(--gray-200);background:var(--gray-50)}.modal-x{border:none;background:var(--gray-100);width:32px;height:32px;border-radius:50%;cursor:pointer;color:var(--gray-600);font-weight:800}.toast{position:fixed;right:1.5rem;bottom:1.5rem;background:var(--navy);color:var(--white);padding:.9rem 1rem;border-radius:14px;box-shadow:var(--shadow-md);z-index:500;display:none;max-width:360px;font-size:.88rem}.toast.show{display:block}.toast.error{background:var(--red)}.toast.success{background:var(--green)}
+.statement-preview{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:14px;padding:1rem}.statement-paper{background:var(--white);border:1px solid var(--gray-200);border-radius:8px;padding:1rem;margin-bottom:1rem}.statement-copy-label{font-weight:900;color:var(--navy);letter-spacing:.08em;text-transform:uppercase;font-size:.72rem;margin-bottom:.6rem}.statement-title{font-family:var(--font-display);font-size:1.3rem;color:var(--navy)}.signature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:1.2rem}.sig-line{border-top:1px solid var(--gray-300);padding-top:.32rem;font-size:.76rem;color:var(--gray-500)}
+@media(max-width:1100px){.grid-5,.grid-4{grid-template-columns:repeat(2,1fr)}.chart-grid,.hero{grid-template-columns:1fr}.form-grid-4,.form-grid-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.main{margin-left:var(--sidebar-collapsed)}.topbar{padding:1rem}.content{padding:1rem}.grid-5,.grid-4,.grid-3,.grid-2,.form-grid,.form-grid-3,.form-grid-4{grid-template-columns:1fr}.topbar-right{width:100%}.topbar{align-items:flex-start;flex-direction:column}.month-switch{width:100%;justify-content:space-between}.hero-title{font-size:1.55rem}.signature-grid{grid-template-columns:1fr}.sidebar:hover{width:var(--sidebar-collapsed)}.sidebar.open{width:var(--sidebar-w)}}
+:root{--sidebar-collapsed:54px}
+.sidebar{width:var(--sidebar-collapsed);transition:width .25s ease;overflow:hidden;z-index:200}
+.sidebar:hover,.sidebar.open{width:var(--sidebar-w)}
+.brand-name,.sidebar-dc,.nav-section-label,.user-info,.user-name-el,.user-email-el,.btn-logout,.nav-item-label{opacity:0;transition:opacity .15s ease;white-space:nowrap;overflow:hidden}
+.sidebar:hover .brand-name,.sidebar:hover .sidebar-dc,.sidebar:hover .nav-section-label,.sidebar:hover .user-info,.sidebar:hover .user-name-el,.sidebar:hover .user-email-el,.sidebar:hover .btn-logout,.sidebar:hover .nav-item-label,.sidebar.open .brand-name,.sidebar.open .sidebar-dc,.sidebar.open .nav-section-label,.sidebar.open .user-info,.sidebar.open .user-name-el,.sidebar.open .user-email-el,.sidebar.open .btn-logout,.sidebar.open .nav-item-label{opacity:1}
+.sidebar-brand{display:flex;align-items:center;gap:.75rem;padding:1.25rem 0;padding-left:calc((var(--sidebar-collapsed) - 38px) / 2);border-bottom:1px solid rgba(255,255,255,.07);overflow:hidden;min-width:var(--sidebar-w)}
+.sidebar-dc{padding:.75rem 0 .75rem calc((var(--sidebar-collapsed) - 22px) / 2);border-bottom:1px solid rgba(255,255,255,.07);min-width:var(--sidebar-w);overflow:hidden;white-space:nowrap}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;padding-left:calc((var(--sidebar-collapsed) - 22px) / 2);font-size:.95rem;color:rgba(255,255,255,.6);text-decoration:none;cursor:pointer;transition:.2s;border-left:3px solid transparent;min-width:var(--sidebar-w);white-space:nowrap}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}.nav-item.active{background:rgba(0,168,171,.12);color:var(--white);border-left-color:var(--teal);font-weight:500}
+.sidebar-footer{padding:.75rem 0;padding-left:calc((var(--sidebar-collapsed) - 36px) / 2);border-top:1px solid rgba(255,255,255,.07);min-width:var(--sidebar-w);overflow:hidden}
+.sidebar-user{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;white-space:nowrap}
+.sidebar-overlay{display:none;position:fixed;inset:0;z-index:199}
+.sidebar-overlay.open{display:block}
+.main{margin-left:var(--sidebar-collapsed)}
+@media print{body{background:white;display:block}.sidebar,.topbar,.content>*:not(.print-root),.modal-actions,.modal-head .modal-x{display:none!important}.main{margin-left:0}.modal-overlay{position:static;display:block;background:white;padding:0}.modal{box-shadow:none;max-height:none;width:100%;border-radius:0}.modal-head{display:none}.modal-body{padding:0}.statement-preview{border:0;background:white;padding:0}.statement-paper{border:1px solid #999;page-break-inside:avoid;margin-bottom:16px}.statement-paper:nth-child(2){page-break-before:auto}#auditPrintFrame{display:block!important}}
+.audit-flagged-row{cursor:pointer;background:var(--red-light)}.audit-flagged-row:hover{filter:brightness(.97)}.audit-flagged-row td{color:var(--red);font-weight:700}.audit-expand{background:var(--gray-50)}.audit-expand td{padding:0}.audit-expand-inner{padding:.75rem 1rem;border-top:2px solid var(--red)}.audit-expand table{min-width:0;border:1px solid var(--gray-200);border-radius:8px;overflow:hidden}.audit-expand th{font-size:.65rem}.audit-expand td{font-size:.8rem;color:var(--gray-700)}.audit-flag-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);margin-right:.35rem}
+.settlement-grand td{background:var(--navy);color:var(--white);font-weight:800;font-size:.88rem}.settlement-grand td.num{font-variant-numeric:tabular-nums}
+@media print{
+  .settlement-print-hide{display:none!important}
+  #tab-settlement .card-header .card-actions{display:none!important}
+  #tab-settlement .card-header{display:flex}
+}
+</style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><img src="logo.png" class="brand-img" alt="AquaDesk"><div class="brand-name">Aqua<span>Desk</span></div></div>
+  <div class="sidebar-dc"><div class="dc-label">Dive Center</div><div class="dc-name-el" id="dcName">Loading...</div><div class="dc-role" id="userRole">Reports</div></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Operations</div>
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">⌂</span><span class="nav-item-label">Dashboard</span></a>
+    <a class="nav-item" href="divers.html"><span class="nav-icon">👥</span><span class="nav-item-label">Diver</span></a>
+    <a class="nav-item" href="diver-form.html"><span class="nav-icon">📋</span><span class="nav-item-label">Diver Form</span></a>
+    <a class="nav-item" href="scheduling.html"><span class="nav-icon">🚤</span><span class="nav-item-label">Scheduling</span></a>
+    <div class="nav-section-label">Business</div>
+    <a class="nav-item" href="boat-manifest.html"><span class="nav-icon">🚢</span><span class="nav-item-label">Boat Manifest</span></a>
+    <a class="nav-item active" href="reports.html"><span class="nav-icon">📈</span><span class="nav-item-label">Reports</span></a>
+    <a class="nav-item owner-only" style="display:none" href="settings.html"><span class="nav-icon">⚙️</span><span class="nav-item-label">Settings</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user"><div class="user-avatar" id="userAvatar">U</div><div class="user-info"><div class="user-name-el" id="userName">User</div><div class="user-email-el" id="userEmail">—</div></div></div>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div><h1 class="page-title">Reports</h1><p class="page-subtitle">Your dive center story, staff activity, government fees, join rides, and rentals.</p></div>
+    <div class="topbar-right" style="flex-wrap:nowrap;align-items:center">
+      <label style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray-500);white-space:nowrap">From</label>
+      <input class="input" type="date" id="dateFrom" style="max-width:160px">
+      <label style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray-500);white-space:nowrap">To</label>
+      <input class="input" type="date" id="dateTo" style="max-width:160px">
+      <button class="btn btn-navy" onclick="applyDateRange()" style="white-space:nowrap;flex-shrink:0">Apply</button>
+    </div>
+  </header>
+  <section class="content">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview" onclick="setTab('overview')">Overview</button>
+      <button class="tab-btn" data-tab="staff" onclick="setTab('staff')">Staff Activity Summary</button>
+      <button class="tab-btn" data-tab="join" onclick="setTab('join')">Join Ride</button>
+      <button class="tab-btn" data-tab="rentals" onclick="setTab('rentals')">Rental Gears</button>
+      <button class="tab-btn" data-tab="expenses" onclick="setTab('expenses')">Expenses</button>
+      <button class="tab-btn" data-tab="settlement" onclick="setTab('settlement');loadSettlement()">Settlement</button>
+      <button class="tab-btn" data-tab="govtfees" onclick="setTab('govtfees');loadGovtFees()">Government Fees</button>
+      <button class="tab-btn" data-tab="audit" onclick="setTab('audit')">Billing Audit</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-overview">
+      <div class="hero" style="grid-template-columns:1fr">
+        <div>
+          <div class="hero-kicker">Your Story</div>
+          <div class="hero-title" id="storyTitle">Loading report...</div>
+          <div class="hero-story" id="storyText">AquaDesk is preparing this month's story.</div>
+        </div>
+      </div>
+      <div class="card" id="businessSummaryCard">
+        <div class="card-header">
+          <div><div class="card-title">Business Summary</div><div class="card-sub" id="summaryRangeLabel">Selected date range</div></div>
+        </div>
+        <div class="card-body">
+          <div class="summary-block">
+            <div class="summary-row summary-total"><span>Money In</span><span id="sumMoneyIn">₱0</span></div>
+            <div class="summary-sub-row"><span>Collected from Divers</span><span id="sumCollected">₱0</span></div>
+            <div class="summary-sub-row"><span>Rental Income (Collected)</span><span id="sumRentalIncome">₱0</span></div>
+            <div class="summary-sub-row"><span>Join Ride Income (Collected)</span><span id="sumJoinIncome">₱0</span></div>
+          </div>
+          <div class="summary-block">
+            <div class="summary-row summary-total"><span>Money Out</span><span id="sumMoneyOut">₱0</span></div>
+            <div class="summary-sub-row"><span>Government Fees (Marine/Shark Tax)</span><span id="sumGovtFees">₱0</span></div>
+            <div class="summary-sub-row"><span>Dive Center Expenses</span><span id="sumExpenses">₱0</span></div>
+            <div class="summary-sub-row"><span>Rental Expense (Paid)</span><span id="sumRentalExpense">₱0</span></div>
+            <div class="summary-sub-row"><span>Join Ride Expense (Paid)</span><span id="sumJoinExpense">₱0</span></div>
+            <div class="summary-sub-row"><span>Staff Commissions (Paid)</span><span id="sumCommissions">₱0</span></div>
+          </div>
+          <div class="summary-net-row" id="summaryNetRow"><span>Net Profit</span><span id="sumNetProfit">₱0</span></div>
+          <div class="summary-block summary-pending">
+            <div class="summary-row"><span>Not Yet Settled</span><span style="font-weight:400;font-size:.72rem;color:var(--gray-400);text-transform:none;letter-spacing:0">Current balances, excluded from Net Profit above</span></div>
+            <div class="summary-sub-row"><span>Open Diver Bills (owed to you)</span><span id="sumOpenBills">₱0</span></div>
+            <div class="summary-sub-row"><span>Rental — To Collect (owed to you)</span><span id="sumRentalToCollect">₱0</span></div>
+            <div class="summary-sub-row"><span>Rental — To Pay (you owe)</span><span id="sumRentalToPay">₱0</span></div>
+            <div class="summary-sub-row"><span>Join Ride — To Collect (owed to you)</span><span id="sumJoinToCollect">₱0</span></div>
+            <div class="summary-sub-row"><span>Join Ride — To Pay (you owe)</span><span id="sumJoinToPay">₱0</span></div>
+            <div class="summary-sub-row"><span>Unpaid Staff Commissions (you owe)</span><span id="sumUnpaidCommissions">₱0</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="card"><div class="card-header"><div><div class="card-title">Dive Site Activity</div><div class="card-sub">Completed dives by site, highest to lowest.</div></div></div><div class="card-body"><div class="bar-list" id="siteBars"></div></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title">Money Snapshot</div><div class="card-sub">Collected, open, and pending money movement.</div></div></div><div class="card-body"><div class="donut-wrap"><div class="donut" id="moneyDonut"><div class="donut-inner" id="donutTotal">₱0</div></div><div class="legend"><div class="legend-item"><span class="dot"></span>Collected from divers</div><div class="legend-item"><span class="dot orange"></span>Open diver bills</div><div class="legend-item"><span class="dot gray"></span>Other pending money</div></div></div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">Expense Breakdown</div><div class="card-sub">Where dive center spending went this period, by category.</div></div></div>
+        <div class="card-body"><div class="bar-list" id="overviewExpenseBars"></div></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-staff">
+      <div class="section-note">Staff Activity Summary is a reference for commissions. AquaDesk counts the work. Secretaries can enter rates and mark commission rows as paid.</div>
+      <div class="card"><div class="card-header"><div><div class="card-title">Selected Staff Details</div><div class="card-sub">Select a staff member to review their activity for the selected date range.</div></div></div><div class="card-body"><div class="form-grid form-grid-3"><div class="field"><label>Staff Type</label><select class="select" id="staffDetailType" onchange="renderStaffDetailControls()"><option value="guide">Divemaster / Dive Guide</option><option value="instructor">Instructor</option></select></div><div class="field"><label>Staff Member</label><select class="select" id="staffDetailName" onchange="renderSelectedStaffDetails()"></select></div></div><div id="staffDetailBody" style="margin-top:1rem"></div></div></div>
+      <div class="card"><div class="card-header"><div><div class="card-title">Our Dive Educators</div><div class="card-sub">Course count × rate = commission.</div></div></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Staff</th><th>Course Title</th><th class="num">Quantity</th><th class="num">Rate</th><th class="num">Commission</th><th>Status</th><th>Action</th></tr></thead><tbody id="educatorRows"></tbody></table></div></div></div>
+      <div class="card"><div class="card-header"><div><div class="card-title">Leading Our Dives</div><div class="card-sub">Completed dives × rate = commission.</div></div></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Staff</th><th class="num">Completed Dives</th><th class="num">Rate</th><th class="num">Commission</th><th>Status</th><th>Action</th></tr></thead><tbody id="leaderRows"></tbody></table></div></div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-join">
+      <div class="section-note">Fixed Malapascua join ride rate: ₱500 per diver per dive. Records are saved per trip/day, then statements can be grouped by company and date range.</div>
+      <div class="grid grid-5" id="joinCards"></div>
+      <div class="sub-tabs"><button class="sub-tab active" data-join="joined_our_boat" onclick="setJoinDirection('joined_our_boat')">They Joined Our Boat</button><button class="sub-tab" data-join="we_joined_another_boat" onclick="setJoinDirection('we_joined_another_boat')">We Joined Another Boat</button></div>
+      <div class="card"><div class="card-header"><div><div class="card-title" id="joinTableTitle">They Joined Our Boat</div><div class="card-sub" id="joinTableSub">Money to collect from partner companies.</div></div><div class="card-actions"><button class="btn btn-soft" onclick="openJoinRecordModal()">+ Add Join Ride Record</button><button class="btn btn-navy" id="statementBtn" onclick="openStatementModal()">Generate Collection Statement</button></div></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Company</th><th>Divers</th><th>Dives</th><th>Dive Site(s)</th><th class="num">Total</th><th>Status</th><th class="num">Balance</th><th>Remarks</th><th>Action</th></tr></thead><tbody id="joinRows"></tbody></table></div></div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-rentals">
+      <div class="section-note">Rental Gears tracks tanks, equipment, and peripherals between dive centers. Use To Collect/Collected for money in, and To Pay/Paid for money out.</div>
+      <div class="grid grid-5" id="rentalCards"></div>
+      <div class="card"><div class="card-header"><div><div class="card-title">Rental Gear Records</div><div class="card-sub">Quantity × rate = balance.</div></div><div class="card-actions"><button class="btn btn-soft" onclick="openRentalModal()">+ Add Rental Record</button></div></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Equipment</th><th>Company</th><th class="num">Quantity</th><th class="num">Rate</th><th>Status</th><th class="num">Balance</th><th>Remarks</th><th>Action</th></tr></thead><tbody id="rentalRows"></tbody></table></div></div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-expenses">
+      <div class="section-note">Log dive center expenses outside of diver fees — fuel, maintenance, supplies, and more. Pick a category so spending stays easy to analyze; use "Uncategorized" if you're not sure yet, it still counts toward your totals.</div>
+      <div class="grid grid-4" id="expenseCards"></div>
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">Expenses by Category</div><div class="card-sub">Total spend per category for the selected date range.</div></div></div>
+        <div class="card-body"><div class="bar-list" id="expenseCategoryBars"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Expense Records</div><div class="card-sub">Manual entries for the selected date range.</div></div>
+          <div class="card-actions"><button class="btn btn-soft" onclick="openExpenseModal()">+ Add Expense</button></div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th class="num">Amount</th><th>Paid By</th><th>Notes</th><th>Action</th></tr></thead><tbody id="expenseRows"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-settlement">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Daily Settlement</div>
+            <div class="card-sub">All payments recorded for the selected date. Highlighted rows are deposits.</div>
+          </div>
+          <div class="card-actions">
+            <div class="field" style="margin:0;display:flex;align-items:center;gap:.5rem">
+              <label style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray-500);white-space:nowrap">Select Date</label>
+              <input class="input" type="date" id="settlementDate" style="max-width:180px" onchange="loadSettlement()">
+            </div>
+            <button class="btn btn-navy" onclick="loadSettlement()">Load</button>
+            <button class="btn btn-ghost" onclick="printSettlement()">🖨 Print</button>
+            <button class="btn btn-soft" onclick="downloadSettlementCSV()">⬇ Download CSV</button>
+          </div>
+        </div>
+        <div class="card-body" id="settlementBody">
+          <div class="empty">Select a date and click Load to view payments.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-govtfees">
+      <div class="section-note">Log the government fees your dive center owes for the selected period. This is separate from what divers are charged.</div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Government Fees</div>
+            <div class="card-sub">Fees owed to local government per diver activity.</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-teal" onclick="addGovtFeeRow()">+ Add Row</button>
+            <button class="btn btn-navy" onclick="saveAllGovtFees()">Save All</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table id="govtFeesTable" style="min-width:700px">
+              <thead><tr><th style="width:160px">Date</th><th>Fee Type</th><th class="num" style="width:130px">Rate (₱)</th><th class="num" style="width:140px">No. of Divers</th><th class="num" style="width:130px">Total</th><th style="width:48px"></th></tr></thead>
+              <tbody id="govtFeesBody"></tbody>
+              <tfoot><tr><td colspan="4" class="strong" style="text-align:right;padding:.72rem .85rem">Grand Total</td><td class="num strong" id="govtFeesGrandTotal">₱0</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-audit">
+      <div class="section-note">Billing Audit gives you a complete invoice history and flags any bill that was closed more than once — a sign that charges may have changed after payment was collected.</div>
+
+      <div class="card" style="margin-bottom:1.25rem">
+        <div class="card-header">
+          <div><div class="card-title">🔴 Flagged Bills</div><div class="card-sub">Divers whose bill was closed more than once. Click a flagged row to see all invoices sent.</div></div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap" id="auditFlaggedWrap">
+            <table style="min-width:600px"><thead><tr><th>Diver</th><th>Email</th><th class="num">Invoices Sent</th><th>Flag</th></tr></thead><tbody id="auditFlaggedRows"></tbody></table>
+          </div>
+          <div id="auditFlaggedEmpty" class="empty" style="display:none">No flagged bills. All invoices look clean.</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1.25rem">
+        <div class="card-header">
+          <div><div class="card-title">Invoice History</div><div class="card-sub">Every invoice ever sent. Search by diver name or email.</div></div>
+          <div class="card-actions"><input class="input" id="auditSearch" placeholder="Search name or email…" style="max-width:240px" oninput="filterAuditHistory()"></div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table style="min-width:700px"><thead><tr><th>Diver</th><th>Email</th><th>Sent At</th><th>Closed By</th><th class="num">Total Billed</th><th>Download</th></tr></thead><tbody id="auditHistoryRows"></tbody></table>
+          </div>
+          <div id="auditHistoryEmpty" class="empty" style="display:none">No invoices found.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Bill Unlock Log</div><div class="card-sub">Every time a closed bill was unlocked with the billing password.</div></div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table style="min-width:700px"><thead><tr><th>Diver / Bill</th><th>Unlocked By</th><th>Unlocked At</th><th>Notes</th></tr></thead><tbody id="auditUnlockRows"></tbody></table>
+          </div>
+          <div id="auditUnlockEmpty" class="empty" style="display:none">No bill unlocks recorded.</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<div id="auditPrintFrame" style="display:none"></div>
+
+<div class="modal-overlay" id="joinRecordModal"><div class="modal"><div class="modal-head"><div><div class="modal-title" id="joinModalTitle">Add Join Ride Record</div><div class="modal-sub">Save a report-side join ride record. This does not change Scheduling.</div></div><button class="modal-x" onclick="closeModal('joinRecordModal')">×</button></div><div class="modal-body"><div class="form-grid form-grid-3"><div class="field"><label>Date</label><input class="input" type="date" id="joinDate"></div><div class="field"><label>Company</label><input class="input" id="joinCompany" placeholder="Company name"></div><div class="field"><label>Status</label><select class="select" id="joinStatus"></select></div><div class="field"><label>Number of Divers</label><input class="input" type="number" min="0" id="joinDivers" value="0" oninput="updateJoinEstimate()"></div><div class="field"><label>Number of Dives</label><input class="input" type="number" min="0" id="joinDives" value="0" oninput="updateJoinEstimate()"></div><div class="field"><label>Total</label><input class="input" id="joinTotal" readonly></div></div><div class="field" style="margin-top:.85rem"><label>Dive Site(s)</label><input class="input" id="joinSites" placeholder="Kimud, Monad, Gato"></div><div class="field" style="margin-top:.85rem"><label>Remarks</label><textarea class="textarea" id="joinRemarks" placeholder="Optional notes"></textarea></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('joinRecordModal')">Cancel</button><button class="btn btn-teal" onclick="saveJoinRecord()">Save Record</button></div></div></div>
+
+<div class="modal-overlay" id="rentalModal"><div class="modal"><div class="modal-head"><div><div class="modal-title" id="rentalModalTitle">Add Rental Record</div><div class="modal-sub">Track gear, tank, and peripheral rentals with other companies.</div></div><button class="modal-x" onclick="closeModal('rentalModal')">×</button></div><div class="modal-body"><div class="form-grid form-grid-3"><div class="field"><label>Date</label><input class="input" type="date" id="rentalDate"></div><div class="field"><label>Equipment</label><select class="select" id="rentalEquipment"><option value="Air Tank 12L">Air Tank 12L</option><option value="Air Tank 15L">Air Tank 15L</option><option value="Nitrox Tank">Nitrox Tank</option><option value="BCD">BCD</option><option value="Regulator">Regulator</option><option value="Wetsuit">Wetsuit</option><option value="Fins">Fins</option><option value="Mask">Mask</option><option value="Computer">Computer</option><option value="Other">Other</option></select></div><div class="field"><label>Company</label><input class="input" id="rentalCompany" placeholder="Company name"></div><div class="field"><label>Quantity</label><input class="input" type="number" min="0" id="rentalQty" value="0" oninput="updateRentalEstimate()"></div><div class="field"><label>Rate</label><input class="input" type="number" min="0" id="rentalRate" value="0" oninput="updateRentalEstimate()"></div><div class="field"><label>Balance</label><input class="input" id="rentalTotal" readonly></div><div class="field"><label>Status</label><select class="select" id="rentalStatus"><option>To Collect</option><option>Collected</option><option>To Pay</option><option>Paid</option></select></div></div><div class="field" style="margin-top:.85rem"><label>Remarks</label><textarea class="textarea" id="rentalRemarks" placeholder="Optional notes"></textarea></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('rentalModal')">Cancel</button><button class="btn btn-teal" onclick="saveRentalRecord()">Save Record</button></div></div></div>
+
+<div class="modal-overlay" id="expenseModal"><div class="modal"><div class="modal-head"><div><div class="modal-title" id="expenseModalTitle">Add Expense</div><div class="modal-sub">Track dive center spending outside of diver fees.</div></div><button class="modal-x" onclick="closeModal('expenseModal')">×</button></div><div class="modal-body"><div class="form-grid form-grid-3"><div class="field"><label>Date</label><input class="input" type="date" id="expenseDate"></div><div class="field"><label>Category</label><select class="select" id="expenseCategory" onchange="toggleExpenseCustomCategory()"></select></div><div class="field" id="expenseCustomCategoryField" style="display:none"><label>Specify Category</label><input class="input" id="expenseCustomCategory" placeholder="e.g. Boat repaint"></div><div class="field"><label>Amount</label><input class="input" type="number" min="0" step="0.01" id="expenseAmount" value="0"></div><div class="field"><label>Paid By</label><input class="input" id="expensePaidBy" placeholder="e.g. Owner, Petty Cash"></div></div><div class="field" style="margin-top:.85rem"><label>Notes</label><textarea class="textarea" id="expenseNotes" placeholder="Optional notes"></textarea></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('expenseModal')">Cancel</button><button class="btn btn-teal" onclick="saveExpenseRecord()">Save Expense</button></div></div></div>
+
+<div class="modal-overlay" id="statementModal"><div class="modal wide"><div class="modal-head"><div><div class="modal-title">Generate Collection Statement</div><div class="modal-sub">Group To Collect join rides by company and date range, then print one statement.</div></div><button class="modal-x" onclick="closeModal('statementModal')">×</button></div><div class="modal-body"><div class="form-grid form-grid-4"><div class="field"><label>Company</label><select class="select" id="stmtCompany" onchange="previewStatement()"></select></div><div class="field"><label>Date From</label><input class="input" type="date" id="stmtFrom" onchange="previewStatement()"></div><div class="field"><label>Date To</label><input class="input" type="date" id="stmtTo" onchange="previewStatement()"></div><div class="field"><label>Status</label><select class="select" id="stmtStatus" onchange="previewStatement()"><option>To Collect</option><option>Statement Printed</option></select></div></div><div id="statementPreview" class="statement-preview" style="margin-top:1rem"></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('statementModal')">Close</button><button class="btn btn-navy" onclick="generateStatement()">Generate & Print Statement</button></div></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://xaabndtaevwgicibzcqm.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+const { createClient } = supabase;
+const client = createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const JOIN_RATE=500;
+let currentUser=null,currentUserData=null,diveCenterId=null,diveCenterName='Dive Center';
+let activeTab='overview',joinDirection='joined_our_boat';
+let divers=[],groups=[],visits=[],activities=[],payments=[],schedules=[],staff=[],courseRates=[],joinRideRecords=[],joinRideStatements=[],rentalGearRecords=[],staffCommissionRecords=[];
+let expensesData=[];
+const EXPENSE_CATEGORIES=['Fuel','Boat Maintenance','Equipment Maintenance','Compressor / Fill Station','Staff Meals','Food Expenses','Office Supplies','Utilities','Licenses & Permits','Marketing','Repairs','Other','Uncategorized'];
+let guideSummary={},courseSummary={},courseTitleSummary={},openBills=[],closedBills=[],topSites=[],topStaff=null;
+let govtFeesData=[];
+let editingJoinId=null,editingRentalId=null,editingExpenseId=null,statementRecordIds=[];
+let auditLoaded=false,auditInvoices=[],auditUnlocks=[],auditFlaggedVisits=[];
+
+function money(n){return '₱'+Number(n||0).toLocaleString(undefined,{maximumFractionDigits:0});}
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function ym(d){
+  const base=d||new Date(document.getElementById('dateFrom')?.value||new Date());
+  return base.getFullYear()+'-'+String(base.getMonth()+1).padStart(2,'0');
+}
+function monthStart(){return document.getElementById('dateFrom')?.value||new Date().toISOString().slice(0,7)+'-01';}
+function monthEnd(){return document.getElementById('dateTo')?.value||new Date().toISOString().slice(0,10);}
+function inRange(date){if(!date)return false;const ds=String(date).slice(0,10);return ds>=monthStart()&&ds<=monthEnd();}
+function inMonth(date){return inRange(date);}
+function fmtDate(d){if(!d)return '—';const x=new Date(String(d).slice(0,10)+'T00:00:00');return x.toLocaleDateString(undefined,{month:'short',day:'numeric'});}
+function nowIso(){return new Date().toISOString();}
+function fullName(d){return d?`${d.first_name||''} ${d.last_name||''}`.trim()||'Unnamed Diver':'—';}
+function groupName(id){const g=groups.find(x=>x.id===id);return g?(g.group_name||g.name||'Group'):'—';}
+function staffNameFromActivity(a){if(a.staff_name)return a.staff_name;const s=staff.find(x=>x.id===a.staff_id);return s?`${s.first_name||''} ${s.last_name||''}`.trim():'Unassigned';}
+function activityTotal(a){return Number(a.total??0)||Number(a.dive_rate||0)+Number(a.fuel_surcharge||0)+Number(a.marine_tax||0)+Number(a.nitrox_fee||0)+Number(a.equipment_rental||0)+Number(a.addons||0)-Number(a.discount||0);}
+function normalizeStatus(s){return String(s||'').trim();}
+function isCompleted(a){return normalizeStatus(a.status).toLowerCase()==='completed';}
+function isCancelled(a){return normalizeStatus(a.status).toLowerCase()==='cancelled';}
+function lowerClean(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+function normalizeCourseName(name){const x=lowerClean(name);if(!x)return 'Other';
+  const open=['1 star','ow','owd','open water','openwater','open water diver','open water course'];
+  const adv=['aow','aowd','2 star','advanced adventurer','adventurer','advanced','advanced open water','advanced open water diver','advanced course'];
+  const react=['react right','reactright','first aid','efr','emergency first response','first responder'];
+  const rescue=['rescue','rescue course','rescue diver','stress and rescue','stress rescue'];
+  const dm=['internship','dm','divemaster','dm course'];
+  if(open.includes(x))return 'Open Water'; if(adv.includes(x))return 'Advanced Open Water'; if(react.includes(x))return 'React Right'; if(rescue.includes(x))return 'Stress & Rescue'; if(dm.includes(x))return 'Divemaster'; return 'Other';}
+function statusPill(s){const v=String(s||'').toLowerCase();let cls='';if(v.includes('collect')&&v!=='collected')cls='collect';else if(v==='collected'||v==='paid')cls='ok';else if(v.includes('pay')&&v!=='paid')cls='pay';else if(v.includes('printed')||v.includes('received'))cls='printed';else if(v==='unpaid')cls='unpaid';return `<span class="status ${cls}">${esc(s||'—')}</span>`;}
+
+async function init(){
+  const {data:{session}}=await client.auth.getSession();
+  if(!session){window.location.href='login.html';return;}
+  currentUser=session.user;
+  const {data,error}=await client.from('users').select('*,dive_centers(*)').eq('id',currentUser.id).single();
+  if(error||!data){showToast('Could not load user profile','error');return;}
+  currentUserData=data;diveCenterId=data.dive_center_id;diveCenterName=data.dive_centers?.name||'My Dive Center';
+  document.getElementById('dcName').textContent=diveCenterName;
+  document.getElementById('userRole').textContent=data.role==='owner'?'👑 Owner':'🗂️ Secretary';
+  document.getElementById('userName').textContent=data.full_name||'User';
+  document.getElementById('userEmail').textContent=currentUser.email||'';
+  document.getElementById('userAvatar').textContent=(data.full_name||'U')[0].toUpperCase();
+  applyRoleVisibility();
+  // Set default date range: first to last day of current month (local time, not UTC)
+  const now=new Date();
+  const y=now.getFullYear(),m=now.getMonth();
+  const pad=n=>String(n).padStart(2,'0');
+  const firstDay=`${y}-${pad(m+1)}-01`;
+  const lastDay=`${y}-${pad(m+1)}-${pad(new Date(y,m+1,0).getDate())}`;
+  document.getElementById('dateFrom').value=firstDay;
+  document.getElementById('dateTo').value=lastDay;
+  await loadAll();
+}
+function applyRoleVisibility(){
+  const role=(currentUserData?.role||'secretary');
+  if(role!=='owner'){
+    // Hide Overview and Billing Audit tab buttons
+    document.querySelectorAll('.tab-btn').forEach(b=>{
+      if(b.dataset.tab==='overview'||b.dataset.tab==='audit')b.style.display='none';
+    });
+    // Hide their panels
+    const overviewPanel=document.getElementById('tab-overview');
+    const auditPanel=document.getElementById('tab-audit');
+    if(overviewPanel)overviewPanel.style.display='none';
+    if(auditPanel)auditPanel.style.display='none';
+    // Default active tab to Staff Activity Summary
+    setTab('staff');
+  } else {
+    // Owner — show owner-only nav items
+    document.querySelectorAll('.owner-only').forEach(el=>el.style.display='flex');
+  }
+}
+async function loadAll(){
+  try{
+    const from=monthStart(),to=monthEnd();
+    const queries=[
+      client.from('divers').select('*').eq('dive_center_id',diveCenterId),
+      client.from('groups').select('*').eq('dive_center_id',diveCenterId),
+      client.from('visits').select('*').eq('dive_center_id',diveCenterId),
+      client.from('activities').select('*').eq('dive_center_id',diveCenterId),
+      client.from('payments').select('*').eq('dive_center_id',diveCenterId),
+      client.from('schedules').select('*').eq('dive_center_id',diveCenterId),
+      client.from('staff').select('*').eq('dive_center_id',diveCenterId),
+      client.from('course_rates').select('id,course_name').eq('dive_center_id',diveCenterId),
+      client.from('join_ride_records').select('*').eq('dive_center_id',diveCenterId).order('date',{ascending:true}),
+      client.from('join_ride_statements').select('*').eq('dive_center_id',diveCenterId),
+      client.from('rental_gear_records').select('*').eq('dive_center_id',diveCenterId).order('date',{ascending:true}),
+      client.from('expenses').select('*').eq('dive_center_id',diveCenterId).gte('date',from).lte('date',to).order('date',{ascending:false}),
+      client.from('staff_commission_records').select('*').eq('dive_center_id',diveCenterId).eq('period_month',ym()),
+      client.from('govt_fees').select('*').eq('dive_center_id',diveCenterId).gte('date',from).lte('date',to).order('date',{ascending:true})
+    ];
+    const [d,g,v,a,p,sch,st,cr,jr,js,rg,ex,sc,gf]=await Promise.all(queries);
+    [d,g,v,a,p,sch,st,cr,jr,js,rg,ex,sc,gf].forEach(r=>{if(r.error)console.warn(r.error);});
+    divers=d.data||[];groups=g.data||[];visits=v.data||[];activities=a.data||[];payments=p.data||[];schedules=sch.data||[];staff=st.data||[];courseRates=cr.data||[];joinRideRecords=jr.data||[];joinRideStatements=js.data||[];rentalGearRecords=rg.data||[];expensesData=ex.data||[];staffCommissionRecords=sc.data||[];govtFeesData=gf.data||[];
+    buildSummaries();renderAll();
+  }catch(err){console.error(err);showToast('Reports could not load. Check table access/RLS.','error');}
+}
+function applyDateRange(){
+  const from=document.getElementById('dateFrom').value;
+  const to=document.getElementById('dateTo').value;
+  if(!from||!to){showToast('Please select both From and To dates.','error');return;}
+  if(from>to){showToast('From date must be before or equal to To date.','error');return;}
+  loadAll();
+}
+function setTab(tab){activeTab=tab;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');if(tab==='audit'&&!auditLoaded)loadAudit();}
+function setJoinDirection(direction){joinDirection=direction;document.querySelectorAll('.sub-tab').forEach(b=>b.classList.toggle('active',b.dataset.join===direction));renderJoinRide();}
+function showComingSoon(name){showToast(`${name} is not available yet. This section will be added in a future build.`);}
+async function logout(){await client.auth.signOut();window.location.href='login.html';}
+
+// ── GOVERNMENT FEES ──────────────────────────────────────────────────────────
+function govtFeesToday(){return new Date().toISOString().slice(0,10);}
+function calcGovtFeeTotal(row){
+  const rate=Number(row.querySelector('.gf-rate')?.value||0);
+  const divers=Number(row.querySelector('.gf-divers')?.value||0);
+  const totalEl=row.querySelector('.gf-total');
+  if(totalEl)totalEl.value=money(rate*divers);
+  return rate*divers;
+}
+function updateGovtGrandTotal(){
+  const rows=[...document.querySelectorAll('#govtFeesBody tr')];
+  let grand=0;
+  rows.forEach(row=>{
+    const totalEl=row.querySelector('.gf-total');
+    if(totalEl){
+      const raw=String(totalEl.value||'').replace(/[^\d.]/g,'');
+      grand+=Number(raw)||0;
+    }
+  });
+  document.getElementById('govtFeesGrandTotal').textContent=money(grand);
+}
+function addGovtFeeRow(){
+  const tbody=document.getElementById('govtFeesBody');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td><input class="input" type="date" value="${govtFeesToday()}" style="width:100%"></td>
+    <td><select class="select gf-type" style="width:100%">
+      <option value="Marine Fee">Marine Fee</option>
+      <option value="Shark Fee">Shark Fee</option>
+      <option value="Other Fee">Other Fee</option>
+    </select></td>
+    <td><input class="input gf-rate" type="number" min="0" value="0" style="width:100%;text-align:right" oninput="calcGovtFeeTotal(this.closest('tr'));updateGovtGrandTotal()"></td>
+    <td><input class="input gf-divers" type="number" min="0" value="0" style="width:100%;text-align:right" oninput="calcGovtFeeTotal(this.closest('tr'));updateGovtGrandTotal()"></td>
+    <td><input class="input gf-total" readonly value="₱0" style="width:100%;text-align:right;background:var(--gray-50)"></td>
+    <td><button class="btn btn-sm btn-ghost" style="color:var(--red)" onclick="this.closest('tr').remove();updateGovtGrandTotal()">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  updateGovtGrandTotal();
+}
+async function loadGovtFees(){
+  const from=monthStart(),to=monthEnd();
+  const {data,error}=await client.from('govt_fees').select('*').eq('dive_center_id',diveCenterId).gte('date',from).lte('date',to).order('date',{ascending:true});
+  if(error){console.error('loadGovtFees error:',error.message,error.details,error.hint,error.code);showToast('Could not load government fees.','error');return;}
+  govtFeesData=data||[];
+  const tbody=document.getElementById('govtFeesBody');
+  tbody.innerHTML=govtFeesData.map(r=>`
+    <tr data-gf-id="${r.id}">
+      <td>${fmtDate(r.date)}</td>
+      <td>${esc(r.fee_type)}</td>
+      <td class="num">${money(r.rate)}</td>
+      <td class="num">${r.divers}</td>
+      <td class="num strong"><input class="input gf-total" readonly value="${money(r.total)}" style="width:100%;text-align:right;background:var(--gray-50)"></td>
+      <td><button class="btn btn-sm btn-ghost" style="color:var(--red)" onclick="deleteGovtFee('${r.id}',this.closest('tr'))">✕</button></td>
+    </tr>
+  `).join('');
+  updateGovtGrandTotal();
+}
+function deleteGovtFee(id,trEl){
+  confirmModal('Delete this government fee record? This cannot be undone.',async()=>{
+    const {error}=await client.from('govt_fees').delete().eq('id',id);
+    if(error){console.error(error);showToast('Could not delete record.','error');return;}
+    trEl.remove();
+    govtFeesData=govtFeesData.filter(r=>r.id!==id);
+    updateGovtGrandTotal();
+    showToast('Government fee record deleted.');
+  });
+}
+async function saveAllGovtFees(){
+  const newRows=[...document.querySelectorAll('#govtFeesBody tr:not([data-gf-id])')];
+  if(!newRows.length){showToast('No new rows to save.');return;}
+  const inserts=newRows.map(row=>{
+    const dateVal=row.querySelector('input[type="date"]')?.value||govtFeesToday();
+    const feeType=row.querySelector('.gf-type')?.value||'Marine Fee';
+    const rate=Number(row.querySelector('.gf-rate')?.value||0);
+    const divers=Number(row.querySelector('.gf-divers')?.value||0);
+    const total=rate*divers;
+    return {dive_center_id:diveCenterId,date:dateVal,fee_type:feeType,rate,divers,total};
+  });
+  const {data,error}=await client.from('govt_fees').insert(inserts).select();
+  if(error){console.error(error);showToast('Could not save government fees.','error');return;}
+  showToast('Government fees saved.','success');
+  await loadGovtFees();
+  renderOverview();
+}
+function confirmModal(message,onConfirm){
+  let overlay=document.getElementById('govtConfirmOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='govtConfirmOverlay';
+    overlay.className='modal-overlay';
+    overlay.innerHTML=`<div class="modal" style="max-width:420px"><div class="modal-head"><div class="modal-title">Confirm</div></div><div class="modal-body"><p id="govtConfirmMsg" style="font-size:.9rem;color:var(--gray-700)"></p></div><div class="modal-actions"><button class="btn btn-ghost" id="govtConfirmCancel">Cancel</button><button class="btn btn-red" id="govtConfirmOk">Delete</button></div></div>`;
+    document.body.appendChild(overlay);
+  }
+  document.getElementById('govtConfirmMsg').textContent=message;
+  overlay.classList.add('show');
+  const ok=document.getElementById('govtConfirmOk');
+  const cancel=document.getElementById('govtConfirmCancel');
+  const close=()=>overlay.classList.remove('show');
+  const newOk=ok.cloneNode(true);ok.parentNode.replaceChild(newOk,ok);
+  const newCancel=cancel.cloneNode(true);cancel.parentNode.replaceChild(newCancel,cancel);
+  document.getElementById('govtConfirmOk').addEventListener('click',()=>{close();onConfirm();});
+  document.getElementById('govtConfirmCancel').addEventListener('click',close);
+}
+// ── END GOVERNMENT FEES ──────────────────────────────────────────────────────
+
+
+function activityDateKey(a){return String(a.date||a.created_at||'').slice(0,10)||'Undated';}
+function uniqueDiverKey(a,i){return a.diver_id||a.diver_name||a.visit_id||`row-${i}`;}
+function splitDiveSites(site){const parts=String(site||'Unnamed').split(',').map(x=>x.trim()).filter(Boolean);return parts.length?parts:['Unnamed'];}
+function buildActualActivitySummary(activityList){
+  const completed=activityList.filter(isCompleted);
+  const siteMap={},staffMap={},guides={},courseCats={},courseTitles={};
+  const funGroups={},courseGroups={};
+  completed.forEach((a,i)=>{
+    const staffName=staffNameFromActivity(a)||'Unassigned';
+    const date=activityDateKey(a);
+    const diverKey=uniqueDiverKey(a,i);
+    if(isCourseActivity(a)){
+      const title=courseTitleFromActivity(a);
+      const key=[staffName,date,title].join('|');
+      if(!courseGroups[key])courseGroups[key]={staffName,date,title,divers:new Set(),rows:[]};
+      courseGroups[key].divers.add(diverKey);courseGroups[key].rows.push(a);
+    }else{
+      const label=a.dive_site||a.activity_name||a.activity||'Unnamed';
+      const key=[staffName,date,a.schedule_id||a.schedule||'manual',label].join('|');
+      if(!funGroups[key])funGroups[key]={staffName,date,label,divers:new Set(),rows:[]};
+      funGroups[key].divers.add(diverKey);funGroups[key].rows.push(a);
+    }
+  });
+  Object.values(funGroups).forEach(g=>{
+    const diverCount=Math.max(1,g.divers.size);
+    const rowBased=Math.max(1,Math.round(g.rows.length/diverCount));
+    const entries=splitDiveSites(g.label);
+    const entryBased=Math.max(1,entries.length);
+    const actualDives=Math.max(rowBased,entryBased);
+    if(!guides[g.staffName])guides[g.staffName]={completed:0,sites:{}};
+    guides[g.staffName].completed+=actualDives;
+    staffMap[g.staffName]=(staffMap[g.staffName]||0)+actualDives;
+    if(entries.length>1){
+      entries.forEach(site=>{siteMap[site]=(siteMap[site]||0)+1;guides[g.staffName].sites[site]=(guides[g.staffName].sites[site]||0)+1;});
+    }else{
+      const site=entries[0]||g.label||'Unnamed';
+      siteMap[site]=(siteMap[site]||0)+actualDives;
+      guides[g.staffName].sites[site]=(guides[g.staffName].sites[site]||0)+actualDives;
+    }
+  });
+  Object.values(courseGroups).forEach(g=>{
+    const numberOfDivers=Math.max(1,g.divers.size);
+    const cat=normalizeCourseName(g.title);
+    if(!courseCats[g.staffName])courseCats[g.staffName]={'Open Water':0,'Advanced Open Water':0,'React Right':0,'Stress & Rescue':0,'Divemaster':0,'Other':0};
+    if(!courseTitles[g.staffName])courseTitles[g.staffName]={};
+    courseCats[g.staffName][cat]=(courseCats[g.staffName][cat]||0)+numberOfDivers;
+    courseTitles[g.staffName][g.title]=(courseTitles[g.staffName][g.title]||0)+numberOfDivers;
+    staffMap[g.staffName]=(staffMap[g.staffName]||0)+numberOfDivers;
+  });
+  return {
+    topSites:Object.entries(siteMap).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count})),
+    topStaff:(()=>{const entry=Object.entries(staffMap).sort((a,b)=>b[1]-a[1])[0];return entry?{name:entry[0],count:entry[1]}:null;})(),
+    guideSummary:guides,
+    courseSummary:courseCats,
+    courseTitleSummary:courseTitles,
+    completedDives:Object.values(guides).reduce((sum,v)=>sum+Number(v.completed||0),0)
+  };
+}
+function buildSummaries(){
+  const rangeActivities=activities.filter(a=>inRange(a.date||a.created_at));
+  const monthly=buildActualActivitySummary(rangeActivities);
+  topSites=monthly.topSites;
+  topStaff=monthly.topStaff;
+  guideSummary=monthly.guideSummary;
+  courseSummary=monthly.courseSummary;
+  courseTitleSummary=monthly.courseTitleSummary;
+  openBills=[];closedBills=[];
+  visits.forEach(v=>{
+    const acts=activities.filter(a=>a.visit_id===v.id);const pays=payments.filter(p=>p.visit_id===v.id);const total=acts.filter(a=>normalizeStatus(a.status).toLowerCase()!=='cancelled').reduce((s,a)=>s+activityTotal(a),0);const paid=pays.reduce((s,p)=>s+Number(p.total_paid||p.amount||p.cash_amount||0)+Number(p.card_amount||0)+Number(p.online_amount||0),0);const diver=divers.find(d=>d.id===v.diver_id);const rec={visit:v,diver,total,paid,balance:Math.max(0,total-paid),lastActivity:acts.map(a=>a.date||a.created_at).sort().pop()};
+    if(v.is_paid||v.visit_status==='closed')closedBills.push(rec);else if(v.is_active!==false)openBills.push(rec);
+  });
+}
+function renderAll(){renderOverview();renderStaff();renderJoinRide();renderRentalGears();renderExpenses();}
+function renderOverview(){
+  const marineTaxTotal=govtFeesData.filter(r=>r.fee_type==='Marine Fee'||r.fee_type==='Other Fee').reduce((s,r)=>s+Number(r.total||0),0);
+  const sharkFeeTotal=govtFeesData.filter(r=>r.fee_type==='Shark Fee').reduce((s,r)=>s+Number(r.total||0),0);
+  const govtFeesTotal=marineTaxTotal+sharkFeeTotal;
+  const paidRange=payments.filter(p=>inRange(p.paid_at||p.created_at));
+  const collected=paidRange.reduce((s,p)=>s+Number(p.total_paid||p.amount||0)+Number(p.cash_amount||0)+Number(p.card_amount||0)+Number(p.online_amount||0),0);
+  const openBalance=openBills.reduce((s,b)=>s+b.balance,0);
+  const completedDives=activities.filter(a=>inRange(a.date||a.created_at)&&isCompleted(a)).length;
+  // Money already settled within the selected date range (period figures)
+  const rentalIncomeRange=rentalGearRecords.filter(r=>r.status==='Collected'&&inRange(r.date)).reduce((s,r)=>s+Number(r.total_amount||0),0);
+  const rentalExpenseRange=rentalGearRecords.filter(r=>r.status==='Paid'&&inRange(r.date)).reduce((s,r)=>s+Number(r.total_amount||0),0);
+  const jrIncomeRange=joinRideRecords.filter(r=>r.direction==='joined_our_boat'&&r.status==='Collected'&&inRange(r.date)).reduce((s,r)=>s+Number(r.total_amount||0),0);
+  const jrExpenseRange=joinRideRecords.filter(r=>r.direction==='we_joined_another_boat'&&r.status==='Paid'&&inRange(r.date)).reduce((s,r)=>s+Number(r.total_amount||0),0);
+  const commPaid=staffCommissionRecords.filter(r=>r.status==='Paid').reduce((s,r)=>s+Number(r.commission_amount||0),0);
+  const commUnpaid=staffCommissionRecords.filter(r=>r.status!=='Paid').reduce((s,r)=>s+Number(r.commission_amount||0),0);
+  const expenseTotal=expensesData.reduce((s,r)=>s+Number(r.amount||0),0);
+  // Not-yet-settled: current outstanding balances, regardless of the selected date range
+  const jrToCollect=joinRideRecords.filter(r=>r.direction==='joined_our_boat'&&r.status!=='Collected').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0);
+  const jrToPay=joinRideRecords.filter(r=>r.direction==='we_joined_another_boat'&&r.status!=='Paid').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0);
+  const rentalToCollect=rentalGearRecords.filter(r=>r.status==='To Collect').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0);
+  const rentalToPay=rentalGearRecords.filter(r=>r.status==='To Pay').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0);
+  const diversServed=new Set(activities.filter(a=>inRange(a.date||a.created_at)&&isCompleted(a)&&a.diver_id).map(a=>a.diver_id)).size;
+
+  const moneyIn=collected+rentalIncomeRange+jrIncomeRange;
+  const moneyOut=govtFeesTotal+expenseTotal+rentalExpenseRange+jrExpenseRange+commPaid;
+  const netProfit=moneyIn-moneyOut;
+  const notYetSettled=openBalance+rentalToCollect+rentalToPay+jrToCollect+jrToPay+commUnpaid;
+
+  const fromVal=document.getElementById('dateFrom')?.value||'';
+  const toVal=document.getElementById('dateTo')?.value||'';
+  document.getElementById('storyTitle').textContent=`${diveCenterName} — ${fmtDate(fromVal)} to ${fmtDate(toVal)}`;
+  document.getElementById('storyText').innerHTML=`You served <span class="story-highlight">${diversServed}</span> diver${diversServed!==1?'s':''} across <span class="story-highlight">${completedDives}</span> completed dive${completedDives!==1?'s':''}, and made <span class="story-highlight">${money(netProfit)}</span> net profit this period.`;
+  document.getElementById('summaryRangeLabel').textContent=`${fmtDate(fromVal)} – ${fmtDate(toVal)}`;
+
+  document.getElementById('sumMoneyIn').textContent=money(moneyIn);
+  document.getElementById('sumCollected').textContent=money(collected);
+  document.getElementById('sumRentalIncome').textContent=money(rentalIncomeRange);
+  document.getElementById('sumJoinIncome').textContent=money(jrIncomeRange);
+
+  document.getElementById('sumMoneyOut').textContent=money(moneyOut);
+  document.getElementById('sumGovtFees').textContent=money(govtFeesTotal);
+  document.getElementById('sumExpenses').textContent=money(expenseTotal);
+  document.getElementById('sumRentalExpense').textContent=money(rentalExpenseRange);
+  document.getElementById('sumJoinExpense').textContent=money(jrExpenseRange);
+  document.getElementById('sumCommissions').textContent=money(commPaid);
+
+  const netRow=document.getElementById('summaryNetRow');
+  document.getElementById('sumNetProfit').textContent=money(netProfit);
+  netRow.classList.toggle('negative',netProfit<0);
+
+  document.getElementById('sumOpenBills').textContent=money(openBalance);
+  document.getElementById('sumRentalToCollect').textContent=money(rentalToCollect);
+  document.getElementById('sumRentalToPay').textContent=money(rentalToPay);
+  document.getElementById('sumJoinToCollect').textContent=money(jrToCollect);
+  document.getElementById('sumJoinToPay').textContent=money(jrToPay);
+  document.getElementById('sumUnpaidCommissions').textContent=money(commUnpaid);
+
+  renderBars('siteBars',topSites.slice(0,8));
+  renderExpenseCategoryBars('overviewExpenseBars');
+  const pending=notYetSettled;const total=Math.max(1,collected+openBalance+pending);const a=(collected/total)*360;const b=((collected+openBalance)/total)*360;const donut=document.getElementById('moneyDonut');donut.style.setProperty('--donut-a',a+'deg');donut.style.setProperty('--donut-b',b+'deg');document.getElementById('donutTotal').textContent=money(collected+openBalance+pending);
+}
+function renderBars(id,items){const max=Math.max(1,...items.map(x=>x.count));document.getElementById(id).innerHTML=items.length?items.map(x=>`<div class="bar-row"><div class="bar-name">${esc(x.name)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(4,(x.count/max)*100)}%"></div></div><div class="bar-val">${x.count}</div></div>`).join(''):'<div class="empty">No completed data yet for this month.</div>';}
+
+
+function nonGenericTitle(value){
+  const raw=String(value||'').trim();
+  if(!raw)return '';
+  const cleaned=lowerClean(raw);
+  const generic=['course','dive course','diving course','training','activity','course activity','dive training','other','unnamed','no site','select course','select activity'];
+  if(generic.includes(cleaned))return '';
+  return raw;
+}
+function activityVisit(a){return visits.find(v=>v.id===a.visit_id)||null;}
+
+function courseRateNameFor(id){
+  if(!id)return '';
+  const rate=courseRates.find(r=>String(r.id)===String(id));
+  return nonGenericTitle(rate?.course_name);
+}
+function courseTitleFromActivity(a){
+  const v=activityVisit(a);
+  const mappedCourse=courseRateNameFor(a.course_id||v?.course_id);
+  const candidates=[a.course_name,mappedCourse,a.course_title,a.course,a.activity,a.activity_name,a.dive_site,v?.course_name,v?.course_title,v?.course].map(nonGenericTitle).filter(Boolean);
+  if(candidates.length)return candidates[0];
+  const fallback=normalizeCourseName(a.dive_site||a.activity_name||a.activity||'');
+  return fallback==='Other'?'Course':fallback;
+}
+function isCourseActivity(a){
+  const v=activityVisit(a);
+  const exp=String(v?.experience_type||a.experience_type||'').toLowerCase();
+  const type=String(a.activity_type||a.type||'').toLowerCase();
+  if(exp.includes('course')||type.includes('course')||nonGenericTitle(a.course_name)||courseRateNameFor(a.course_id||v?.course_id))return true;
+  return ['Open Water','Advanced Open Water','React Right','Stress & Rescue','Divemaster'].includes(normalizeCourseName(a.course_name||a.course_title||a.course||a.activity||a.activity_name||a.dive_site));
+}
+function activitiesInStaffPeriod(){return activities.filter(a=>{const d=String(a.date||a.created_at||'').slice(0,10);return d>=monthStart()&&d<=monthEnd()&&isCompleted(a);});}
+function staffNamesForDetail(type){
+  const names=activitiesInStaffPeriod().filter(a=>type==='instructor'?isCourseActivity(a):!isCourseActivity(a)).map(a=>staffNameFromActivity(a)||'Unassigned');
+  return [...new Set(names)].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+}
+function renderStaffDetailControls(skipBody=false){
+  const typeEl=document.getElementById('staffDetailType'),nameEl=document.getElementById('staffDetailName');
+  if(!typeEl||!nameEl)return;
+  const type=typeEl.value||'guide';
+  const current=nameEl.value;
+  const names=staffNamesForDetail(type);
+  nameEl.innerHTML=names.length?names.map(n=>`<option value="${escAttr(n)}">${esc(n)}</option>`).join(''):'<option value="">No staff activity</option>';
+  if(names.includes(current))nameEl.value=current;
+  else if(names.length)nameEl.value=names[0];
+  if(!skipBody)renderSelectedStaffDetails();
+  else renderSelectedStaffDetails();
+}
+function renderSelectedStaffDetails(){
+  const body=document.getElementById('staffDetailBody'),typeEl=document.getElementById('staffDetailType'),nameEl=document.getElementById('staffDetailName');
+  if(!body||!typeEl||!nameEl)return;
+  const type=typeEl.value||'guide';
+  const name=nameEl.value;
+  if(!name){body.innerHTML='<div class="empty">No staff activity found for this period.</div>';return;}
+  const rows=activitiesInStaffPeriod().filter(a=>(type==='instructor'?isCourseActivity(a):!isCourseActivity(a))&&(staffNameFromActivity(a)||'Unassigned')===name).sort((a,b)=>String(a.date||a.created_at||'').localeCompare(String(b.date||b.created_at||'')));
+  if(!rows.length){body.innerHTML='<div class="empty">No records found for this staff member in the selected period.</div>';return;}
+  if(type==='instructor'){
+    const grouped={};
+    rows.forEach((a,i)=>{
+      const date=activityDateKey(a);
+      const course=courseTitleFromActivity(a);
+      const key=[date,course].join('|');
+      if(!grouped[key])grouped[key]={date,course,divers:new Set()};
+      grouped[key].divers.add(uniqueDiverKey(a,i));
+    });
+    const courseRows=Object.values(grouped).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.course).localeCompare(String(b.course)));
+    body.innerHTML=`<div class="table-wrap"><table style="min-width:620px"><thead><tr><th>Date</th><th class="num">Number of Divers</th><th>Course Conducted</th></tr></thead><tbody>${courseRows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="num strong">${r.divers.size||0}</td><td>${esc(r.course)}</td></tr>`).join('')}</tbody></table></div>`;
+    return;
+  }
+  const dateGroups={};
+  rows.forEach((a,i)=>{
+    const date=activityDateKey(a);
+    if(!dateGroups[date])dateGroups[date]={date,divers:new Set(),groups:{}};
+    dateGroups[date].divers.add(uniqueDiverKey(a,i));
+    const label=a.dive_site||a.activity_name||a.activity||'Unnamed';
+    const key=[a.schedule_id||a.schedule||'manual',label].join('|');
+    if(!dateGroups[date].groups[key])dateGroups[date].groups[key]={label,divers:new Set(),rows:[]};
+    dateGroups[date].groups[key].divers.add(uniqueDiverKey(a,i));
+    dateGroups[date].groups[key].rows.push(a);
+  });
+  const guideRows=Object.values(dateGroups).map(g=>{
+    let dives=0;
+    Object.values(g.groups).forEach(group=>{
+      const diverCount=Math.max(1,group.divers.size);
+      const rowBased=Math.max(1,Math.round(group.rows.length/diverCount));
+      const entryBased=Math.max(1,splitDiveSites(group.label).length);
+      dives+=Math.max(rowBased,entryBased);
+    });
+    return {date:g.date,dives,divers:g.divers.size};
+  }).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  body.innerHTML=`<div class="table-wrap"><table style="min-width:520px"><thead><tr><th>Date</th><th class="num">Number of Dives</th><th class="num">Number of Divers</th></tr></thead><tbody>${guideRows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="num strong">${r.dives}</td><td class="num">${r.divers}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderStaff(){
+  renderStaffDetailControls(true);
+  renderCommissionRows();
+}
+function findCommission(group,staffName,title,quantity){const exact=staffCommissionRecords.find(r=>r.commission_group===group&&r.staff_name===staffName&&r.title===title);if(exact)return {...exact,quantity};const legacyTitle=normalizeCourseName(title);const legacy=staffCommissionRecords.find(r=>r.commission_group===group&&r.staff_name===staffName&&r.title===legacyTitle);if(legacy)return {...legacy,title,quantity};return {staff_name:staffName,title,commission_group:group,quantity,rate:0,commission_amount:0,status:'Unpaid'};}
+function renderCommissionRows(){
+  let educator=[];
+  Object.entries(courseTitleSummary).forEach(([name,v])=>Object.entries(v).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([title,count])=>{if(count>0)educator.push(findCommission('dive_educator',name,title,count));}));
+  document.getElementById('educatorRows').innerHTML=educator.length?educator.map(r=>commissionRowHTML(r,'dive_educator')).join(''):'<tr><td colspan="7"><div class="empty">No course counts to calculate yet.</div></td></tr>';
+  const leaders=Object.entries(guideSummary).filter(([n,v])=>v.completed>0).map(([name,v])=>findCommission('dive_leader',name,'Completed Dives',v.completed));
+  document.getElementById('leaderRows').innerHTML=leaders.length?leaders.map(r=>commissionRowHTML(r,'dive_leader')).join(''):'<tr><td colspan="6"><div class="empty">No completed fun dives to calculate yet.</div></td></tr>';
+}
+function commissionRowHTML(r,group){const qty=Number(r.quantity||0);const rate=Number(r.rate||0);const amount=qty*rate;const key=`${group}|${r.staff_name}|${r.title}`;const action=r.status==='Paid'?`<span class="muted">Paid</span>`:`<button class="btn btn-sm btn-teal" onclick="saveCommission('${escAttr(key)}')">Save Rate</button> <button class="btn btn-sm btn-green" onclick="markCommissionPaid('${escAttr(key)}')">Mark as Paid</button>`;return `<tr><td class="strong">${esc(r.staff_name)}</td>${group==='dive_educator'?`<td>${esc(r.title)}</td>`:''}<td class="num">${qty}</td><td class="num"><input class="input inline-input" type="number" min="0" id="rate-${hashKey(key)}" value="${rate}" oninput="updateCommissionCalc('${escAttr(key)}')"></td><td class="num strong" id="amount-${hashKey(key)}">${money(amount)}</td><td>${statusPill(r.status||'Unpaid')}</td><td>${action}</td></tr>`;}
+function escAttr(v){return String(v).replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+function hashKey(k){let h=0;for(let i=0;i<k.length;i++)h=(h*31+k.charCodeAt(i))>>>0;return h;}
+function parseCommissionKey(key){const [group,staffName,title]=key.split('|');const quantity=group==='dive_leader'?(guideSummary[staffName]?.completed||0):(courseTitleSummary[staffName]?.[title]||courseSummary[staffName]?.[title]||0);return {group,staffName,title,quantity};}
+function updateCommissionCalc(key){const {quantity}=parseCommissionKey(key);const rate=Number(document.getElementById('rate-'+hashKey(key))?.value||0);document.getElementById('amount-'+hashKey(key)).textContent=money(quantity*rate);}
+async function saveCommission(key,markPaid=false){const {group,staffName,title,quantity}=parseCommissionKey(key);const rate=Number(document.getElementById('rate-'+hashKey(key))?.value||0);const amount=quantity*rate;const existing=staffCommissionRecords.find(r=>r.commission_group===group&&r.staff_name===staffName&&r.title===title);const payload={dive_center_id:diveCenterId,period_month:ym(),staff_name:staffName,commission_group:group,title,quantity,rate,commission_amount:amount,status:markPaid?'Paid':(existing?.status||'Unpaid'),paid_at:markPaid?nowIso():(existing?.paid_at||null),remarks:existing?.remarks||null,updated_at:nowIso()};let res;if(existing?.id)res=await client.from('staff_commission_records').update(payload).eq('id',existing.id);else res=await client.from('staff_commission_records').insert(payload);if(res.error){console.error('saveCommission error:',res.error.message,res.error.code,res.error.hint);showToast('Could not save commission record.','error');return;}showToast(markPaid?'Commission marked as paid.':'Commission rate saved.','success');await loadAll();}
+function markCommissionPaid(key){saveCommission(key,true);}
+
+function renderJoinRide(){
+  const records=joinRideRecords.filter(r=>r.direction===joinDirection&&inRange(r.date));const collect=joinRideRecords.filter(r=>r.direction==='joined_our_boat');const pay=joinRideRecords.filter(r=>r.direction==='we_joined_another_boat');
+  const cards=[['To Collect',money(collect.filter(r=>r.status!=='Collected').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0)),'Uncollected join rides','orange'],['Collected',money(collect.filter(r=>r.status==='Collected').reduce((s,r)=>s+Number(r.total_amount||0),0)),'Money in','green'],['To Pay',money(pay.filter(r=>r.status!=='Paid').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0)),'Expected/outstanding','purple'],['Paid',money(pay.filter(r=>r.status==='Paid').reduce((s,r)=>s+Number(r.total_amount||0),0)),'Money out','green'],['Joiner Dives',joinRideRecords.reduce((s,r)=>s+(Number(r.number_of_divers||0)*Number(r.number_of_dives||0)),0),'Divers × dives','blue']];
+  document.getElementById('joinCards').innerHTML=cards.map(c=>`<div class="metric-card ${c[3]}"><div class="metric-label">${esc(c[0])}</div><div class="metric-value">${esc(c[1])}</div><div class="metric-note">${esc(c[2])}</div></div>`).join('');
+  document.getElementById('joinTableTitle').textContent=joinDirection==='joined_our_boat'?'They Joined Our Boat':'We Joined Another Boat';document.getElementById('joinTableSub').textContent=joinDirection==='joined_our_boat'?'Money to collect from partner companies.':'Money to pay when partner companies send paperwork.';document.getElementById('statementBtn').style.display=joinDirection==='joined_our_boat'?'inline-flex':'none';
+  document.getElementById('joinRows').innerHTML=records.length?records.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="strong">${esc(r.company)}</td><td class="num">${Number(r.number_of_divers||0)}</td><td class="num">${Number(r.number_of_dives||0)}</td><td>${esc(r.dive_sites||'—')}</td><td class="num strong">${money(r.total_amount)}</td><td>${statusPill(r.status)}</td><td class="num">${money(r.balance)}</td><td>${esc(r.remarks||'')}</td><td>${joinActions(r)}</td></tr>`).join(''):'<tr><td colspan="10"><div class="empty">No join ride records for the selected date range.</div></td></tr>';
+}
+function joinActions(r){let buttons=`<button class="btn btn-sm btn-ghost" onclick="editJoinRecord('${r.id}')">Edit</button>`;if(r.direction==='joined_our_boat'&&r.status!=='Collected')buttons+=` <button class="btn btn-sm btn-green" onclick="updateJoinStatus('${r.id}','Collected')">Mark Collected</button>`;if(r.direction==='we_joined_another_boat'&&r.status==='Expected To Pay')buttons+=` <button class="btn btn-sm btn-soft" onclick="updateJoinStatus('${r.id}','Statement Received')">Statement Received</button>`;if(r.direction==='we_joined_another_boat'&&r.status!=='Paid')buttons+=` <button class="btn btn-sm btn-green" onclick="updateJoinStatus('${r.id}','Paid')">Mark Paid</button>`;return buttons;}
+function fillJoinStatusOptions(){const sel=document.getElementById('joinStatus');const opts=joinDirection==='joined_our_boat'?['To Collect','Statement Printed','Collected']:['Expected To Pay','Statement Received','Paid'];sel.innerHTML=opts.map(o=>`<option>${o}</option>`).join('');}
+function openJoinRecordModal(){editingJoinId=null;fillJoinStatusOptions();document.getElementById('joinModalTitle').textContent='Add Join Ride Record';document.getElementById('joinDate').value=govtFeesToday();document.getElementById('joinCompany').value='';document.getElementById('joinDivers').value=0;document.getElementById('joinDives').value=0;document.getElementById('joinSites').value='';document.getElementById('joinRemarks').value='';document.getElementById('joinStatus').value=joinDirection==='joined_our_boat'?'To Collect':'Expected To Pay';updateJoinEstimate();openModal('joinRecordModal');}
+function editJoinRecord(id){const r=joinRideRecords.find(x=>x.id===id);if(!r)return;editingJoinId=id;joinDirection=r.direction;fillJoinStatusOptions();document.getElementById('joinModalTitle').textContent='Edit Join Ride Record';document.getElementById('joinDate').value=r.date||monthStart();document.getElementById('joinCompany').value=r.company||'';document.getElementById('joinDivers').value=r.number_of_divers||0;document.getElementById('joinDives').value=r.number_of_dives||0;document.getElementById('joinSites').value=r.dive_sites||'';document.getElementById('joinRemarks').value=r.remarks||'';document.getElementById('joinStatus').value=r.status||'To Collect';updateJoinEstimate();openModal('joinRecordModal');}
+function updateJoinEstimate(){const total=Number(document.getElementById('joinDivers').value||0)*Number(document.getElementById('joinDives').value||0)*JOIN_RATE;document.getElementById('joinTotal').value=money(total);}
+async function saveJoinRecord(){const diversN=Number(document.getElementById('joinDivers').value||0),divesN=Number(document.getElementById('joinDives').value||0),total=diversN*divesN*JOIN_RATE,status=document.getElementById('joinStatus').value;const payload={dive_center_id:diveCenterId,direction:joinDirection,date:document.getElementById('joinDate').value,company:document.getElementById('joinCompany').value.trim(),number_of_divers:diversN,number_of_dives:divesN,dive_sites:document.getElementById('joinSites').value.trim(),total_amount:total,status,balance:(status==='Collected'||status==='Paid')?0:total,remarks:document.getElementById('joinRemarks').value.trim(),updated_at:nowIso()};if(!payload.date||!payload.company){showToast('Date and company are required.','error');return;}let res;if(editingJoinId)res=await client.from('join_ride_records').update(payload).eq('id',editingJoinId);else res=await client.from('join_ride_records').insert(payload);if(res.error){console.error(res.error);showToast('Could not save join ride record.','error');return;}closeModal('joinRecordModal');showToast('Join ride record saved.','success');await loadAll();}
+async function updateJoinStatus(id,status){const r=joinRideRecords.find(x=>x.id===id);if(!r)return;const balance=(status==='Collected'||status==='Paid')?0:Number(r.total_amount||0);const {error}=await client.from('join_ride_records').update({status,balance,updated_at:nowIso()}).eq('id',id);if(error){console.error(error);showToast('Could not update status.','error');return;}showToast('Status updated.','success');await loadAll();}
+
+function openStatementModal(){const companies=[...new Set(joinRideRecords.filter(r=>r.direction==='joined_our_boat'&&r.status!=='Collected').map(r=>r.company).filter(Boolean))].sort();document.getElementById('stmtCompany').innerHTML=companies.length?companies.map(c=>`<option>${esc(c)}</option>`).join(''):'<option value="">No company</option>';document.getElementById('stmtFrom').value=monthStart();document.getElementById('stmtTo').value=monthEnd();document.getElementById('stmtStatus').value='To Collect';previewStatement();openModal('statementModal');}
+function getStatementRecords(){const company=document.getElementById('stmtCompany').value,from=document.getElementById('stmtFrom').value,to=document.getElementById('stmtTo').value,status=document.getElementById('stmtStatus').value;return joinRideRecords.filter(r=>r.direction==='joined_our_boat'&&r.company===company&&r.date>=from&&r.date<=to&&r.status===status);}
+function previewStatement(){const rows=getStatementRecords();statementRecordIds=rows.map(r=>r.id);const total=rows.reduce((s,r)=>s+Number(r.total_amount||0),0);document.getElementById('statementPreview').innerHTML=rows.length?statementHTML(rows,total,false):'<div class="empty">No matching records for this company, date range, and status.</div>';}
+function statementHTML(rows,total,printMode=true){const company=document.getElementById('stmtCompany')?.value||rows[0]?.company||'';const from=document.getElementById('stmtFrom')?.value||monthStart();const to=document.getElementById('stmtTo')?.value||monthEnd();const lineRows=rows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td>${esc(r.dive_sites||'—')}</td><td class="num">${r.number_of_divers}</td><td class="num">${r.number_of_dives}</td><td class="num">${money(JOIN_RATE)}</td><td class="num strong">${money(r.total_amount)}</td></tr>`).join('');const copy=(label)=>`<div class="statement-paper"><div class="statement-copy-label">${label}</div><div class="statement-title">Join Ride Collection Statement</div><div class="muted" style="margin:.25rem 0 1rem">From: <strong>${esc(diveCenterName)}</strong> &nbsp; To: <strong>${esc(company)}</strong><br>Date Range: ${fmtDate(from)} – ${fmtDate(to)} &nbsp; Statement Date: ${fmtDate(new Date().toISOString())}</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Dive Site(s)</th><th>Divers</th><th>Dives</th><th>Rate</th><th class="num">Amount</th></tr></thead><tbody>${lineRows}</tbody></table></div><div style="display:flex;justify-content:flex-end;margin-top:1rem"><div style="min-width:260px;background:var(--teal-light);padding:.9rem;border-radius:12px"><div class="muted">Total to Collect</div><div class="metric-value" style="margin:0">${money(total)}</div></div></div><div class="signature-grid"><div class="sig-line">Prepared by</div><div class="sig-line">Received by</div><div class="sig-line">Date Received</div><div class="sig-line">Signature</div></div><div class="sig-line" style="margin-top:1rem">Remarks</div></div>`;return copy('Dive Center Copy')+copy('Company Copy');}
+async function generateStatement(){const rows=getStatementRecords();if(!rows.length){showToast('No records to include in this statement.','error');return;}const total=rows.reduce((s,r)=>s+Number(r.total_amount||0),0);const company=document.getElementById('stmtCompany').value,from=document.getElementById('stmtFrom').value,to=document.getElementById('stmtTo').value;const {data,error}=await client.from('join_ride_statements').insert({dive_center_id:diveCenterId,company,date_from:from,date_to:to,total_amount:total,status:'Statement Printed',prepared_by:currentUserData?.full_name||'',printed_at:nowIso(),created_at:nowIso(),updated_at:nowIso()}).select().single();if(error){console.error(error);showToast('Could not create statement.','error');return;}const ids=rows.map(r=>r.id);const upd=await client.from('join_ride_records').update({status:'Statement Printed',statement_id:data.id,balance:total>0?undefined:undefined,updated_at:nowIso()}).in('id',ids);if(upd.error){console.error(upd.error);}const html=statementHTML(rows,total,true);printStatement(html);closeModal('statementModal');showToast('Statement generated and marked as printed.','success');await loadAll();}
+function printStatement(html){const w=window.open('','_blank');if(!w){showToast('Pop-up blocked. Please allow pop-ups to print.','error');return;}w.document.write(`<!DOCTYPE html><html><head><title>Join Ride Statement</title><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"><style>${document.querySelector('style').innerHTML}</style></head><body style="display:block;background:white;padding:20px"><div class="statement-preview">${html}</div><script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script></body></html>`);w.document.close();}
+
+function renderRentalGears(){const income=rentalGearRecords.filter(r=>r.status==='Collected').reduce((s,r)=>s+Number(r.total_amount||0),0),expense=rentalGearRecords.filter(r=>r.status==='Paid').reduce((s,r)=>s+Number(r.total_amount||0),0),toCollect=rentalGearRecords.filter(r=>r.status==='To Collect').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0),toPay=rentalGearRecords.filter(r=>r.status==='To Pay').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0),net=income+toCollect-expense-toPay;const cards=[['Rental Income',money(income),'Collected','green'],['Rental Expense',money(expense),'Paid out','orange'],['Still To Collect',money(toCollect),'Money in pending','orange'],['Still To Pay',money(toPay),'Money out pending','purple'],['Net Rental Balance',money(net),'Income - expense','blue']];document.getElementById('rentalCards').innerHTML=cards.map(c=>`<div class="metric-card ${c[3]}"><div class="metric-label">${esc(c[0])}</div><div class="metric-value">${esc(c[1])}</div><div class="metric-note">${esc(c[2])}</div></div>`).join('');const rangeRentals=rentalGearRecords.filter(r=>inRange(r.date));document.getElementById('rentalRows').innerHTML=rangeRentals.length?rangeRentals.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="strong">${esc(r.equipment)}</td><td>${esc(r.company)}</td><td class="num">${r.quantity}</td><td class="num">${money(r.rate)}</td><td>${statusPill(r.status)}</td><td class="num strong">${money(r.balance)}</td><td>${esc(r.remarks||'')}</td><td>${rentalActions(r)}</td></tr>`).join(''):'<tr><td colspan="9"><div class="empty">No rental records for the selected date range.</div></td></tr>';}
+function rentalActions(r){let buttons=`<button class="btn btn-sm btn-ghost" onclick="editRental('${r.id}')">Edit</button>`;if(r.status==='To Collect')buttons+=` <button class="btn btn-sm btn-green" onclick="updateRentalStatus('${r.id}','Collected')">Mark Collected</button>`;if(r.status==='To Pay')buttons+=` <button class="btn btn-sm btn-green" onclick="updateRentalStatus('${r.id}','Paid')">Mark Paid</button>`;return buttons;}
+function openRentalModal(){editingRentalId=null;document.getElementById('rentalModalTitle').textContent='Add Rental Record';document.getElementById('rentalDate').value=govtFeesToday();document.getElementById('rentalEquipment').selectedIndex=0;document.getElementById('rentalCompany').value='';document.getElementById('rentalQty').value=0;document.getElementById('rentalRate').value=0;document.getElementById('rentalStatus').value='To Collect';document.getElementById('rentalRemarks').value='';updateRentalEstimate();openModal('rentalModal');}
+function editRental(id){const r=rentalGearRecords.find(x=>x.id===id);if(!r)return;editingRentalId=id;document.getElementById('rentalModalTitle').textContent='Edit Rental Record';document.getElementById('rentalDate').value=r.date||govtFeesToday();const eqSel=document.getElementById('rentalEquipment');const eqVal=r.equipment||'';const opt=[...eqSel.options].find(o=>o.value===eqVal);if(opt)eqSel.value=eqVal;else{eqSel.value='Other';}document.getElementById('rentalCompany').value=r.company||'';document.getElementById('rentalQty').value=r.quantity||0;document.getElementById('rentalRate').value=r.rate||0;document.getElementById('rentalStatus').value=r.status||'To Collect';document.getElementById('rentalRemarks').value=r.remarks||'';updateRentalEstimate();openModal('rentalModal');}
+function updateRentalEstimate(){const total=Number(document.getElementById('rentalQty').value||0)*Number(document.getElementById('rentalRate').value||0);document.getElementById('rentalTotal').value=money(total);}
+async function saveRentalRecord(){const quantity=Number(document.getElementById('rentalQty').value||0),rate=Number(document.getElementById('rentalRate').value||0),total=quantity*rate,status=document.getElementById('rentalStatus').value;const payload={dive_center_id:diveCenterId,date:document.getElementById('rentalDate').value,equipment:document.getElementById('rentalEquipment').value.trim(),company:document.getElementById('rentalCompany').value.trim(),quantity,rate,total_amount:total,status,balance:(status==='Collected'||status==='Paid')?0:total,remarks:document.getElementById('rentalRemarks').value.trim(),updated_at:nowIso()};if(!payload.date||!payload.equipment||!payload.company){showToast('Date, equipment, and company are required.','error');return;}let res;if(editingRentalId)res=await client.from('rental_gear_records').update(payload).eq('id',editingRentalId);else res=await client.from('rental_gear_records').insert(payload);if(res.error){console.error(res.error);showToast('Could not save rental record.','error');return;}closeModal('rentalModal');showToast('Rental record saved.','success');await loadAll();}
+async function updateRentalStatus(id,status){const r=rentalGearRecords.find(x=>x.id===id);if(!r)return;const balance=(status==='Collected'||status==='Paid')?0:Number(r.total_amount||0);const {error}=await client.from('rental_gear_records').update({status,balance,updated_at:nowIso()}).eq('id',id);if(error){console.error(error);showToast('Could not update rental status.','error');return;}showToast('Rental status updated.','success');await loadAll();}
+
+// ── EXPENSES ──────────────────────────────────────────────────────────────────
+function expenseGroupLabel(r){
+  const cat=r.category||'Uncategorized';
+  if(cat==='Other'){const custom=(r.custom_category||'').trim();return custom?`Other – ${custom}`:'Other (unspecified)';}
+  return cat;
+}
+function renderMoneyBars(id,items){
+  const max=Math.max(1,...items.map(x=>x.amount));
+  document.getElementById(id).innerHTML=items.length?items.map(x=>`<div class="bar-row"><div class="bar-name">${esc(x.name)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(4,(x.amount/max)*100)}%"></div></div><div class="bar-val">${money(x.amount)}</div></div>`).join(''):'<div class="empty">No expenses recorded for this period.</div>';
+}
+function expenseCategoryTotals(){
+  const map={};
+  expensesData.forEach(r=>{const label=expenseGroupLabel(r);map[label]=(map[label]||0)+Number(r.amount||0);});
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([name,amount])=>({name,amount}));
+}
+function renderExpenseCategoryBars(id){renderMoneyBars(id,expenseCategoryTotals());}
+function renderExpenses(){
+  const total=expensesData.reduce((s,r)=>s+Number(r.amount||0),0);
+  const uncategorized=expensesData.filter(r=>{const l=expenseGroupLabel(r);return l==='Uncategorized'||l==='Other (unspecified)';}).reduce((s,r)=>s+Number(r.amount||0),0);
+  const topCat=expenseCategoryTotals()[0];
+  const cards=[
+    ['Total Expenses',money(total),`${expensesData.length} entr${expensesData.length===1?'y':'ies'} this period`,'orange'],
+    ['Uncategorized',money(uncategorized),'Still counted, not yet labeled','purple'],
+    ['Top Category',topCat?money(topCat.amount):'₱0',topCat?topCat.name:'No expenses yet','blue'],
+    ['Entries Logged',expensesData.length,'For the selected range','green']
+  ];
+  document.getElementById('expenseCards').innerHTML=cards.map(c=>`<div class="metric-card ${c[3]}"><div class="metric-label">${esc(c[0])}</div><div class="metric-value">${esc(c[1])}</div><div class="metric-note">${esc(c[2])}</div></div>`).join('');
+  renderExpenseCategoryBars('expenseCategoryBars');
+  document.getElementById('expenseRows').innerHTML=expensesData.length?expensesData.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="strong">${esc(expenseGroupLabel(r))}</td><td class="num strong">${money(r.amount)}</td><td>${esc(r.paid_by||'—')}</td><td>${esc(r.notes||'')}</td><td>${expenseActions(r)}</td></tr>`).join(''):'<tr><td colspan="6"><div class="empty">No expenses recorded for the selected date range.</div></td></tr>';
+}
+function expenseActions(r){return `<button class="btn btn-sm btn-ghost" onclick="editExpense('${r.id}')">Edit</button> <button class="btn btn-sm btn-ghost" style="color:var(--red)" onclick="deleteExpense('${r.id}')">Delete</button>`;}
+function fillExpenseCategoryOptions(){document.getElementById('expenseCategory').innerHTML=EXPENSE_CATEGORIES.map(c=>`<option>${esc(c)}</option>`).join('');}
+function toggleExpenseCustomCategory(){const isOther=document.getElementById('expenseCategory').value==='Other';document.getElementById('expenseCustomCategoryField').style.display=isOther?'block':'none';}
+function openExpenseModal(){editingExpenseId=null;fillExpenseCategoryOptions();document.getElementById('expenseModalTitle').textContent='Add Expense';document.getElementById('expenseDate').value=govtFeesToday();document.getElementById('expenseCategory').value='Fuel';document.getElementById('expenseCustomCategory').value='';document.getElementById('expenseAmount').value=0;document.getElementById('expensePaidBy').value='';document.getElementById('expenseNotes').value='';toggleExpenseCustomCategory();openModal('expenseModal');}
+function editExpense(id){const r=expensesData.find(x=>x.id===id);if(!r)return;editingExpenseId=id;fillExpenseCategoryOptions();document.getElementById('expenseModalTitle').textContent='Edit Expense';document.getElementById('expenseDate').value=r.date||govtFeesToday();document.getElementById('expenseCategory').value=EXPENSE_CATEGORIES.includes(r.category)?r.category:'Uncategorized';document.getElementById('expenseCustomCategory').value=r.custom_category||'';document.getElementById('expenseAmount').value=r.amount||0;document.getElementById('expensePaidBy').value=r.paid_by||'';document.getElementById('expenseNotes').value=r.notes||'';toggleExpenseCustomCategory();openModal('expenseModal');}
+async function saveExpenseRecord(){
+  const date=document.getElementById('expenseDate').value;
+  const category=document.getElementById('expenseCategory').value;
+  const amount=Number(document.getElementById('expenseAmount').value||0);
+  if(!date){showToast('Date is required.','error');return;}
+  if(amount<=0){showToast('Amount must be greater than 0.','error');return;}
+  const payload={
+    dive_center_id:diveCenterId,
+    date,
+    category,
+    custom_category:category==='Other'?document.getElementById('expenseCustomCategory').value.trim():null,
+    amount,
+    paid_by:document.getElementById('expensePaidBy').value.trim(),
+    notes:document.getElementById('expenseNotes').value.trim(),
+    created_by:currentUser?.id||null
+  };
+  let res;
+  if(editingExpenseId)res=await client.from('expenses').update(payload).eq('id',editingExpenseId);
+  else res=await client.from('expenses').insert(payload);
+  if(res.error){console.error(res.error);showToast('Could not save expense.','error');return;}
+  closeModal('expenseModal');showToast('Expense saved.','success');await loadAll();
+}
+function deleteExpense(id){
+  confirmModal('Delete this expense? This cannot be undone.',async()=>{
+    const {error}=await client.from('expenses').delete().eq('id',id);
+    if(error){console.error(error);showToast('Could not delete expense.','error');return;}
+    showToast('Expense deleted.','success');await loadAll();
+  });
+}
+// ── END EXPENSES ──────────────────────────────────────────────────────────────
+
+
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.classList.remove('show'),3500);}
+
+// ── BILLING AUDIT ─────────────────────────────────────────────────────────────
+async function loadAudit(){
+  try{
+    const [vRes,ieRes,alRes]=await Promise.all([
+      client.from('visits').select('id,diver_id,invoice_count').eq('dive_center_id',diveCenterId).gt('invoice_count',0),
+      client.from('invoice_emails').select('id,visit_id,diver_id,sent_at,sent_by,invoice_snapshot').eq('dive_center_id',diveCenterId).order('sent_at',{ascending:false}),
+      client.from('audit_logs').select('id,performed_by,target_id,notes,created_at').eq('dive_center_id',diveCenterId).eq('action','bill_unlocked').order('created_at',{ascending:false})
+    ]);
+    if(vRes.error)console.warn('audit visits:',vRes.error);
+    if(ieRes.error)console.warn('audit invoice_emails:',ieRes.error);
+    if(alRes.error)console.warn('audit audit_logs:',alRes.error);
+    auditFlaggedVisits=(vRes.data||[]).filter(v=>Number(v.invoice_count||0)>1);
+    auditInvoices=ieRes.data||[];
+    auditUnlocks=alRes.data||[];
+    // fetch user full_names for sent_by and performed_by
+    const userIds=[...new Set([
+      ...auditInvoices.map(r=>r.sent_by),
+      ...auditUnlocks.map(r=>r.performed_by)
+    ].filter(Boolean))];
+    if(userIds.length){
+      const {data:uData}=await client.from('users').select('id,full_name').in('id',userIds);
+      if(uData){
+        const uMap=Object.fromEntries(uData.map(u=>[u.id,u.full_name||'Unknown']));
+        auditInvoices=auditInvoices.map(r=>({...r,_closedBy:uMap[r.sent_by]||'—'}));
+        auditUnlocks=auditUnlocks.map(r=>({...r,_unlockedBy:uMap[r.performed_by]||'—'}));
+      }
+    }
+    auditLoaded=true;
+    renderAudit();
+  }catch(err){
+    console.error('loadAudit error:',err);
+    showToast('Could not load billing audit data.','error');
+  }
+}
+
+function diverForId(id){return divers.find(d=>d.id===id)||null;}
+
+function renderAudit(){
+  renderAuditFlagged();
+  renderAuditHistory(auditInvoices);
+  renderAuditUnlocks();
+}
+
+function renderAuditFlagged(){
+  const tbody=document.getElementById('auditFlaggedRows');
+  const empty=document.getElementById('auditFlaggedEmpty');
+  const wrap=document.getElementById('auditFlaggedWrap');
+  if(!auditFlaggedVisits.length){wrap.style.display='none';empty.style.display='block';return;}
+  wrap.style.display='';empty.style.display='none';
+  tbody.innerHTML=auditFlaggedVisits.map(v=>{
+    const d=diverForId(v.diver_id);
+    const name=d?fullName(d):'Unknown Diver';
+    const email=d?esc(d.email||'—'):'—';
+    const count=Number(v.invoice_count||0);
+    return `<tr class="audit-flagged-row" onclick="toggleFlaggedExpand('${v.id}','${v.diver_id}')">
+      <td class="strong">${esc(name)}</td>
+      <td>${email}</td>
+      <td class="num">${count}</td>
+      <td><span class="audit-flag-dot"></span>Flagged</td>
+    </tr>
+    <tr class="audit-expand" id="expand-${v.id}" style="display:none">
+      <td colspan="4"><div class="audit-expand-inner" id="expand-inner-${v.id}">Loading…</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleFlaggedExpand(visitId,diverId){
+  const row=document.getElementById('expand-'+visitId);
+  if(!row)return;
+  const visible=row.style.display!=='none';
+  row.style.display=visible?'none':'table-row';
+  if(!visible){
+    const invoices=auditInvoices.filter(i=>i.visit_id===visitId);
+    const inner=document.getElementById('expand-inner-'+visitId);
+    if(!invoices.length){inner.innerHTML='<span class="muted">No invoice records found for this visit.</span>';return;}
+    inner.innerHTML=`<table><thead><tr><th>#</th><th>Sent At</th><th>Closed By</th><th class="num">Total Billed</th><th>Download</th></tr></thead><tbody>${
+      invoices.map((inv,i)=>{
+        const snap=inv.invoice_snapshot||{};
+        const total=snap.grand_total??snap.grandTotal??snap.total??0;
+        const d=diverForId(diverId);
+        const name=d?fullName(d):'Diver';
+        return `<tr>
+          <td>${i+1}</td>
+          <td>${fmtDatetime(inv.sent_at)}</td>
+          <td>${esc(inv._closedBy||'—')}</td>
+          <td class="num strong">${money(total)}</td>
+          <td><button class="btn btn-sm btn-ghost" onclick="downloadInvoicePDF('${inv.id}')">⬇ PDF</button></td>
+        </tr>`;
+      }).join('')
+    }</tbody></table>`;
+  }
+}
+
+function renderAuditHistory(rows){
+  const tbody=document.getElementById('auditHistoryRows');
+  const empty=document.getElementById('auditHistoryEmpty');
+  if(!rows.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=rows.map(inv=>{
+    const d=diverForId(inv.diver_id);
+    const name=d?fullName(d):'Unknown Diver';
+    const email=d?esc(d.email||'—'):'—';
+    const snap=inv.invoice_snapshot||{};
+    const total=snap.grand_total??snap.grandTotal??snap.total??0;
+    return `<tr>
+      <td class="strong">${esc(name)}</td>
+      <td>${email}</td>
+      <td>${fmtDatetime(inv.sent_at)}</td>
+      <td>${esc(inv._closedBy||'—')}</td>
+      <td class="num">${money(total)}</td>
+      <td><button class="btn btn-sm btn-ghost" onclick="downloadInvoicePDF('${inv.id}')">⬇ PDF</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAuditHistory(){
+  const q=(document.getElementById('auditSearch').value||'').toLowerCase().trim();
+  if(!q){renderAuditHistory(auditInvoices);return;}
+  const filtered=auditInvoices.filter(inv=>{
+    const d=diverForId(inv.diver_id);
+    const name=d?fullName(d).toLowerCase():'';
+    const email=d?(d.email||'').toLowerCase():'';
+    return name.includes(q)||email.includes(q);
+  });
+  renderAuditHistory(filtered);
+}
+
+function renderAuditUnlocks(){
+  const tbody=document.getElementById('auditUnlockRows');
+  const empty=document.getElementById('auditUnlockEmpty');
+  if(!auditUnlocks.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=auditUnlocks.map(log=>{
+    // Try to extract diver name from notes field, fallback to target_id reference
+    const noteText=log.notes||'—';
+    return `<tr>
+      <td class="strong">${esc(noteText.split('—')[0]||noteText)}</td>
+      <td>${esc(log._unlockedBy||'—')}</td>
+      <td>${fmtDatetime(log.created_at)}</td>
+      <td class="muted">${esc(noteText)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function fmtDatetime(ts){
+  if(!ts)return '—';
+  const d=new Date(ts);
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+
+function downloadInvoicePDF(invoiceId){
+  const inv=auditInvoices.find(i=>i.id===invoiceId);
+  if(!inv){showToast('Invoice not found.','error');return;}
+  const snap=inv.invoice_snapshot||{};
+  const d=diverForId(inv.diver_id);
+  const diverName=d?fullName(d):'Diver';
+  const diverNationality=d?esc(d.nationality||''):'';
+  const sentDate=inv.sent_at?new Date(inv.sent_at).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'—';
+  const filename=`invoice-${diverName.replace(/\s+/g,'-')}-${(inv.sent_at||'').slice(0,10)}.pdf`;
+
+  // Build activity rows from snapshot
+  const activities=snap.activities||snap.rows||[];
+  const activityHTML=activities.length?activities.map(a=>`
+    <tr>
+      <td>${esc(a.date||a.dive_date||'—')}</td>
+      <td>${esc(a.dive_site||a.activity||a.activity_name||'—')}</td>
+      <td>${esc(a.staff_name||a.staff||'—')}</td>
+      <td style="text-align:right">${fmtPHP(a.dive_rate)}</td>
+      <td style="text-align:right">${fmtPHP(a.fuel_surcharge??a.fuel)}</td>
+      <td style="text-align:right">${fmtPHP(a.marine_tax)}</td>
+      <td style="text-align:right">${fmtPHP(a.nitrox_fee??a.nitrox)}</td>
+      <td style="text-align:right">${fmtPHP(a.equipment_rental??a.equipment)}</td>
+      <td style="text-align:right">${fmtPHP(a.addons)}</td>
+    </tr>`).join(''):`<tr><td colspan="9" style="text-align:center;color:#64748B">No activity data in snapshot.</td></tr>`;
+
+  const discount=snap.discount||0;
+  const grandTotal=snap.grand_total??snap.grandTotal??snap.total??0;
+  const cash=snap.cash_amount??snap.cash??0;
+  const card=snap.card_amount??snap.card??0;
+  const online=snap.online_amount??snap.online??0;
+  const cardSurcharge=snap.card_surcharge??0;
+  const onlineSurcharge=snap.online_surcharge??0;
+  const currency=snap.currency||'PHP';
+  const fxRate=snap.exchange_rate??snap.fx_rate??null;
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${filename}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;color:#0F172A;background:white;padding:32px;font-size:13px}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1A3C5E}
+    .dc-name{font-family:'DM Serif Display',serif;font-size:22px;color:#1A3C5E}
+    .invoice-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748B;text-align:right}
+    .invoice-num{font-size:18px;font-weight:700;color:#00A8AB;text-align:right}
+    .diver-block{background:#F1F5F9;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;gap:32px}
+    .diver-block div{display:flex;flex-direction:column;gap:2px}
+    .label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748B}
+    .value{font-size:13px;font-weight:700;color:#0F172A}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px}
+    th{background:#F8FAFC;padding:7px 8px;text-align:left;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#64748B;font-weight:900;border-bottom:1px solid #E2E8F0}
+    td{padding:7px 8px;border-bottom:1px solid #F1F5F9;color:#334155}
+    .totals{margin-left:auto;min-width:280px;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden}
+    .totals tr td{padding:8px 12px;border-bottom:1px solid #F1F5F9;font-size:12px}
+    .totals tr:last-child td{border-bottom:none}
+    .totals .grand td{background:#1A3C5E;color:white;font-weight:700;font-size:13px}
+    .footer{margin-top:24px;font-size:11px;color:#94A3B8;text-align:center;border-top:1px solid #E2E8F0;padding-top:12px}
+    @media print{body{padding:16px}}
+  </style></head><body>
+  <div class="header">
+    <div><div class="dc-name">${esc(diveCenterName)}</div><div style="color:#64748B;font-size:12px;margin-top:4px">Invoice</div></div>
+    <div><div class="invoice-label">Sent</div><div class="invoice-num">${sentDate}</div></div>
+  </div>
+  <div class="diver-block">
+    <div><span class="label">Diver</span><span class="value">${esc(diverName)}</span></div>
+    ${diverNationality?`<div><span class="label">Nationality</span><span class="value">${diverNationality}</span></div>`:''}
+    ${currency!=='PHP'?`<div><span class="label">Currency</span><span class="value">${esc(currency)}${fxRate?` @ ₱${fxRate}`:''}</span></div>`:''}
+  </div>
+  <table>
+    <thead><tr><th>Date</th><th>Activity</th><th>Staff</th><th style="text-align:right">Dive Rate</th><th style="text-align:right">Fuel</th><th style="text-align:right">Marine Tax</th><th style="text-align:right">Nitrox</th><th style="text-align:right">Equipment</th><th style="text-align:right">Addons</th></tr></thead>
+    <tbody>${activityHTML}</tbody>
+  </table>
+  <div style="display:flex;justify-content:flex-end">
+    <table class="totals">
+      ${discount?`<tr><td>Discount</td><td style="text-align:right;color:#DC2626">− ₱${Number(discount).toLocaleString()}</td></tr>`:''}
+      ${cash?`<tr><td>Cash</td><td style="text-align:right">₱${Number(cash).toLocaleString()}</td></tr>`:''}
+      ${card?`<tr><td>Card${cardSurcharge?` (incl. surcharge ₱${Number(cardSurcharge).toLocaleString()})`:''}  </td><td style="text-align:right">₱${Number(card).toLocaleString()}</td></tr>`:''}
+      ${online?`<tr><td>Online${onlineSurcharge?` (incl. surcharge ₱${Number(onlineSurcharge).toLocaleString()})`:''}  </td><td style="text-align:right">₱${Number(online).toLocaleString()}</td></tr>`:''}
+      <tr class="grand"><td>Grand Total</td><td style="text-align:right">₱${Number(grandTotal).toLocaleString()}</td></tr>
+    </table>
+  </div>
+  <div class="footer">Generated by AquaDesk · aquadesk.online · Closed by ${esc(inv._closedBy||'—')} on ${sentDate}</div>
+  <script>window.onload=function(){setTimeout(function(){document.title='${filename}';window.print();},400);}<\/script>
+  </body></html>`;
+
+  const frame=document.getElementById('auditPrintFrame');
+  frame.innerHTML='';
+  const w=window.open('','_blank');
+  if(!w){showToast('Pop-up blocked. Please allow pop-ups to download the invoice.','error');return;}
+  w.document.write(html);
+  w.document.close();
+}
+
+function fmtPHP(v){if(v===null||v===undefined||v==='')return '—';const n=Number(v);return n===0?'—':'₱'+n.toLocaleString();}
+
+// ── END BILLING AUDIT ──────────────────────────────────────────────────────────
+
+// ── SETTLEMENT ────────────────────────────────────────────────────────────────
+let settlementRows = [];
+
+function settlementTodayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function initSettlementDate() {
+  const el = document.getElementById('settlementDate');
+  if (el && !el.value) el.value = settlementTodayISO();
+}
+
+async function loadSettlement() {
+  initSettlementDate();
+  const dateVal = document.getElementById('settlementDate').value;
+  if (!dateVal) { showToast('Please select a date.', 'error'); return; }
+  const body = document.getElementById('settlementBody');
+  body.innerHTML = '<div class="empty">Loading…</div>';
+  settlementRows = [];
+  try {
+    // Query payments for this date and dive center (filter on paid_at to match dashboard totals)
+    const dayStart = dateVal + 'T00:00:00';
+    const dayEnd   = dateVal + 'T23:59:59';
+    const { data: pmts, error: pmtErr } = await client
+      .from('payments')
+      .select('id,created_at,paid_at,diver_id,visit_id,cash_amount,cash_amount_foreign,cash_currency_code,cash_exchange_rate,card_amount,card_surcharge_amount,online_amount,online_surcharge_amount,total_collected')
+      .eq('dive_center_id', diveCenterId)
+      .gte('paid_at', dayStart)
+      .lte('paid_at', dayEnd)
+      .order('paid_at', { ascending: true });
+    if (pmtErr) throw pmtErr;
+
+    // Collect unique diver IDs and visit IDs
+    const diverIds  = [...new Set(pmts.map(p => p.diver_id).filter(Boolean))];
+    const visitIds  = [...new Set(pmts.map(p => p.visit_id).filter(Boolean))];
+
+    // Fetch divers
+    let diverMap = {};
+    if (diverIds.length) {
+      const { data: dData } = await client.from('divers').select('id,first_name,last_name').in('id', diverIds);
+      if (dData) dData.forEach(d => { diverMap[d.id] = d; });
+    }
+
+    // Fetch invoice_emails to resolve "Closed By" via sent_by → users
+    let closedByMap = {}; // visit_id → full_name
+    if (visitIds.length) {
+      const { data: ieData } = await client
+        .from('invoice_emails')
+        .select('visit_id,sent_by')
+        .in('visit_id', visitIds)
+        .order('sent_at', { ascending: false }); // most recent first
+      if (ieData && ieData.length) {
+        const userIds = [...new Set(ieData.map(r => r.sent_by).filter(Boolean))];
+        let userMap = {};
+        if (userIds.length) {
+          const { data: uData } = await client.from('users').select('id,full_name').in('id', userIds);
+          if (uData) uData.forEach(u => { userMap[u.id] = u.full_name || '—'; });
+        }
+        // Map each visit_id to the most recent closer (first result due to desc order)
+        ieData.forEach(ie => {
+          if (!closedByMap[ie.visit_id]) {
+            closedByMap[ie.visit_id] = userMap[ie.sent_by] || '—';
+          }
+        });
+      }
+    }
+
+    // Assemble payment rows
+    const paymentRows = pmts.map(p => {
+      const d = diverMap[p.diver_id];
+      const diverName = d ? `${d.first_name || ''} ${d.last_name || ''}`.trim() : '—';
+      const closedBy  = closedByMap[p.visit_id] || '—';
+      const foreign   = (p.cash_amount_foreign != null && p.cash_currency_code)
+        ? `${Number(p.cash_amount_foreign).toLocaleString()} ${p.cash_currency_code} × ₱${Number(p.cash_exchange_rate || 0).toLocaleString()}`
+        : '';
+      return {
+        date:            String(p.paid_at || p.created_at || '').slice(0, 10),
+        diverName,
+        closedBy,
+        cashPHP:         Number(p.cash_amount          || 0),
+        foreign,
+        foreignPHP:      (p.cash_amount_foreign != null && p.cash_exchange_rate)
+                           ? Number(p.cash_amount_foreign) * Number(p.cash_exchange_rate)
+                           : 0,
+        card:            Number(p.card_amount           || 0),
+        cardSurcharge:   Number(p.card_surcharge_amount || 0),
+        online:          Number(p.online_amount         || 0),
+        onlineSurcharge: Number(p.online_surcharge_amount || 0),
+        totalCollected:  Number(p.total_collected       || 0),
+        isDeposit:       false,
+      };
+    });
+
+    // Query deposits for the selected date
+    const { data: deps, error: depErr } = await client
+      .from('deposits')
+      .select('id,deposit_date,diver_id,amount,method,received_by')
+      .eq('dive_center_id', diveCenterId)
+      .eq('deposit_date', dateVal)
+      .order('created_at', { ascending: true });
+    if (depErr) throw depErr;
+
+    let depositRows = [];
+    if (deps && deps.length) {
+      // Fetch diver names for deposit rows (diver_ids not already in diverMap)
+      const depDiverIds = [...new Set(deps.map(d => d.diver_id).filter(Boolean))];
+      const missingIds  = depDiverIds.filter(id => !diverMap[id]);
+      if (missingIds.length) {
+        const { data: mData } = await client.from('divers').select('id,first_name,last_name').in('id', missingIds);
+        if (mData) mData.forEach(d => { diverMap[d.id] = d; });
+      }
+      depositRows = deps.map(dep => {
+        const dv = diverMap[dep.diver_id];
+        const diverName = dv ? `${dv.first_name || ''} ${dv.last_name || ''}`.trim() : '—';
+        const method = dep.method || '';
+        return {
+          date:            String(dep.deposit_date || ''),
+          diverName,
+          closedBy:        dep.received_by || '—',
+          cashPHP:         method === 'cash'   ? Number(dep.amount || 0) : 0,
+          foreign:         '',
+          foreignPHP:      0,
+          card:            method === 'card'   ? Number(dep.amount || 0) : 0,
+          cardSurcharge:   0,
+          online:          method === 'online' ? Number(dep.amount || 0) : 0,
+          onlineSurcharge: 0,
+          totalCollected:  0,
+          isDeposit:       true,
+        };
+      });
+    }
+
+    // Merge and sort by date ascending
+    settlementRows = [...paymentRows, ...depositRows].sort((a, b) => {
+      if (a.date < b.date) return -1;
+      if (a.date > b.date) return  1;
+      return 0;
+    });
+
+    if (!settlementRows.length) {
+      body.innerHTML = '<div class="empty">No payments recorded for this date.</div>';
+      return;
+    }
+
+    renderSettlementTable();
+  } catch (err) {
+    console.error('loadSettlement error:', err);
+    body.innerHTML = '<div class="empty">Could not load settlement data. Please try again.</div>';
+    showToast('Settlement failed to load. Check your connection.', 'error');
+  }
+}
+
+function renderSettlementTable() {
+  const body = document.getElementById('settlementBody');
+  if (!settlementRows.length) {
+    body.innerHTML = '<div class="empty">No payments recorded for this date.</div>';
+    return;
+  }
+
+  // Totals
+  const tot = {
+    cashPHP:         settlementRows.reduce((s, r) => s + r.cashPHP, 0),
+    foreignPHP:      settlementRows.reduce((s, r) => s + r.foreignPHP, 0),
+    card:            settlementRows.reduce((s, r) => s + r.card, 0),
+    cardSurcharge:   settlementRows.reduce((s, r) => s + r.cardSurcharge, 0),
+    online:          settlementRows.reduce((s, r) => s + r.online, 0),
+    onlineSurcharge: settlementRows.reduce((s, r) => s + r.onlineSurcharge, 0),
+    totalCollected:  settlementRows.reduce((s, r) => s + r.totalCollected, 0),
+  };
+
+  const fPHP = v => v === 0 ? '—' : '₱' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  const rows = settlementRows.map((r, i) => {
+    const rowStyle = r.isDeposit ? ' style="background:var(--orange-light,#FFFBEB)"' : '';
+    const totalCell = r.isDeposit ? '<td class="num strong">—</td>' : `<td class="num strong">${fPHP(r.totalCollected)}</td>`;
+    return `
+    <tr${rowStyle}>
+      <td>${esc(r.date)}</td>
+      <td class="strong">${esc(r.diverName)}</td>
+      <td>${esc(r.closedBy)}</td>
+      <td class="num">${fPHP(r.cashPHP)}</td>
+      <td class="muted" style="font-size:.78rem">${r.isDeposit ? '—' : esc(r.foreign)}</td>
+      <td class="num">${fPHP(r.card)}</td>
+      <td class="num">${r.isDeposit ? '—' : fPHP(r.cardSurcharge)}</td>
+      <td class="num">${fPHP(r.online)}</td>
+      <td class="num">${r.isDeposit ? '—' : fPHP(r.onlineSurcharge)}</td>
+      ${totalCell}
+    </tr>`;
+  }).join('');
+
+  const grandRow = `
+    <tr class="settlement-grand">
+      <td colspan="3">Grand Total</td>
+      <td class="num">${fPHP(tot.cashPHP)}</td>
+      <td class="num" style="font-size:.76rem">${tot.foreignPHP > 0 ? '≈ ₱' + Math.round(tot.foreignPHP).toLocaleString() : '—'}</td>
+      <td class="num">${fPHP(tot.card)}</td>
+      <td class="num">${fPHP(tot.cardSurcharge)}</td>
+      <td class="num">${fPHP(tot.online)}</td>
+      <td class="num">${fPHP(tot.onlineSurcharge)}</td>
+      <td class="num">${fPHP(tot.totalCollected)}</td>
+    </tr>`;
+
+  body.innerHTML = `
+    <div class="table-wrap">
+      <table style="min-width:960px">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Diver</th>
+            <th>Closed By</th>
+            <th class="num">Cash (PHP)</th>
+            <th>Foreign</th>
+            <th class="num">Card</th>
+            <th class="num">Card Surcharge</th>
+            <th class="num">Online</th>
+            <th class="num">Online Surcharge</th>
+            <th class="num">Total Collected</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>${grandRow}</tfoot>
+      </table>
+    </div>`;
+}
+
+function printSettlement() {
+  if (!settlementRows.length) { showToast('No data to print. Load a date first.', 'error'); return; }
+  const dateVal = document.getElementById('settlementDate').value || '—';
+  const fPHP = v => v === 0 ? '—' : '₱' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  const tot = {
+    cashPHP:         settlementRows.reduce((s, r) => s + r.cashPHP, 0),
+    foreignPHP:      settlementRows.reduce((s, r) => s + r.foreignPHP, 0),
+    card:            settlementRows.reduce((s, r) => s + r.card, 0),
+    cardSurcharge:   settlementRows.reduce((s, r) => s + r.cardSurcharge, 0),
+    online:          settlementRows.reduce((s, r) => s + r.online, 0),
+    onlineSurcharge: settlementRows.reduce((s, r) => s + r.onlineSurcharge, 0),
+    totalCollected:  settlementRows.reduce((s, r) => s + r.totalCollected, 0),
+  };
+  const rows = settlementRows.map(r => `<tr${r.isDeposit ? ' style="background:#FFFBEB"' : ''}>
+    <td>${esc(r.date)}</td><td>${esc(r.diverName)}</td><td>${esc(r.closedBy)}</td>
+    <td style="text-align:right">${fPHP(r.cashPHP)}</td>
+    <td style="font-size:11px">${r.isDeposit ? '—' : esc(r.foreign)}</td>
+    <td style="text-align:right">${fPHP(r.card)}</td>
+    <td style="text-align:right">${r.isDeposit ? '—' : fPHP(r.cardSurcharge)}</td>
+    <td style="text-align:right">${fPHP(r.online)}</td>
+    <td style="text-align:right">${r.isDeposit ? '—' : fPHP(r.onlineSurcharge)}</td>
+    <td style="text-align:right;font-weight:800">${r.isDeposit ? '—' : fPHP(r.totalCollected)}</td>
+  </tr>`).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Settlement ${dateVal}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',sans-serif;font-size:12px;color:#0F172A;padding:24px}
+  h2{font-family:'DM Serif Display',serif;font-size:18px;color:#1A3C5E;margin-bottom:4px}.sub{color:#64748B;font-size:11px;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse}th{background:#F8FAFC;padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#64748B;font-weight:900;border-bottom:1px solid #E2E8F0}
+  td{padding:6px 8px;border-bottom:1px solid #F1F5F9;vertical-align:middle}.num{text-align:right;font-variant-numeric:tabular-nums}
+  .grand td{background:#1A3C5E;color:white;font-weight:800}@media print{body{padding:12px}}</style>
+  </head><body>
+  <h2>${esc(diveCenterName)} — Daily Settlement</h2>
+  <div class="sub">Date: ${dateVal} &nbsp;·&nbsp; Printed: ${new Date().toLocaleString()}</div>
+  <table>
+    <thead><tr><th>Date</th><th>Diver</th><th>Closed By</th><th class="num">Cash (PHP)</th><th>Foreign</th><th class="num">Card</th><th class="num">Card Surch.</th><th class="num">Online</th><th class="num">Online Surch.</th><th class="num">Total</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr class="grand"><td colspan="3">Grand Total</td>
+      <td class="num">${fPHP(tot.cashPHP)}</td>
+      <td style="font-size:10px">${tot.foreignPHP > 0 ? '≈ ₱' + Math.round(tot.foreignPHP).toLocaleString() : '—'}</td>
+      <td class="num">${fPHP(tot.card)}</td><td class="num">${fPHP(tot.cardSurcharge)}</td>
+      <td class="num">${fPHP(tot.online)}</td><td class="num">${fPHP(tot.onlineSurcharge)}</td>
+      <td class="num">${fPHP(tot.totalCollected)}</td>
+    </tr></tfoot>
+  </table>
+  <script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script>
+  </body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked. Please allow pop-ups to print.', 'error'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+function downloadSettlementCSV() {
+  if (!settlementRows.length) { showToast('No data to download. Load a date first.', 'error'); return; }
+  const dateVal = document.getElementById('settlementDate').value || 'unknown';
+  const headers = ['Date','Diver','Closed By','Cash (PHP)','Foreign','Card','Card Surcharge','Online','Online Surcharge','Total Collected'];
+  const csvRows = settlementRows.map(r => [
+    r.date,
+    r.isDeposit ? r.diverName + ' (Deposit)' : r.diverName,
+    r.closedBy,
+    r.cashPHP,
+    r.isDeposit ? '' : r.foreign,
+    r.card,
+    r.isDeposit ? '' : r.cardSurcharge,
+    r.online,
+    r.isDeposit ? '' : r.onlineSurcharge,
+    r.isDeposit ? '' : r.totalCollected,
+  ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','));
+  // Grand total row
+  const tot = {
+    cashPHP:         settlementRows.reduce((s, r) => s + r.cashPHP, 0),
+    foreignPHP:      settlementRows.reduce((s, r) => s + r.foreignPHP, 0),
+    card:            settlementRows.reduce((s, r) => s + r.card, 0),
+    cardSurcharge:   settlementRows.reduce((s, r) => s + r.cardSurcharge, 0),
+    online:          settlementRows.reduce((s, r) => s + r.online, 0),
+    onlineSurcharge: settlementRows.reduce((s, r) => s + r.onlineSurcharge, 0),
+    totalCollected:  settlementRows.reduce((s, r) => s + r.totalCollected, 0),
+  };
+  csvRows.push([
+    '"' + dateVal + '"',
+    '"GRAND TOTAL"',
+    '""',
+    tot.cashPHP,
+    `"≈ PHP ${tot.foreignPHP > 0 ? Math.round(tot.foreignPHP) : 0}"`,
+    tot.card,
+    tot.cardSurcharge,
+    tot.online,
+    tot.onlineSurcharge,
+    tot.totalCollected,
+  ].join(','));
+  const csv = [headers.join(','), ...csvRows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `settlement-${dateVal}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+// ── END SETTLEMENT ─────────────────────────────────────────────────────────────
+
+const _sidebar=document.getElementById('sidebar');
+const _overlay=document.getElementById('sidebarOverlay');
+_sidebar.addEventListener('click',function(e){if(window.innerWidth<=760&&!_sidebar.classList.contains('open')){e.preventDefault();_sidebar.classList.add('open');_overlay.classList.add('open');document.body.style.overflow='hidden';}});
+_overlay.addEventListener('click',function(){_sidebar.classList.remove('open');_overlay.classList.remove('open');document.body.style.overflow='';});
+
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>

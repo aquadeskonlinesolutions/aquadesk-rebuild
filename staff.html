@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaDesk — Today's Schedule</title>
+<link rel="icon" href="/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --navy:        #1A3C5E;
+  --navy-dark:   #0F2540;
+  --navy-mid:    #244d73;
+  --teal:        #00A8AB;
+  --teal-light:  #E0F7F8;
+  --white:       #FFFFFF;
+  --off-white:   #F8FAFC;
+  --gray-100:    #F1F5F9;
+  --gray-200:    #E2E8F0;
+  --gray-300:    #CBD5E1;
+  --gray-400:    #94A3B8;
+  --gray-600:    #475569;
+  --gray-700:    #334155;
+  --dark:        #0F172A;
+  --red:         #DC2626;
+  --red-light:   #FEF2F2;
+  --green:       #16A34A;
+  --green-light: #F0FDF4;
+  --orange:      #D97706;
+  --orange-light:#FFFBEB;
+  --font-display:'DM Serif Display', serif;
+  --font-body:   'DM Sans', sans-serif;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.08);
+  --radius:      12px;
+  --error-text:  #991B1B;
+  --warn-text:   #92400E;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--off-white);
+  color: var(--dark);
+  min-height: 100vh;
+  font-size: 15px;
+  overflow-x: hidden;
+}
+
+/* ── SCREEN 1 — TOKEN ENTRY ── */
+#screen1 {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+
+.entry-box {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  padding: 2rem 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.entry-logo {
+  height: 56px;
+  width: auto;
+  margin-bottom: 1.25rem;
+}
+
+.entry-heading {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--navy);
+  margin-bottom: .35rem;
+}
+
+.entry-sub {
+  font-size: .9rem;
+  color: var(--gray-400);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.field-wrap {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.field-label {
+  display: block;
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: .38rem;
+}
+
+.field-helper {
+  font-size: .75rem;
+  color: var(--gray-400);
+  margin-top: .3rem;
+}
+
+.field-input {
+  width: 100%;
+  padding: .8rem 1rem;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  outline: none;
+  background: var(--white);
+  font-size: .95rem;
+  font-family: var(--font-body);
+  transition: border-color .2s;
+}
+
+.field-input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 4px rgba(0,168,171,.1);
+}
+
+.token-input {
+  font-size: 2rem;
+  letter-spacing: .25em;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: .9rem 1rem;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: var(--font-body);
+  transition: .2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-teal {
+  background: var(--teal);
+  color: var(--white);
+  padding: .78rem 1.25rem;
+  width: 100%;
+  height: 52px;
+  font-size: 1rem;
+  border-radius: 10px;
+  margin-top: .5rem;
+}
+
+.btn-teal:hover { background: var(--teal-dark); }
+
+.notice-box {
+  display: none;
+  border-radius: 10px;
+  padding: .72rem .9rem;
+  margin-top: .85rem;
+  font-size: .875rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.notice-box.error {
+  background: var(--red-light);
+  border: 1px solid var(--red);
+  color: var(--error-text);
+}
+
+.notice-box.warning {
+  background: var(--orange-light);
+  border: 1px solid #FCD34D;
+  color: var(--warn-text);
+}
+
+/* ── SCREEN 2 — SCHEDULE VIEW ── */
+#screen2 { display: none; }
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--navy);
+  padding: .85rem 1.25rem;
+}
+
+.header-row1 {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: .2rem;
+}
+
+.header-logo {
+  height: 28px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
+.header-brand {
+  color: var(--white);
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+.header-dc {
+  color: var(--teal);
+  font-weight: 600;
+  font-size: .88rem;
+  margin-bottom: .15rem;
+}
+
+.header-date {
+  color: rgba(255,255,255,.75);
+  font-size: .82rem;
+}
+
+.schedule-content {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+}
+
+/* ── TRIP CARD ── */
+.trip-card {
+  background: var(--white);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.trip-card-header {
+  background: var(--gray-100);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.trip-boat-name {
+  font-family: var(--font-display);
+  color: var(--navy);
+  font-size: 1.1rem;
+  margin-bottom: .3rem;
+}
+
+.trip-boat-meta {
+  font-size: .82rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.trip-section {
+  padding: .85rem 1.25rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.trip-section:last-child {
+  border-bottom: none;
+}
+
+.section-label {
+  font-size: .72rem;
+  font-weight: 800;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: .5rem;
+}
+
+.section-value {
+  font-size: .9rem;
+  color: var(--navy);
+  line-height: 1.6;
+}
+
+.section-value .dim {
+  color: var(--gray-400);
+  font-size: .85rem;
+}
+
+.tank-row {
+  font-size: .9rem;
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.notes-text {
+  font-size: .85rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+/* ── STAFF GROUP ── */
+.staff-group {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: .75rem;
+}
+
+.staff-group:last-child {
+  margin-bottom: 0;
+}
+
+.staff-group-header {
+  font-weight: 800;
+  color: var(--white);
+  font-size: .88rem;
+  padding: .55rem .85rem;
+  background: var(--navy);
+  border-left: 4px solid var(--teal);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.staff-group.instructor .staff-group-header {
+  border-left-color: var(--orange);
+}
+
+.staff-group-divers {
+  padding: .5rem .65rem;
+  background: var(--white);
+}
+
+.staff-no-divers {
+  font-size: .78rem;
+  color: var(--gray-400);
+  padding: .4rem .2rem;
+}
+
+.group-badge {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--teal);
+  background: var(--teal-light);
+  border-radius: 20px;
+  padding: .08rem .4rem;
+  display: inline-block;
+}
+
+.diver-group-label {
+  margin-bottom: .2rem;
+}
+
+.diver-row {
+  background: var(--gray-100);
+  border-radius: 8px;
+  padding: .5rem .65rem;
+  margin-bottom: .35rem;
+}
+
+.diver-row:last-child {
+  margin-bottom: 0;
+}
+
+.diver-name-row {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: .88rem;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  flex-wrap: wrap;
+}
+
+.iso-badge {
+  background: var(--white);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  padding: .08rem .4rem;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.diver-meta {
+  font-size: .75rem;
+  color: var(--gray-600);
+  margin-top: .15rem;
+  line-height: 1.4;
+}
+
+.diver-exp {
+  font-size: .78rem;
+  color: var(--gray-600);
+  margin-top: .2rem;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.nitrox-pill {
+  background: var(--teal-light);
+  color: var(--teal);
+  border-radius: 20px;
+  padding: .15rem .5rem;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+/* ── EMPTY / LOADING ── */
+.empty-card {
+  background: var(--white);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--gray-400);
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
+.loading-text {
+  text-align: center;
+  color: var(--gray-400);
+  font-size: .95rem;
+  padding: 2rem 1rem;
+}
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: TOKEN ENTRY -->
+<div id="screen1">
+  <div class="entry-box">
+    <img src="/logo.png" alt="AquaDesk" class="entry-logo">
+    <div class="entry-heading">Today's Schedule</div>
+    <div class="entry-sub">Enter today's token to view the schedule</div>
+
+    <div class="field-wrap">
+      <label class="field-label" for="tokenInput">Today's Token</label>
+      <input
+        class="field-input token-input"
+        id="tokenInput"
+        type="text"
+        maxlength="5"
+        placeholder="A3F9B"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="characters"
+        spellcheck="false"
+      >
+    </div>
+
+    <button class="btn btn-teal" onclick="submitToken()">View Schedule</button>
+
+    <div class="notice-box" id="tokenNotice"></div>
+  </div>
+</div>
+
+<!-- SCREEN 2: SCHEDULE VIEW -->
+<div id="screen2">
+  <div class="sticky-header">
+    <div class="header-row1">
+      <img src="/logo.png" alt="AquaDesk" class="header-logo">
+      <span class="header-brand">AquaDesk</span>
+    </div>
+    <div class="header-dc" id="headerDcName"></div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+  <div class="schedule-content" id="scheduleContent">
+    <div class="loading-text">Loading today's schedule...</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const SUPABASE_URL     = 'https://xaabndtaevwgicibzcqm.supabase.co';
+const SUPABASE_ANON_KEY= 'sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+const { createClient } = supabase;
+const client           = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── ISO NATIONALITY MAP ───────────────────────────────────────────────────────
+const ISO_MAP = {
+  'philippines':'PHL','filipino':'PHL',
+  'united kingdom':'GBR','british':'GBR','uk':'GBR',
+  'united states':'USA','american':'USA','usa':'USA','us':'USA',
+  'germany':'DEU','german':'DEU',
+  'france':'FRA','french':'FRA',
+  'australia':'AUS','australian':'AUS',
+  'south korea':'KOR','korean':'KOR',
+  'japan':'JPN','japanese':'JPN',
+  'china':'CHN','chinese':'CHN',
+  'israel':'ISR','israeli':'ISR',
+  'sweden':'SWE','swedish':'SWE',
+  'norway':'NOR','norwegian':'NOR',
+  'denmark':'DNK','danish':'DNK',
+  'finland':'FIN','finnish':'FIN',
+  'netherlands':'NLD','dutch':'NLD',
+  'switzerland':'CHE','swiss':'CHE',
+  'italy':'ITA','italian':'ITA',
+  'spain':'ESP','spanish':'ESP',
+  'canada':'CAN','canadian':'CAN',
+  'new zealand':'NZL',
+  'singapore':'SGP',
+  'hong kong':'HKG',
+  'taiwan':'TWN','taiwanese':'TWN',
+  'thailand':'THA','thai':'THA',
+  'russia':'RUS','russian':'RUS',
+  'brazil':'BRA','brazilian':'BRA',
+  'mexico':'MEX','mexican':'MEX',
+  'india':'IND','indian':'IND',
+  'indonesia':'IDN','indonesian':'IDN',
+  'malaysia':'MYS','malaysian':'MYS',
+  'belgium':'BEL','belgian':'BEL',
+  'austria':'AUT','austrian':'AUT',
+  'czech republic':'CZE','czech':'CZE',
+  'poland':'POL','polish':'POL',
+  'portugal':'PRT','portuguese':'PRT',
+  'ireland':'IRL','irish':'IRL',
+  'south africa':'ZAF','south african':'ZAF'
+};
+
+function getIso(nationality) {
+  if (!nationality) return null;
+  const key = nationality.toLowerCase().trim();
+  return ISO_MAP[key] || nationality.trim().slice(0, 10) || null;
+}
+
+// ── TOKEN GENERATION ─────────────────────────────────────────────────────────
+// ── NOTICE HELPERS ────────────────────────────────────────────────────────────
+function showNotice(msg, type) {
+  const el = document.getElementById('tokenNotice');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'notice-box ' + type;
+  el.style.display = 'block';
+}
+
+function hideNotice() {
+  const el = document.getElementById('tokenNotice');
+  if (el) el.style.display = 'none';
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── DATE HELPERS ──────────────────────────────────────────────────────────────
+function todayLocalStr() {
+  const now = new Date();
+  const y   = now.getFullYear();
+  const m   = String(now.getMonth() + 1).padStart(2, '0');
+  const d   = String(now.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+
+function formatHeaderDate() {
+  const now = new Date();
+  return now.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return '—';
+  const [hStr, mStr] = timeStr.split(':');
+  let h = parseInt(hStr, 10);
+  const min = mStr || '00';
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + min + ' ' + ampm;
+}
+
+// ── ON LOAD ───────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function () {
+  const tokenEl = document.getElementById('tokenInput');
+  if (tokenEl) {
+    tokenEl.addEventListener('input', function () {
+      this.value = this.value.toUpperCase();
+    });
+    tokenEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') submitToken();
+    });
+  }
+});
+
+// ── TOKEN SUBMIT ──────────────────────────────────────────────────────────────
+async function submitToken() {
+  hideNotice();
+  const entered = (document.getElementById('tokenInput').value || '').trim().toUpperCase();
+
+  if (!entered) {
+    showNotice('Please enter today\'s token.', 'warning');
+    return;
+  }
+
+  if (entered.length < 5) {
+    showNotice('Token must be 5 characters.', 'warning');
+    return;
+  }
+
+  // Show loading state on button
+  const btn = document.querySelector('.btn-teal');
+  if (btn) { btn.textContent = 'Checking...'; btn.disabled = true; }
+
+  try {
+    const now = new Date();
+    const todayStr = now.getFullYear() + '-' +
+      String(now.getMonth() + 1).padStart(2, '0') + '-' +
+      String(now.getDate()).padStart(2, '0');
+
+    // Look up dive center by token and today's date
+    const { data, error } = await client
+      .from('dive_centers')
+      .select('id, name, staff_token_date')
+      .eq('staff_token', entered)
+      .single();
+
+    if (error || !data) {
+      showNotice('Incorrect or expired token. Ask your secretary for today\'s token.', 'error');
+      if (btn) { btn.textContent = 'View Schedule'; btn.disabled = false; }
+      return;
+    }
+
+    // Valid — show schedule
+    document.getElementById('screen1').style.display = 'none';
+    document.getElementById('screen2').style.display = 'block';
+    document.getElementById('headerDate').textContent = '📅 ' + formatHeaderDate();
+    loadSchedule(data.id, data.name, data.staff_token_date);
+
+  } catch (err) {
+    console.error(err);
+    showNotice('Something went wrong. Please try again.', 'error');
+    if (btn) { btn.textContent = 'View Schedule'; btn.disabled = false; }
+  }
+}
+
+// ── LOAD SCHEDULE ─────────────────────────────────────────────────────────────
+async function loadSchedule(dcId, dcName, scheduleDate) {
+  const content = document.getElementById('scheduleContent');
+  if (!content) return;
+  content.innerHTML = '<div class="loading-text">Loading today\'s schedule...</div>';
+
+  try {
+    // Set dive center name from token lookup result
+    const dcNameEl = document.getElementById('headerDcName');
+    if (dcNameEl) dcNameEl.textContent = dcName || '';
+
+    const today = scheduleDate || todayLocalStr();
+
+    // Load schedules for today
+    const { data: schedules, error: schedErr } = await client
+      .from('schedules')
+      .select('id, dive_center_id, schedule_date, boat_id, departure_time, notes, dive_site')
+      .eq('dive_center_id', dcId)
+      .eq('schedule_date', today)
+      .order('departure_time', { ascending: true });
+
+    if (schedErr) {
+      content.innerHTML = '<div class="empty-card">Could not load schedule. Please try again.</div>';
+      return;
+    }
+
+    if (!schedules || schedules.length === 0) {
+      content.innerHTML = '<div class="empty-card">🌊 No trips scheduled for today.</div>';
+      return;
+    }
+
+    const activeSchedules = schedules;
+
+    // Collect all IDs needed
+    const scheduleIds = activeSchedules.map(s => s.id);
+    const boatIds     = [...new Set(activeSchedules.map(s => s.boat_id).filter(Boolean))];
+
+    // Parallel fetch
+    const [boatsRes, schedDiversRes, staffRes] = await Promise.all([
+      boatIds.length
+        ? client.from('boats').select('id, name, captain').in('id', boatIds)
+        : Promise.resolve({ data: [] }),
+      client.from('schedule_divers')
+        .select('id, schedule_id, diver_id, staff_id, notes, is_15l, nitrox_requested, experience_type')
+        .in('schedule_id', scheduleIds),
+      client.from('staff')
+        .select('id, first_name, last_name, role, nitrox_certified')
+        .eq('dive_center_id', dcId)
+        .eq('is_active', true)
+    ]);
+
+    const boats       = boatsRes.data || [];
+    const schedDivers = schedDiversRes.data || [];
+    const staffList   = staffRes.data || [];
+
+    // Collect diver IDs
+    const diverIds = [...new Set(schedDivers.map(sd => sd.diver_id).filter(Boolean))];
+    const groupIds = [];
+
+    let diversMap = {};
+    let groupsMap = {};
+
+    if (diverIds.length) {
+      const { data: diversData } = await client
+        .from('divers')
+        .select('id, first_name, last_name, nationality, certification_level, logged_dives, age, birthday, group_id')
+        .in('id', diverIds);
+
+      (diversData || []).forEach(d => { diversMap[d.id] = d; });
+
+      const gIds = [...new Set((diversData || []).map(d => d.group_id).filter(Boolean))];
+      if (gIds.length) {
+        const { data: groupsData } = await client
+          .from('groups')
+          .select('id, group_name')
+          .in('id', gIds);
+        (groupsData || []).forEach(g => { groupsMap[g.id] = g; });
+      }
+    }
+
+    // Render trips
+    const html = activeSchedules.map(s => renderTripCard(s, boats, schedDivers, staffList, diversMap, groupsMap)).join('');
+    content.innerHTML = html;
+
+  } catch (err) {
+    console.error(err);
+    content.innerHTML = '<div class="empty-card">Something went wrong. Please try again.</div>';
+  }
+}
+
+// ── RENDER TRIP CARD ──────────────────────────────────────────────────────────
+function renderTripCard(s, boats, schedDivers, staffList, diversMap, groupsMap) {
+  let meta = {};
+  try { meta = JSON.parse(s.notes || '{}'); } catch (e) { meta = {}; }
+
+  const boat        = boats.find(b => b.id === s.boat_id) || null;
+  const boatName    = boat ? boat.name : (meta.boatName || '—');
+  const captain     = (boat && boat.captain) ? boat.captain : (meta.captain || '');
+  const crew        = (meta.crews || []).filter(Boolean).join(', ');
+
+  const sitesArr    = Array.isArray(meta.sites)
+    ? meta.sites.filter(Boolean)
+    : (s.dive_site || '').split('/').map(x => x.trim()).filter(Boolean);
+  const sitesStr    = sitesArr.length ? sitesArr.join(' · ') : '—';
+  const depTime     = formatTime(s.departure_time);
+
+  // Staff from notes JSON staffGroups
+  const staffGroups = Array.isArray(meta.staffGroups) ? meta.staffGroups : [];
+  const dms = [];
+  const instructors = [];
+  staffGroups.forEach(g => {
+    const name = (g.name || '').trim();
+    if (!name) return;
+    const role = (g.role || '').toLowerCase();
+    if (role.includes('instructor')) {
+      instructors.push(name);
+    } else {
+      // Default all staff to DM/guide unless explicitly instructor
+      dms.push(name);
+    }
+  });
+
+  // Also check staff_id links in schedule_divers for role detection
+  const tripSDs = schedDivers.filter(sd => sd.schedule_id === s.id);
+  const assignedStaffIds = [...new Set(tripSDs.map(sd => sd.staff_id).filter(Boolean))];
+  assignedStaffIds.forEach(id => {
+    const st = staffList.find(x => x.id === id);
+    if (!st) return;
+    const fullName = ((st.first_name || '') + ' ' + (st.last_name || '')).trim();
+    const role = (st.role || '').toLowerCase();
+    // Only add if not already listed from staffGroups
+    if (role.includes('instructor')) {
+      if (!instructors.includes(fullName)) instructors.push(fullName);
+    } else {
+      if (!dms.includes(fullName)) dms.push(fullName);
+    }
+  });
+
+  // Divers
+  const diverSDs = tripSDs.filter(sd => sd.diver_id);
+  const diverCount = diverSDs.length;
+
+  // Tank tally — 1 tank per diver per dive site, matching scheduling.html logic
+  let tank12 = 0, tank15 = 0, tankNitrox = 0;
+  const diveCount = sitesArr.length || 1;
+
+  diverSDs.forEach(sd => {
+    let dm = {};
+    try { dm = JSON.parse(sd.notes || '{}'); } catch (e) { dm = {}; }
+
+    // Use per-dive indexes if saved; fall back to boolean (all dives)
+    const nitroxIndexes = Array.isArray(dm.nitrox_dive_indexes) ? dm.nitrox_dive_indexes
+      : (sd.nitrox_requested === true || dm.nitrox === true)
+        ? Array.from({ length: diveCount }, (_, i) => i)
+        : [];
+    const tank15lIndexes = Array.isArray(dm.tank_15l_dive_indexes) ? dm.tank_15l_dive_indexes
+      : (sd.is_15l === true || dm.tank_15l === true)
+        ? Array.from({ length: diveCount }, (_, i) => i)
+        : [];
+
+    for (let si = 0; si < diveCount; si++) {
+      if (nitroxIndexes.includes(si))      tankNitrox++;
+      else if (tank15lIndexes.includes(si)) tank15++;
+      else                                   tank12++;
+    }
+  });
+
+  // Staff — 1 tank per dive site per staff group, nitrox per staffNitrox indexes
+  staffGroups.forEach(g => {
+    const staffNitrox = Array.isArray(g.staffNitrox) ? g.staffNitrox : [];
+    for (let si = 0; si < diveCount; si++) {
+      if (staffNitrox.includes(si)) tankNitrox++;
+      else tank12++;
+    }
+  });
+
+  // Joiners
+  const joinerDivers = meta.joinerDivers ?? 0;
+  const joinerDC     = meta.joinerDC || '';
+  const joinerNotes  = meta.joinerNotes || '';
+  const hasJoiners   = joinerDivers > 0 || joinerDC.trim();
+
+  // Notes
+  const notesText = (meta.notesText || '').trim();
+
+  // Build HTML
+  let html = `<div class="trip-card">`;
+
+  // Card header
+  const boatType    = meta.boatType || (s.is_joiner ? 'join' : 'own');
+  const joinDC      = meta.joinDC || '';
+  const owner       = meta.owner || '';
+
+  // Boat icon and label based on type
+  let boatIcon = '🚤';
+  let boatTypeBadge = '';
+  if (boatType === 'join') {
+    boatIcon = '🔗';
+    boatTypeBadge = `<span style="font-size:.72rem;font-weight:700;background:var(--orange-light);color:var(--orange);border-radius:20px;padding:.1rem .45rem;margin-left:.4rem;vertical-align:middle">Join Ride</span>`;
+  } else if (boatType === 'rental') {
+    boatIcon = '🚢';
+    boatTypeBadge = `<span style="font-size:.72rem;font-weight:700;background:var(--teal-light);color:var(--teal);border-radius:20px;padding:.1rem .45rem;margin-left:.4rem;vertical-align:middle">Rental</span>`;
+  }
+
+  html += `<div class="trip-card-header">`;
+  html += `<div class="trip-boat-name">${boatIcon} ${esc(boatName)}${boatTypeBadge}</div>`;
+  if (boatType === 'join' && joinDC) {
+    html += `<div class="trip-boat-meta">🏪 Joining: ${esc(joinDC)}</div>`;
+  } else if (boatType === 'rental' && owner) {
+    html += `<div class="trip-boat-meta">👤 Owner: ${esc(owner)}</div>`;
+  } else {
+    if (captain) html += `<div class="trip-boat-meta">👨‍✈️ Captain: ${esc(captain)}</div>`;
+    if (crew)    html += `<div class="trip-boat-meta">🧑‍🤝‍🧑 Crew: ${esc(crew)}</div>`;
+  }
+  html += `</div>`;
+
+  // Dive info
+  const dateDisplay = s.schedule_date
+    ? new Date(s.schedule_date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' })
+    : '';
+  html += `<div class="trip-section">`;
+  html += `<div class="section-label">Dive Info</div>`;
+  if (dateDisplay) html += `<div class="section-value" style="font-size:.82rem;color:var(--gray-600);margin-bottom:.25rem">📅 ${esc(dateDisplay)}</div>`;
+  html += `<div class="section-value">📍 ${esc(sitesStr)}</div>`;
+  if (diveCount > 0) html += `<div class="section-value" style="margin-top:.2rem;font-size:.82rem;color:var(--gray-600)">🤿 ${diveCount} dive${diveCount !== 1 ? 's' : ''}</div>`;
+  html += `<div class="section-value" style="margin-top:.3rem;color:var(--gray-600);font-size:.85rem">🕗 Departure: ${esc(depTime)}</div>`;
+  html += `</div>`;
+
+  // Staff section — each staff member with their divers underneath
+  html += `<div class="trip-section">`;
+  html += `<div class="section-label">Staff & Divers</div>`;
+
+  if (staffGroups.length === 0) {
+    html += `<div class="section-value dim">No staff assigned</div>`;
+  } else {
+    staffGroups.forEach(g => {
+      const staffName = (g.name || '').trim();
+      if (!staffName) return;
+      const excluded  = new Set(Array.isArray(g.excludedDiverIds) ? g.excludedDiverIds : []);
+      const activeDiverIds = (Array.isArray(g.diverIds) ? g.diverIds : []).filter(id => !excluded.has(id));
+
+      // Detect role from staffList if linked
+      let roleIcon = '🤿';
+      const linkedStaff = staffList.find(st =>
+        ((st.first_name || '') + ' ' + (st.last_name || '')).trim().toLowerCase() === staffName.toLowerCase()
+      );
+      if (linkedStaff) {
+        const r = (linkedStaff.role || '').toLowerCase();
+        if (r.includes('instructor')) roleIcon = '🎓';
+      } else if ((g.role || '').toLowerCase().includes('instructor')) {
+        roleIcon = '🎓';
+      }
+
+      html += `<div class="staff-group${roleIcon === '🎓' ? ' instructor' : ''}">`;
+      html += `<div class="staff-group-header">${roleIcon} ${esc(staffName)}</div>`;
+      html += `<div class="staff-group-divers">`;
+
+      if (activeDiverIds.length === 0) {
+        html += `<div class="staff-no-divers">No divers assigned</div>`;
+      } else {
+        activeDiverIds.forEach(diverId => {
+          const diver = diversMap[diverId];
+          if (!diver) return;
+          const sd = diverSDs.find(x => x.diver_id === diverId) || {};
+          const nitroxIndexes = Array.isArray(g.nitrox && g.nitrox[diverId]) ? g.nitrox[diverId] : null;
+          html += renderDiverRow(sd, diver, groupsMap, nitroxIndexes, sitesArr);
+        });
+      }
+
+      html += `</div>`;
+      html += `</div>`;
+    });
+  }
+
+  html += `</div>`;
+
+  // Tank tally
+  html += `<div class="trip-section">`;
+  html += `<div class="section-label">Tank Tally</div>`;
+  if (tank12 === 0 && tank15 === 0 && tankNitrox === 0) {
+    html += `<div class="tank-row dim">No tank data</div>`;
+  } else {
+    const parts = [];
+    parts.push(`🪣 12L: ${tank12}`);
+    if (tank15 > 0)     parts.push(`📦 15L: ${tank15}`);
+    if (tankNitrox > 0) parts.push(`🟢 Nitrox: ${tankNitrox}`);
+    html += `<div class="tank-row">${parts.join(' &nbsp;·&nbsp; ')}</div>`;
+  }
+  html += `</div>`;
+
+  // Join rides
+  if (hasJoiners) {
+    html += `<div class="trip-section">`;
+    html += `<div class="section-label">Join Rides</div>`;
+    let joinStr = '';
+    if (joinerDivers) joinStr += `+${joinerDivers} diver${joinerDivers !== 1 ? 's' : ''}`;
+    if (joinerDC)     joinStr += (joinStr ? ' from ' : 'From ') + joinerDC;
+    html += `<div class="section-value">🔗 ${esc(joinStr)}</div>`;
+    if (joinerNotes)  html += `<div class="notes-text" style="margin-top:.3rem">${esc(joinerNotes)}</div>`;
+    html += `</div>`;
+  }
+
+  // Notes
+  if (notesText) {
+    html += `<div class="trip-section">`;
+    html += `<div class="section-label">Notes</div>`;
+    html += `<div class="notes-text">📝 ${esc(notesText)}</div>`;
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+// ── RENDER DIVER CARDS ────────────────────────────────────────────────────────
+function renderDiverCards(diverSDs, diversMap, groupsMap) {
+  if (!diverSDs.length) {
+    return '<div class="diver-row"><span style="color:var(--gray-400);font-size:.85rem">No divers assigned</span></div>';
+  }
+
+  // Separate grouped vs individual
+  const grouped    = {};
+  const individual = [];
+
+  diverSDs.forEach(sd => {
+    const diver = diversMap[sd.diver_id];
+    if (!diver) return;
+    const gid = diver.group_id;
+    if (gid && groupsMap[gid]) {
+      if (!grouped[gid]) grouped[gid] = [];
+      grouped[gid].push({ sd, diver });
+    } else {
+      individual.push({ sd, diver });
+    }
+  });
+
+  const hasGroups = Object.keys(grouped).length > 0;
+  let html = '';
+
+  // Render groups first
+  Object.keys(grouped).forEach(gid => {
+    const group     = groupsMap[gid];
+    const groupName = group ? group.group_name : 'Group';
+    html += `<div class="group-header">👥 ${esc(groupName)}</div>`;
+    grouped[gid].forEach(({ sd, diver }) => {
+      html += renderDiverRow(sd, diver);
+    });
+  });
+
+  // Render individual
+  if (individual.length) {
+    if (hasGroups) {
+      html += `<div class="individual-header">👤 Individual Divers</div>`;
+    }
+    individual.forEach(({ sd, diver }) => {
+      html += renderDiverRow(sd, diver);
+    });
+  }
+
+  return html;
+}
+
+// ── RENDER SINGLE DIVER ROW ───────────────────────────────────────────────────
+function renderDiverRow(sd, diver, groupsMap, nitroxIndexes, sitesArr) {
+  const firstName = diver.first_name || '';
+  const lastName  = diver.last_name  || '';
+  const fullName  = (firstName + ' ' + lastName).trim() || 'Unknown';
+  const iso       = getIso(diver.nationality);
+  const isoBadge  = iso ? `<span class="iso-badge">${esc(iso)}</span>` : '';
+
+  // Group name inside card
+  const gid       = diver.group_id;
+  const group     = (groupsMap && gid) ? groupsMap[gid] : null;
+  const groupBadge = group
+    ? `<span class="group-badge">👥 ${esc(group.group_name || 'Group')}</span>`
+    : '';
+
+  // Meta line
+  const cert      = diver.certification_level || '';
+  const dives     = diver.logged_dives != null && diver.logged_dives > 0 ? diver.logged_dives + ' dives' : '';
+  const age       = diver.age != null && diver.age > 0
+    ? 'Age ' + diver.age
+    : (diver.birthday ? 'Age ' + calcAge(diver.birthday) : '');
+  const metaParts = [cert, dives, age].filter(Boolean);
+  const metaLine  = metaParts.length ? metaParts.join(' · ') : '';
+
+  // Experience and nitrox
+  let dm = {};
+  try { dm = JSON.parse(sd.notes || '{}'); } catch (e) { dm = {}; }
+  const isNitrox  = sd.nitrox_requested === true || dm.nitrox === true || (nitroxIndexes && nitroxIndexes.length > 0);
+  const expType   = sd.experience_type || dm.experience_type || '';
+  const expLabel  = getExpLabel(expType);
+
+  // Build nitrox label — per dive if indexes available, else generic
+  let nitroxPill = '';
+  if (nitroxIndexes && nitroxIndexes.length > 0 && sitesArr && sitesArr.length > 0) {
+    const diveLabels = nitroxIndexes.map(i => 'Dive ' + (i + 1)).join(', ');
+    nitroxPill = `<span class="nitrox-pill">🟢 Nitrox: ${esc(diveLabels)}</span>`;
+  } else if (isNitrox) {
+    nitroxPill = `<span class="nitrox-pill">🟢 Nitrox</span>`;
+  }
+
+  const hasExpLine = expLabel || nitroxPill;
+
+  let html = `<div class="diver-row">`;
+  if (groupBadge) html += `<div class="diver-group-label">${groupBadge}</div>`;
+  html += `<div class="diver-name-row">${esc(fullName)} ${isoBadge}</div>`;
+  if (metaLine) html += `<div class="diver-meta">${esc(metaLine)}</div>`;
+  if (hasExpLine) {
+    html += `<div class="diver-exp">`;
+    if (expLabel) html += `<span>${esc(expLabel)}</span>`;
+    if (nitroxPill) html += nitroxPill;
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function getExpLabel(expType) {
+  if (!expType) return '';
+  const t = expType.toLowerCase().trim();
+  if (t === 'fun' || t === 'fun diving' || t === 'fun_diving') return '🤿 Fun Diving';
+  if (t === 'discover scuba' || t === 'dsd' || t === 'discover_scuba') return '📚 Discover Scuba';
+  if (t === 'course' || t.includes('course') || t.includes('open water') || t.includes('advanced') || t.includes('rescue') || t.includes('divemaster') || t.includes('instructor')) {
+    const label = expType.trim();
+    return '📚 ' + label;
+  }
+  if (expType.trim()) return '📚 ' + expType.trim();
+  return '';
+}
+
+function calcAge(birthday) {
+  if (!birthday) return null;
+  const today = new Date();
+  const dob   = new Date(birthday);
+  if (isNaN(dob.getTime())) return null;
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age > 0 ? age : null;
+}
+</script>
+</body>
+</html>

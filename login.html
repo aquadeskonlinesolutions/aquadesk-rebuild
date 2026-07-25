@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaDesk — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:      #1A3C5E;
+    --navy-dark: #0F2540;
+    --navy-mid:  #244d73;
+    --teal:      #00A8AB;
+    --teal-light:#E0F7F8;
+    --white:     #FFFFFF;
+    --off-white: #F8FAFC;
+    --gray-100:  #F1F5F9;
+    --gray-200:  #E2E8F0;
+    --gray-400:  #94A3B8;
+    --gray-600:  #475569;
+    --dark:      #0F172A;
+    --red:       #DC2626;
+    --green:     #16A34A;
+    --font-display: 'DM Serif Display', serif;
+    --font-body:    'DM Sans', sans-serif;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    --radius:    12px;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--off-white);
+    color: var(--dark);
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── LEFT PANEL ── */
+  .left-panel {
+    width: 52%;
+    background: var(--navy);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3rem;
+    overflow: hidden;
+  }
+
+  .left-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(0,168,171,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(0,168,171,0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .left-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .panel-top { position: relative; z-index: 1; }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 4rem;
+  }
+
+  .brand-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--teal);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+
+  .brand-name span { color: var(--teal); }
+
+  .panel-headline {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    color: var(--white);
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .panel-headline em { font-style: italic; color: var(--teal); }
+
+  .panel-sub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.7;
+    max-width: 380px;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+    margin-top: 3rem;
+  }
+
+  .stat-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    backdrop-filter: blur(4px);
+  }
+
+  .stat-num {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    color: var(--teal);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.4;
+  }
+
+  .features {
+    position: relative;
+    z-index: 1;
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.6);
+    opacity: 0;
+    transform: translateX(-20px);
+    animation: slideIn 0.5s ease forwards;
+  }
+
+  .feature-item:nth-child(1) { animation-delay: 0.3s; }
+  .feature-item:nth-child(2) { animation-delay: 0.5s; }
+  .feature-item:nth-child(3) { animation-delay: 0.7s; }
+  .feature-item:nth-child(4) { animation-delay: 0.9s; }
+
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+  .feature-dot {
+    width: 20px;
+    height: 20px;
+    background: rgba(0,168,171,0.15);
+    border: 1px solid rgba(0,168,171,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    color: var(--teal);
+  }
+
+  .panel-bottom {
+    position: relative;
+    z-index: 1;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .panel-bottom-text {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--off-white);
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 440px;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: cardReveal 0.6s ease forwards 0.2s;
+  }
+
+  @keyframes cardReveal { to { opacity: 1; transform: translateY(0); } }
+
+  .login-header { margin-bottom: 2.5rem; }
+
+  .login-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 0.75rem;
+  }
+
+  .login-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    color: var(--navy);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+
+  .login-sub {
+    font-size: 0.95rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+  }
+
+  .form-group { margin-bottom: 1.25rem; }
+
+  .form-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input-wrap { position: relative; }
+
+  .form-input {
+    width: 100%;
+    padding: 0.875rem 1rem 0.875rem 3rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--dark);
+    background: var(--white);
+    border: 2px solid var(--gray-200);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .form-input::placeholder { color: var(--gray-400); font-size: 0.95rem; }
+
+  .form-input:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 4px rgba(0,168,171,0.1);
+  }
+
+  .form-input.error {
+    border-color: var(--red);
+    box-shadow: 0 0 0 4px rgba(220,38,38,0.08);
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    font-size: 1.1rem;
+    pointer-events: none;
+    transition: color 0.2s;
+  }
+
+  .form-input:focus + .input-icon,
+  .form-input-wrap:focus-within .input-icon { color: var(--teal); }
+
+  .password-toggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .password-toggle:hover { color: var(--navy); }
+
+  .form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .remember-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    cursor: pointer;
+  }
+
+  .remember-check {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--teal);
+    cursor: pointer;
+  }
+
+  .forgot-link {
+    font-size: 0.9rem;
+    color: var(--teal);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-body);
+    padding: 0;
+  }
+
+  .forgot-link:hover { color: var(--navy); }
+
+  .btn-submit {
+    width: 100%;
+    padding: 1rem;
+    background: var(--navy);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-submit:hover { background: var(--navy-dark); box-shadow: var(--shadow-md); }
+  .btn-submit:active { transform: translateY(1px); }
+  .btn-submit.loading { background: var(--navy-mid); pointer-events: none; }
+
+  .btn-submit .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+  }
+
+  .btn-submit.loading .spinner { display: block; }
+  .btn-submit.loading .btn-text { display: none; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--red);
+    margin-bottom: 1.25rem;
+  }
+
+  .error-msg.show { display: flex; }
+
+  .success-msg {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem;
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--green);
+    margin-bottom: 1.25rem;
+  }
+
+  .success-msg.show { display: flex; }
+
+  .role-info {
+    background: var(--teal-light);
+    border: 1px solid rgba(0,168,171,0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .role-info-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+  .role-info-text {
+    font-size: 0.85rem;
+    color: var(--navy);
+    line-height: 1.5;
+  }
+
+  .role-info-text strong { display: block; font-weight: 600; margin-bottom: 0.2rem; }
+
+  .login-footer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+    text-align: center;
+  }
+
+  .login-footer-text { font-size: 0.85rem; color: var(--gray-400); }
+  .login-footer-text a { color: var(--teal); text-decoration: none; font-weight: 500; }
+  .login-footer-text a:hover { color: var(--navy); }
+
+  .version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    color: var(--gray-600);
+    margin-bottom: 2rem;
+  }
+
+  .version-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+  /* ── FORGOT PASSWORD PANEL ── */
+  .forgot-panel {
+    display: none;
+  }
+
+  .forgot-panel.show {
+    display: block;
+  }
+
+  .forgot-back {
+    background: none;
+    border: none;
+    color: var(--teal);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s;
+  }
+
+  .forgot-back:hover { color: var(--navy); }
+
+  .forgot-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--navy);
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.02em;
+  }
+
+  .forgot-sub {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+    margin-bottom: 1.75rem;
+  }
+
+  .forgot-sent {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .forgot-sent.show { display: flex; }
+
+  .forgot-sent-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .forgot-sent-title {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+  }
+
+  .forgot-sent-sub {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+    max-width: 320px;
+  }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 1rem;
+    background: transparent;
+    color: var(--navy);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    border: 2px solid var(--gray-200);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-top: 0.75rem;
+  }
+
+  .btn-secondary:hover { border-color: var(--navy); background: var(--gray-100); }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    body { flex-direction: column; overflow: auto; }
+    .left-panel { width: 100%; padding: 2rem 1.5rem; min-height: auto; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+    .features { display: none; }
+    .right-panel { padding: 2rem 1.5rem; align-items: flex-start; }
+    .login-card { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LEFT PANEL -->
+<div class="left-panel">
+  <div class="panel-top">
+    <div class="brand">
+      <img src="logo.png" style="width:36px;height:36px;border-radius:9px;object-fit:contain;">
+      <div class="brand-name">Aqua<span>Desk</span></div>
+    </div>
+
+    <h1 class="panel-headline">
+      Run your dive center.<br>
+      <em>Not paperwork.</em>
+    </h1>
+    <p class="panel-sub">
+      The complete operations platform built specifically for dive centers in the Philippines. Registration, billing, scheduling — all in one place.
+    </p>
+
+    <div class="features">
+      <div class="feature-item"><div class="feature-dot">✓</div>Digital diver registration — before they arrive</div>
+      <div class="feature-item"><div class="feature-dot">✓</div>Smart billing with multi-currency support</div>
+      <div class="feature-item"><div class="feature-dot">✓</div>Daily scheduling with tank calculator</div>
+      <div class="feature-item"><div class="feature-dot">✓</div>Real-time dashboard for owners</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">0</div>
+        <div class="stat-label">Paper forms needed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Diver records stored</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">System uptime</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-bottom">
+    <p class="panel-bottom-text">© 2025 AquaDesk Solutions · aquadesk.online · Built for Philippine dive centers</p>
+  </div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right-panel">
+  <div class="login-card">
+
+    <div class="version-badge">
+      <div class="version-dot"></div>
+      System Online · Version 1.0
+    </div>
+
+    <!-- ── LOGIN FORM ── -->
+    <div id="loginPanel">
+      <div class="login-header">
+        <div class="login-eyebrow">Welcome back</div>
+        <h2 class="login-title">Sign in to your<br>dive center</h2>
+        <p class="login-sub">Enter your credentials to access AquaDesk.</p>
+      </div>
+
+      <div class="error-msg" id="errorMsg">
+        <span>⚠️</span>
+        <span id="errorText">Invalid email or password. Please try again.</span>
+      </div>
+
+      <div class="success-msg" id="successMsg">
+        <span>✅</span>
+        <span>Signing you in...</span>
+      </div>
+
+      <div class="role-info">
+        <div class="role-info-icon">ℹ️</div>
+        <div class="role-info-text">
+          <strong>First time here?</strong>
+          Your dive center account is created by AquaDesk admin. Contact support if you need access.
+        </div>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <div class="form-input-wrap">
+            <input class="form-input" type="email" id="email" placeholder="your@divecenter.com" autocomplete="email" required />
+            <span class="input-icon">✉</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="form-input-wrap">
+            <input class="form-input" type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required />
+            <span class="input-icon">🔒</span>
+            <button type="button" class="password-toggle" onclick="togglePassword()">Show</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="remember-label">
+            <input type="checkbox" class="remember-check" id="remember" />
+            Remember me
+          </label>
+          <button type="button" class="forgot-link" onclick="showForgotPanel()">Forgot password?</button>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <div class="spinner"></div>
+          <span class="btn-text">Sign In to AquaDesk</span>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p class="login-footer-text">
+          Need help? Contact <a href="mailto:support@aquadesk.online">support@aquadesk.online</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- ── FORGOT PASSWORD PANEL ── -->
+    <div id="forgotPanel" class="forgot-panel">
+      <button class="forgot-back" onclick="showLoginPanel()">← Back to sign in</button>
+
+      <!-- Email entry state -->
+      <div id="forgotForm">
+        <div class="forgot-title">Reset your password</div>
+        <p class="forgot-sub">Enter the email address linked to your AquaDesk account. We'll send you a link to reset your password.</p>
+
+        <div class="error-msg" id="forgotErrorMsg">
+          <span>⚠️</span>
+          <span id="forgotErrorText">Something went wrong. Please try again.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="forgotEmail">Email Address</label>
+          <div class="form-input-wrap">
+            <input class="form-input" type="email" id="forgotEmail" placeholder="your@divecenter.com" autocomplete="email" />
+            <span class="input-icon">✉</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn-submit" id="forgotSubmitBtn" onclick="handleForgotPassword()">
+          <div class="spinner"></div>
+          <span class="btn-text">Send Reset Link</span>
+        </button>
+
+        <button type="button" class="btn-secondary" onclick="showLoginPanel()">Cancel</button>
+      </div>
+
+      <!-- Sent confirmation state -->
+      <div class="forgot-sent" id="forgotSent">
+        <div class="forgot-sent-icon">📬</div>
+        <div class="forgot-sent-title">Check your email</div>
+        <p class="forgot-sent-sub">We sent a password reset link to <strong id="forgotSentEmail"></strong>. Click the link in the email to set a new password.</p>
+        <p class="forgot-sent-sub" style="margin-top:0.5rem;font-size:0.82rem;color:var(--gray-400);">Didn't get it? Check your spam folder or try again.</p>
+        <button type="button" class="btn-secondary" onclick="showLoginPanel()" style="margin-top:1rem;">Back to Sign In</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://xaabndtaevwgicibzcqm.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+  const { createClient } = supabase;
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const REMEMBER_KEY = 'aquadesk_remember';
+
+  // ── ACCOUNT LOCKOUT GUARD ─────────────────────────────────────────────────
+  // Calls the login-guard Edge Function, which tracks failed attempts per
+  // account (by email) and locks the account after too many failures.
+  // This runs in ADDITION to Supabase's own IP-based auth rate limiting —
+  // it protects a specific account from being guessed regardless of how
+  // many IPs the attempts come from.
+  async function checkLoginGuard(action, email) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/login-guard`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ action, email })
+      });
+      if (!res.ok) return { allowed: true };
+      return await res.json();
+    } catch (err) {
+      // If the guard is unreachable, don't block sign-in — Supabase's own
+      // IP-based rate limit is still active as a fallback layer.
+      console.error('login-guard unreachable:', err);
+      return { allowed: true };
+    }
+  }
+
+  function lockoutMessage(retryAfterSeconds) {
+    const mins = Math.max(1, Math.ceil((retryAfterSeconds || 1800) / 60));
+    return `Too many failed attempts. This account is locked for ${mins} more minute${mins === 1 ? '' : 's'}. Please try again later.`;
+  }
+
+  // ── SESSION CHECK ──────────────────────────────────────────────────────────
+  // Auto-redirect only when "Remember me" was set AND a valid session exists.
+  // Never destroy an active session just because the login page was visited —
+  // that would silently sign out users who navigate back or follow a link here.
+  async function checkSession() {
+    const { data: { session } } = await client.auth.getSession();
+    if (!session) return; // No session — show the login form as normal.
+    const rememberMe = localStorage.getItem(REMEMBER_KEY) === 'true';
+    if (rememberMe) {
+      await redirectByRole(session.user); // Valid session + remember me → skip login.
+    }
+    // Session exists but no remember me → just show the form; do NOT sign out.
+  }
+  checkSession();
+
+  // ── PANEL SWITCHING ────────────────────────────────────────────────────────
+  function showForgotPanel() {
+    document.getElementById('loginPanel').style.display = 'none';
+    document.getElementById('forgotPanel').classList.add('show');
+    document.getElementById('forgotEmail').value = '';
+    document.getElementById('forgotErrorMsg').classList.remove('show');
+    document.getElementById('forgotForm').style.display = 'block';
+    document.getElementById('forgotSent').classList.remove('show');
+    document.getElementById('forgotEmail').focus();
+  }
+
+  function showLoginPanel() {
+    document.getElementById('loginPanel').style.display = 'block';
+    document.getElementById('forgotPanel').classList.remove('show');
+    clearErrors();
+  }
+
+  // ── PASSWORD TOGGLE ────────────────────────────────────────────────────────
+  function togglePassword() {
+    const input = document.getElementById('password');
+    const btn = document.querySelector('.password-toggle');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'Hide';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'Show';
+    }
+  }
+
+  // ── ERROR HELPERS ──────────────────────────────────────────────────────────
+  function showError(msg) {
+    const errorMsg = document.getElementById('errorMsg');
+    const errorText = document.getElementById('errorText');
+    errorText.textContent = msg;
+    errorMsg.classList.add('show');
+    document.getElementById('successMsg').classList.remove('show');
+    document.getElementById('email').classList.add('error');
+    document.getElementById('password').classList.add('error');
+  }
+
+  function clearErrors() {
+    document.getElementById('errorMsg').classList.remove('show');
+    document.getElementById('email').classList.remove('error');
+    document.getElementById('password').classList.remove('error');
+  }
+
+  function setLoading(loading) {
+    const btn = document.getElementById('submitBtn');
+    if (loading) { btn.classList.add('loading'); } else { btn.classList.remove('loading'); }
+  }
+
+  // ── REDIRECT BY ROLE ───────────────────────────────────────────────────────
+  async function redirectByRole(user) {
+    try {
+      const { data, error } = await client
+        .from('users')
+        .select('role, is_active, password_changed, dive_centers(subscription_status)')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !data) {
+        // Cannot verify the user record — deny access and show an error.
+        // Never silently redirect to the dashboard on a DB failure.
+        await client.auth.signOut();
+        localStorage.removeItem(REMEMBER_KEY);
+        setLoading(false);
+        showError('Unable to verify your account. Please try again.');
+        return;
+      }
+
+      // Force password change on first login
+      if (!data.password_changed) {
+        window.location.href = '/change-password.html';
+        return;
+      }
+
+      if (data.is_active === false) {
+        await client.auth.signOut();
+        localStorage.removeItem(REMEMBER_KEY);
+        setLoading(false);
+        document.getElementById('successMsg').classList.remove('show');
+        showError('Your account has been deactivated. Please contact the dive center owner.');
+        return;
+      }
+
+      // Block sign-in for dive centers whose subscription has been suspended
+      // or cancelled.
+      const subStatus = data.dive_centers?.subscription_status;
+      if (subStatus === 'suspended' || subStatus === 'cancelled') {
+        await client.auth.signOut();
+        localStorage.removeItem(REMEMBER_KEY);
+        setLoading(false);
+        document.getElementById('successMsg').classList.remove('show');
+        showError('This dive center\'s account is not currently active. Please contact AquaDesk support.');
+        return;
+      }
+
+      if (data.role === 'owner') {
+        window.location.href = '/dashboard.html?role=owner';
+        return;
+      }
+
+      window.location.href = '/dashboard.html?role=secretary';
+    } catch (err) {
+      // Network or unexpected error — sign out and surface a message.
+      // Never fall through to the dashboard when we cannot confirm identity.
+      console.error('Role check failed:', err);
+      await client.auth.signOut();
+      localStorage.removeItem(REMEMBER_KEY);
+      setLoading(false);
+      showError('Something went wrong verifying your account. Please try again.');
+    }
+  }
+
+  // ── LOGIN ──────────────────────────────────────────────────────────────────
+  async function handleLogin(e) {
+    e.preventDefault();
+    clearErrors();
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const remember = document.getElementById('remember').checked;
+
+    if (!email || !password) {
+      showError('Please enter your email and password.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const guard = await checkLoginGuard('check', email);
+      if (guard && guard.allowed === false) {
+        showError(lockoutMessage(guard.retry_after_seconds));
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        const failResult = await checkLoginGuard('fail', email);
+        if (failResult && failResult.locked) {
+          showError(lockoutMessage(failResult.retry_after_seconds));
+        } else if (error.message.includes('Invalid login')) {
+          showError('Incorrect email or password. Please try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          showError('Please verify your email before signing in.');
+        } else {
+          showError(error.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Successful password check — clear any failed-attempt count.
+      checkLoginGuard('reset', email);
+
+      // Save or clear remember me flag
+      if (remember) {
+        localStorage.setItem(REMEMBER_KEY, 'true');
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+
+      document.getElementById('successMsg').classList.add('show');
+      await redirectByRole(data.user);
+
+    } catch (err) {
+      showError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
+  }
+
+  // ── FORGOT PASSWORD ────────────────────────────────────────────────────────
+  async function handleForgotPassword() {
+    const email = document.getElementById('forgotEmail').value.trim();
+    const errorMsg = document.getElementById('forgotErrorMsg');
+    const errorText = document.getElementById('forgotErrorText');
+
+    errorMsg.classList.remove('show');
+
+    if (!email) {
+      errorText.textContent = 'Please enter your email address.';
+      errorMsg.classList.add('show');
+      return;
+    }
+
+    const btn = document.getElementById('forgotSubmitBtn');
+    btn.classList.add('loading');
+
+    try {
+      const guard = await checkLoginGuard('check', email);
+      if (guard && guard.allowed === false) {
+        btn.classList.remove('loading');
+        errorText.textContent = 'This account is temporarily locked due to failed sign-in attempts. Password reset is unavailable until the lockout expires.';
+        errorMsg.classList.add('show');
+        return;
+      }
+
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset-password.html'
+      });
+
+      btn.classList.remove('loading');
+
+      if (error) {
+        errorText.textContent = error.message || 'Something went wrong. Please try again.';
+        errorMsg.classList.add('show');
+        return;
+      }
+
+      // Show sent confirmation
+      document.getElementById('forgotForm').style.display = 'none';
+      document.getElementById('forgotSentEmail').textContent = email;
+      document.getElementById('forgotSent').classList.add('show');
+
+    } catch (err) {
+      btn.classList.remove('loading');
+      errorText.textContent = 'Something went wrong. Please try again.';
+      errorMsg.classList.add('show');
+    }
+  }
+
+  // Clear errors on input
+  document.getElementById('email').addEventListener('input', clearErrors);
+  document.getElementById('password').addEventListener('input', clearErrors);
+</script>
+</body>
+</html>

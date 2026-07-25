@@ -1,0 +1,18 @@
+https://aquadesk.online/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' cdn.jsdelivr.net 'unsafe-inline'; connect-src 'self' https://xaabndtaevwgicibzcqm.supabase.co wss://xaabndtaevwgicibzcqm.supabase.co https://api.web3forms.com https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' fonts.gstatic.com data:; style-src 'self' fonts.googleapis.com 'unsafe-inline'; img-src 'self' data: blob: https://xaabndtaevwgicibzcqm.supabase.co; frame-ancestors 'none'; object-src 'none';
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+https://aquadesk.pages.dev/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' cdn.jsdelivr.net 'unsafe-inline'; connect-src 'self' https://xaabndtaevwgicibzcqm.supabase.co wss://xaabndtaevwgicibzcqm.supabase.co https://api.web3forms.com https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' fonts.gstatic.com data:; style-src 'self' fonts.googleapis.com 'unsafe-inline'; img-src 'self' data: blob: https://xaabndtaevwgicibzcqm.supabase.co; frame-ancestors 'none'; object-src 'none';
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+https://aquadeskpreprod.pages.dev/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' cdn.jsdelivr.net 'unsafe-inline'; connect-src 'self' https://xaabndtaevwgicibzcqm.supabase.co wss://xaabndtaevwgicibzcqm.supabase.co https://api.web3forms.com https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' fonts.gstatic.com data:; style-src 'self' fonts.googleapis.com 'unsafe-inline'; img-src 'self' data: blob: https://xaabndtaevwgicibzcqm.supabase.co; frame-ancestors 'none'; object-src 'none';
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

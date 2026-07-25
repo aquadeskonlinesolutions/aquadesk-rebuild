@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1A3C5E">
+<title>Diver Registration — AquaDesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1A3C5E;--navy-dark:#0F2540;--teal:#00A8AB;--teal-light:#E0F7F8;--teal-mid:#007B7D;--white:#FFFFFF;--off-white:#F8FAFC;--gray-100:#F1F5F9;--gray-200:#E2E8F0;--gray-300:#CBD5E1;--gray-400:#94A3B8;--gray-600:#475569;--gray-700:#334155;--dark:#0F172A;--red:#DC2626;--red-light:#FEF2F2;--green:#16A34A;--green-light:#F0FDF4;--orange:#D97706;--font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;--radius:12px}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-body);background:var(--off-white);color:var(--dark);min-height:100vh;font-size:16px;-webkit-font-smoothing:antialiased}
+.reg-header{background:var(--navy);padding:1.25rem 1.5rem;text-align:center;position:sticky;top:0;z-index:100}
+.dc-logo{width:48px;height:48px;background:var(--teal);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 0.5rem}
+.dc-name{font-family:var(--font-display);font-size:1.1rem;color:var(--white);letter-spacing:-0.01em}
+.dc-subtitle{font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:0.15rem}
+.progress-wrap{background:var(--white);border-bottom:1px solid var(--gray-200);padding:1rem 1.5rem}
+.progress-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem}
+.progress-label{font-size:0.82rem;font-weight:500;color:var(--navy)}
+.progress-count{font-size:0.78rem;color:var(--gray-400)}
+.progress-bar-track{height:6px;background:var(--gray-200);border-radius:999px;overflow:hidden}
+.progress-bar-fill{height:100%;background:var(--teal);border-radius:999px;transition:width 0.4s ease}
+.progress-dots{display:flex;justify-content:space-between;margin-top:0.5rem}
+.progress-dot{width:8px;height:8px;border-radius:50%;background:var(--gray-200);transition:background 0.3s}
+.progress-dot.done{background:var(--teal)}
+.progress-dot.active{background:var(--navy)}
+.form-container{max-width:520px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.screen{display:none}
+.screen.active{display:block}
+.welcome-card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius);padding:2rem 1.5rem;text-align:center;margin-top:1rem}
+.welcome-icon{font-size:3rem;margin-bottom:1rem}
+.welcome-title{font-family:var(--font-display);font-size:1.75rem;color:var(--navy);letter-spacing:-0.02em;margin-bottom:0.75rem}
+.welcome-sub{font-size:0.95rem;color:var(--gray-600);line-height:1.7;margin-bottom:1.5rem}
+.welcome-steps{text-align:left;background:var(--off-white);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.75rem}
+.welcome-step{display:flex;align-items:center;gap:0.75rem;padding:0.4rem 0;font-size:0.875rem;color:var(--gray-600)}
+.welcome-step-num{width:22px;height:22px;background:var(--teal-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;color:var(--teal-mid);flex-shrink:0}
+.time-badge{display:inline-flex;align-items:center;gap:0.4rem;padding:0.3rem 0.875rem;background:var(--teal-light);border-radius:999px;font-size:0.78rem;color:var(--teal-mid);font-weight:500;margin-bottom:1.5rem}
+.section-header{margin-bottom:1.5rem;padding-top:0.5rem}
+.section-title{font-family:var(--font-display);font-size:1.5rem;color:var(--navy);letter-spacing:-0.02em;margin-bottom:0.3rem}
+.section-sub{font-size:0.85rem;color:var(--gray-400)}
+.form-group{margin-bottom:1.1rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.875rem}
+.form-label{display:block;font-size:0.875rem;font-weight:500;color:var(--navy);margin-bottom:0.4rem}
+.form-label .required{color:var(--red);margin-left:2px}
+.form-label .optional{font-size:0.75rem;font-weight:400;color:var(--gray-400);margin-left:4px}
+.form-input,.form-select{width:100%;padding:0.875rem 1rem;font-family:var(--font-body);font-size:1rem;color:var(--dark);background:var(--white);border:1.5px solid var(--gray-200);border-radius:10px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none;appearance:none}
+.form-input::placeholder{color:var(--gray-400)}
+.form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394A3B8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.5rem}
+.form-input:focus,.form-select:focus{border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,168,171,0.1)}
+.form-input.error,.form-select.error{border-color:var(--red)}
+.form-input.auto{background:var(--gray-100);color:var(--gray-600);border-style:dashed}
+.form-hint{font-size:0.75rem;color:var(--gray-400);margin-top:0.3rem}
+.cert-upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.35rem;padding:1.5rem 1rem;border:1.5px dashed var(--gray-300);border-radius:var(--radius);background:var(--off-white);cursor:pointer;transition:border-color 0.2s,background 0.2s;text-align:center}
+.cert-upload-zone:hover{border-color:var(--teal);background:var(--teal-light)}
+.cert-upload-icon{color:var(--teal-mid)}
+.cert-upload-text{font-size:0.875rem;font-weight:500;color:var(--navy)}
+.cert-upload-sub{font-size:0.75rem;color:var(--gray-400)}
+.cert-preview-card{display:flex;align-items:center;gap:0.75rem;padding:0.6rem;border:1.5px solid var(--gray-200);border-radius:var(--radius);background:var(--white)}
+.cert-preview-img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid var(--gray-200);flex-shrink:0}
+.cert-preview-info{display:flex;flex-direction:column;align-items:flex-start;gap:0.35rem;flex:1}
+.cert-preview-label{font-size:0.82rem;font-weight:500;color:var(--dark)}
+.cert-preview-remove{padding:0.25rem 0.7rem;font-family:var(--font-body);font-size:0.72rem;font-weight:500;color:var(--red);background:var(--red-light);border:none;border-radius:999px;cursor:pointer;transition:opacity 0.15s}
+.cert-preview-remove:hover{opacity:0.8}
+.form-error{font-size:0.75rem;color:var(--red);margin-top:0.3rem;display:none}
+.form-error.show{display:block}
+.form-divider{height:1px;background:var(--gray-200);margin:1.25rem 0}
+.toggle-group{display:flex;gap:0.75rem}
+.toggle-btn{flex:1;padding:0.75rem;font-family:var(--font-body);font-size:0.9rem;font-weight:500;border:1.5px solid var(--gray-200);border-radius:10px;background:var(--white);color:var(--gray-600);cursor:pointer;transition:all 0.2s;text-align:center}
+.toggle-btn.active-yes{background:var(--green-light);border-color:var(--green);color:var(--green)}
+.toggle-btn.active-no{background:var(--red-light);border-color:var(--red);color:var(--red)}
+.equipment-type{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1.1rem}
+.radio-card{display:flex;align-items:flex-start;gap:0.875rem;padding:1rem 1.1rem;border:1.5px solid var(--gray-200);border-radius:10px;cursor:pointer;transition:all 0.2s;background:var(--white)}
+.radio-card.selected{border-color:var(--teal);background:var(--teal-light)}
+.radio-dot{width:20px;height:20px;border:2px solid var(--gray-300);border-radius:50%;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.radio-card.selected .radio-dot{border-color:var(--teal);background:var(--teal)}
+.radio-card.selected .radio-dot::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--white)}
+.radio-label{font-size:0.9rem;font-weight:500;color:var(--navy)}
+.radio-desc{font-size:0.78rem;color:var(--gray-400);margin-top:0.15rem}
+.partial-list{display:none;flex-direction:column;gap:0.75rem;background:var(--off-white);border:1px solid var(--gray-200);border-radius:10px;padding:1rem;margin-top:0.5rem}
+.partial-list.show{display:flex}
+.equip-quick-actions{display:flex;gap:0.6rem;margin-bottom:0.75rem}
+.equip-quick-btn{padding:0.35rem 0.875rem;font-family:var(--font-body);font-size:0.78rem;font-weight:500;border:1.5px solid var(--gray-200);border-radius:999px;background:var(--white);color:var(--teal-mid);cursor:pointer;transition:all 0.2s}
+.equip-quick-btn:hover{border-color:var(--teal);background:var(--teal-light)}
+.check-item{display:flex;align-items:center;gap:0.875rem}
+.check-box{width:22px;height:22px;border:2px solid var(--gray-300);border-radius:6px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:var(--white)}
+.check-box.checked{background:var(--teal);border-color:var(--teal)}
+.check-box.checked::after{content:'✓';color:white;font-size:0.75rem;font-weight:600}
+.check-label{font-size:0.9rem;color:var(--dark);flex:1;cursor:pointer}
+.check-size{width:100px}
+.weight-input{display:flex;align-items:center;gap:0.5rem}
+.weight-input input{width:80px;padding:0.5rem 0.75rem;font-size:0.9rem;border:1.5px solid var(--gray-200);border-radius:8px;outline:none;text-align:center}
+.weight-input input:focus{border-color:var(--teal)}
+.weight-unit{font-size:0.82rem;color:var(--gray-400)}
+/* Waiver screen */
+.waiver-pdf-btn{display:flex;align-items:center;justify-content:center;gap:0.6rem;width:100%;padding:1rem;background:var(--navy);color:var(--white);font-family:var(--font-body);font-size:0.95rem;font-weight:500;border:none;border-radius:10px;cursor:pointer;transition:background 0.2s;margin-bottom:0.75rem;text-decoration:none}
+.waiver-pdf-btn:hover{background:var(--navy-dark)}
+.waiver-pdf-btn.opened{background:var(--green);cursor:default}
+.waiver-opened-note{display:none;font-size:0.82rem;color:var(--green);font-weight:500;margin-bottom:1rem}
+.waiver-opened-note.show{display:block}
+.consent-text-box{max-height:340px;overflow-y:auto;padding:1rem 1.1rem;border:1.5px solid var(--gray-200);border-radius:10px;background:var(--white);font-size:0.875rem;line-height:1.65;color:var(--gray-700);margin-bottom:1.25rem}
+.consent-text-box p{margin-bottom:0.75rem}
+.consent-text-box ul,.consent-text-box ol{margin:0 0 0.75rem 1.25rem}
+.waiver-agree{display:flex;align-items:flex-start;gap:0.75rem;padding:1rem;background:var(--off-white);border:1.5px solid var(--gray-200);border-radius:10px;margin-bottom:1.25rem;cursor:pointer;transition:border-color 0.2s}
+.waiver-agree.checked{border-color:var(--teal);background:var(--teal-light)}
+.waiver-check{width:22px;height:22px;border:2px solid var(--gray-300);border-radius:6px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;background:var(--white);transition:all 0.2s}
+.waiver-agree.checked .waiver-check{background:var(--teal);border-color:var(--teal)}
+.waiver-agree.checked .waiver-check::after{content:'✓';color:white;font-size:0.78rem;font-weight:600}
+.waiver-agree-text{font-size:0.875rem;color:var(--gray-700);line-height:1.5}
+.sig-label{font-size:0.875rem;font-weight:500;color:var(--navy);margin-bottom:0.5rem}
+.sig-wrap{position:relative;border:1.5px solid var(--gray-200);border-radius:10px;overflow:hidden;background:var(--white);margin-bottom:0.5rem}
+#signatureCanvas{display:block;width:100%;height:160px;touch-action:none;cursor:crosshair}
+.sig-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.82rem;color:var(--gray-300);pointer-events:none;transition:opacity 0.2s}
+.sig-actions{display:flex;justify-content:flex-end;margin-bottom:1.25rem}
+.sig-clear{font-size:0.8rem;color:var(--gray-400);background:none;border:none;cursor:pointer;padding:0.3rem 0.5rem;transition:color 0.2s}
+.sig-clear:hover{color:var(--red)}
+.sig-date{font-size:0.82rem;color:var(--gray-400);margin-bottom:1.5rem}
+/* Medical questions */
+.medical-question-card{background:var(--white);border:1.5px solid var(--gray-200);border-radius:10px;padding:1rem 1.1rem;margin-bottom:0.875rem}
+.medical-question-text{font-size:0.9rem;color:var(--dark);line-height:1.5;margin-bottom:0.75rem}
+.medical-loading{font-size:0.875rem;color:var(--gray-400);text-align:center;padding:2rem 0}
+.medical-error-box{display:none;background:var(--red-light);border:1px solid #FECACA;border-radius:10px;padding:0.875rem 1rem;margin-bottom:1rem;font-size:0.875rem;color:var(--red)}
+.medical-error-box.show{display:block}
+.medical-friendly-note{display:none;background:var(--teal-light);border:1px solid rgba(0,168,171,0.22);border-radius:10px;padding:0.875rem 1rem;margin-bottom:1rem;font-size:0.84rem;color:var(--teal-mid);line-height:1.55}
+.medical-friendly-note.show{display:block}
+/* Equipment rental loading */
+.equip-loading{font-size:0.875rem;color:var(--gray-400);text-align:center;padding:1.5rem 0}
+/* Returning diver */
+.returning-banner{display:none;background:var(--teal-light);border:1px solid rgba(0,168,171,0.2);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:0.875rem;color:var(--teal-mid)}
+.returning-banner.show{display:block}
+/* Returning diver "Is this you?" prompt */
+.returning-prompt{display:none;background:var(--white);border:1.5px solid var(--teal);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem}
+.returning-prompt.show{display:block}
+.returning-prompt-title{font-size:0.82rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--teal-mid);margin-bottom:0.3rem}
+.returning-prompt-name{font-size:1rem;font-weight:600;color:var(--navy);margin-bottom:0.75rem}
+.returning-prompt-btns{display:flex;gap:0.75rem}
+.btn-returning-yes{flex:1;padding:0.65rem;background:var(--teal);color:var(--white);font-family:var(--font-body);font-size:0.875rem;font-weight:500;border:none;border-radius:8px;cursor:pointer;transition:background 0.2s}
+.btn-returning-yes:hover{background:var(--teal-mid)}
+.btn-returning-no{flex:1;padding:0.65rem;background:var(--white);color:var(--gray-600);font-family:var(--font-body);font-size:0.875rem;border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;transition:all 0.2s}
+.btn-returning-no:hover{border-color:var(--gray-400);color:var(--dark)}
+/* Minor flag banner */
+.minor-banner{display:none;background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:0.875rem 1rem;margin-top:0.5rem;font-size:0.82rem;color:#9A3412;font-weight:500}
+.minor-banner.show{display:block}
+/* Duplicate email banner */
+.duplicate-banner{display:none;background:var(--red-light);border:1px solid #FECACA;border-radius:10px;padding:0.875rem 1rem;margin-bottom:1rem;font-size:0.82rem;color:var(--red)}
+.duplicate-banner.show{display:block}
+/* Group banner */
+.group-banner{display:none;background:var(--teal-light);border:1px solid rgba(0,168,171,0.22);border-radius:10px;padding:1rem 1.25rem;margin:0 0 1.25rem;text-align:left;color:var(--navy)}
+.group-banner.show{display:block}
+.group-banner-label{font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--teal-mid);margin-bottom:0.25rem}
+.group-banner-name{font-size:0.95rem;font-weight:600;color:var(--navy)}
+.group-banner-sub{font-size:0.8rem;color:var(--gray-600);margin-top:0.15rem;line-height:1.5}
+/* Submit gate */
+.submit-gate-notice{display:none;background:var(--off-white);border:1px solid var(--gray-200);border-radius:10px;padding:0.875rem 1rem;margin-bottom:1rem;font-size:0.82rem;color:var(--gray-600);line-height:1.6}
+.submit-gate-notice.show{display:block}
+.submit-gate-notice li{margin-left:1.1rem}
+.submit-error-box{display:none;background:var(--red-light);border:1px solid #FECACA;border-radius:10px;padding:0.875rem 1rem;margin-bottom:1rem;font-size:0.875rem;color:var(--red);line-height:1.5}
+.submit-error-box.show{display:block}
+/* Buttons */
+.btn-continue{width:100%;padding:1rem;background:var(--navy);color:var(--white);font-family:var(--font-body);font-size:1rem;font-weight:500;border:none;border-radius:10px;cursor:pointer;transition:background 0.2s,opacity 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-top:1rem}
+.btn-continue:hover:not(:disabled){background:var(--navy-dark)}
+.btn-continue:disabled{opacity:0.45;cursor:not-allowed}
+.btn-back{width:100%;padding:0.875rem;background:transparent;color:var(--gray-600);font-family:var(--font-body);font-size:0.9rem;font-weight:400;border:1.5px solid var(--gray-200);border-radius:10px;cursor:pointer;transition:all 0.2s;margin-top:0.75rem;text-align:center}
+.btn-back:hover{border-color:var(--gray-400);color:var(--dark)}
+.btn-start{width:100%;padding:1rem;background:var(--teal);color:var(--white);font-family:var(--font-body);font-size:1rem;font-weight:500;border:none;border-radius:10px;cursor:pointer;transition:background 0.2s}
+.btn-start:hover{background:var(--teal-mid)}
+/* Confirmation */
+.confirm-card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius);padding:2.5rem 1.5rem;text-align:center;margin-top:1rem}
+.confirm-icon{width:72px;height:72px;background:var(--green-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1.25rem}
+.confirm-title{font-family:var(--font-display);font-size:1.75rem;color:var(--navy);letter-spacing:-0.02em;margin-bottom:0.5rem}
+.confirm-name{color:var(--teal);font-style:italic}
+.confirm-sub{font-size:0.9rem;color:var(--gray-600);line-height:1.7;margin-bottom:1.5rem}
+.confirm-details{background:var(--off-white);border-radius:10px;padding:1rem 1.25rem;text-align:left;margin-bottom:1.25rem}
+.confirm-detail-row{display:flex;justify-content:space-between;padding:0.4rem 0;font-size:0.875rem;border-bottom:1px solid var(--gray-200)}
+.confirm-detail-row:last-child{border-bottom:none}
+.confirm-detail-label{color:var(--gray-400)}
+.confirm-detail-value{font-weight:500;color:var(--dark)}
+.confirm-wave{font-size:0.875rem;color:var(--gray-400);margin-top:0.5rem}
+/* Loading */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.9);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+.loading-overlay.show{display:flex}
+.spinner{width:40px;height:40px;border:3px solid var(--gray-200);border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:0.9rem;color:var(--gray-600)}
+.powered-by{text-align:center;padding:1.5rem;font-size:0.75rem;color:var(--gray-400)}
+.powered-by span{color:var(--teal);font-weight:500}
+
+/* ─── PHONE PICKER ─────────────────────────────────────────────────────────── */
+.phone-row{display:flex;align-items:stretch;border:1.5px solid var(--gray-200);border-radius:10px;overflow:hidden;background:var(--white);transition:border-color 0.2s,box-shadow 0.2s}
+.phone-row:focus-within{border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,168,171,0.1)}
+.phone-row.error{border-color:var(--red)}
+.phone-code-btn{display:flex;align-items:center;gap:0.35rem;padding:0 0.875rem;background:var(--gray-100);border:none;border-right:1.5px solid var(--gray-200);cursor:pointer;font-family:var(--font-body);font-size:1rem;color:var(--dark);white-space:nowrap;min-height:52px;min-width:90px;flex-shrink:0;transition:background 0.2s}
+.phone-code-btn:hover{background:var(--gray-200)}
+.phone-code-btn .code-flag{font-size:1.15rem}
+.phone-code-btn .code-val{font-weight:500;font-size:0.9rem}
+.phone-code-btn .code-caret{font-size:0.65rem;color:var(--gray-400);margin-left:2px}
+.phone-num-input{flex:1;padding:0.875rem 1rem;font-family:var(--font-body);font-size:1rem;color:var(--dark);background:transparent;border:none;outline:none;min-width:0;-webkit-appearance:none;appearance:none}
+.phone-num-input::placeholder{color:var(--gray-400)}
+
+/* Country picker modal */
+.cp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500}
+.cp-overlay.show{display:block}
+.cp-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-radius:20px 20px 0 0;max-height:80vh;display:flex;flex-direction:column;z-index:501;transform:translateY(100%);transition:transform 0.28s ease}
+.cp-sheet.open{transform:translateY(0)}
+.cp-sheet-header{padding:1rem 1.25rem 0.75rem;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.cp-sheet-title{font-family:var(--font-display);font-size:1.1rem;color:var(--navy)}
+.cp-close-btn{background:none;border:none;font-size:1.5rem;color:var(--gray-400);cursor:pointer;padding:0.25rem 0.5rem;line-height:1;min-height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:background 0.2s}
+.cp-close-btn:hover{background:var(--gray-100)}
+.cp-search-wrap{padding:0.75rem 1.25rem;border-bottom:1px solid var(--gray-200);flex-shrink:0}
+.cp-search{width:100%;padding:0.75rem 1rem;font-family:var(--font-body);font-size:1rem;color:var(--dark);background:var(--gray-100);border:1.5px solid transparent;border-radius:10px;outline:none;-webkit-appearance:none;appearance:none;transition:border-color 0.2s}
+.cp-search:focus{border-color:var(--teal);background:var(--white)}
+.cp-list{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1}
+.cp-item{display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1.25rem;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--gray-100);min-height:56px}
+.cp-item:hover,.cp-item:active{background:var(--teal-light)}
+.cp-item-flag{font-size:1.4rem;flex-shrink:0}
+.cp-item-name{flex:1;font-size:0.9rem;color:var(--dark)}
+.cp-item-code{font-size:0.875rem;color:var(--gray-400);font-weight:500}
+.cp-empty{padding:2rem 1.25rem;text-align:center;font-size:0.875rem;color:var(--gray-400)}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Saving your registration...</div>
+</div>
+
+<div class="reg-header">
+  <div class="dc-logo" id="dcLogo">🌊</div>
+  <div class="dc-name" id="dcName">Loading...</div>
+  <div class="dc-subtitle">Diver Registration</div>
+</div>
+
+<div class="progress-wrap" id="progressWrap" style="display:none;">
+  <div class="progress-top">
+    <div class="progress-label" id="progressLabel">Personal Information</div>
+    <div class="progress-count" id="progressCount">Step 1 of 7</div>
+  </div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progressFill" style="width:14%;"></div>
+  </div>
+  <div class="progress-dots" id="progressDots"></div>
+</div>
+
+<div class="form-container">
+
+  <!-- SCREEN 0: WELCOME -->
+  <div class="screen active" id="screen-0">
+    <div class="welcome-card">
+      <div class="welcome-icon">🤿</div>
+      <h1 class="welcome-title">Welcome!</h1>
+      <div class="time-badge">⏱ Takes about 3 minutes</div>
+      <p class="welcome-sub">Please complete your diver registration before arriving at the dive center. This helps us prepare everything for your dive.</p>
+      <div class="group-banner" id="groupBanner">
+        <div class="group-banner-label">Group Registration</div>
+        <div class="group-banner-name" id="groupBannerName">Group booking</div>
+        <div class="group-banner-sub" id="groupBannerSub">Your registration will be placed in this group folder.</div>
+      </div>
+      <div class="welcome-steps">
+        <div class="welcome-step"><div class="welcome-step-num">1</div>Data privacy consent</div>
+        <div class="welcome-step"><div class="welcome-step-num">2</div>Personal &amp; contact information</div>
+        <div class="welcome-step"><div class="welcome-step-num">3</div>Emergency contact details</div>
+        <div class="welcome-step"><div class="welcome-step-num">4</div>Diving experience &amp; certifications</div>
+        <div class="welcome-step"><div class="welcome-step-num">5</div>Equipment rental preferences</div>
+        <div class="welcome-step"><div class="welcome-step-num">6</div>Medical health questions</div>
+        <div class="welcome-step"><div class="welcome-step-num">7</div>Liability waiver &amp; signature</div>
+      </div>
+      <button class="btn-start" onclick="startForm()">Start Registration →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 1: DATA PRIVACY CONSENT -->
+  <div class="screen" id="screen-1">
+    <div class="section-header">
+      <h2 class="section-title">Data Privacy Consent</h2>
+      <div class="section-sub">Please review before we collect your information</div>
+    </div>
+    <div class="consent-text-box" id="privacyNoticeBox">
+      <div class="medical-loading">Loading privacy notice...</div>
+    </div>
+    <div class="waiver-agree" id="privacyAgreeBox" onclick="togglePrivacyAgree()">
+      <div class="waiver-check" id="privacyCheck"></div>
+      <div class="waiver-agree-text" id="privacyAgreeText">I consent to this collection and processing of my personal data.</div>
+    </div>
+    <div class="form-error" id="privacyErr" style="margin-bottom:0.75rem;">Please provide consent to continue</div>
+    <button class="btn-continue" onclick="goToScreen(2)">Continue →</button>
+  </div>
+
+  <!-- SCREEN 2: PERSONAL INFO -->
+  <div class="screen" id="screen-2">
+    <div class="section-header">
+      <h2 class="section-title">Personal Information</h2>
+      <div class="section-sub">Tell us a bit about yourself</div>
+    </div>
+    <div class="returning-banner" id="returningBanner"><strong>Welcome back!</strong> We found your existing record. Please review and update your details below.</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">First Name <span class="required">*</span></label>
+        <input class="form-input" type="text" id="firstName" placeholder="Juan" autocomplete="given-name" oninput="enforceEnglishAlpha(this)">
+        <div class="form-hint">Please use English alphabet only.</div>
+        <div class="form-error" id="firstNameErr">Please enter your first name</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name <span class="required">*</span></label>
+        <input class="form-input" type="text" id="lastName" placeholder="Santos" autocomplete="family-name" oninput="enforceEnglishAlpha(this)">
+        <div class="form-hint">Please use English alphabet only.</div>
+        <div class="form-error" id="lastNameErr">Please enter your last name</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Birthday <span class="required">*</span></label>
+        <input class="form-input" type="date" id="birthday" onchange="calculateAge();validateBirthday()">
+        <div class="form-error" id="birthdayErr">Please enter your birthday</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Age</label>
+        <input class="form-input auto" type="number" id="age" placeholder="Auto" readonly>
+        <div class="form-hint">Auto-calculated</div>
+      </div>
+    </div>
+    <div id="minorBanner" class="minor-banner">👶 Thanks for letting us know. Since the diver is under 18, additional documents may be needed during arrival. The dive center team will guide you if anything is required.</div>
+    <div class="form-group">
+      <label class="form-label">Nationality <span class="required">*</span></label>
+      <input class="form-input" type="text" id="nationality" placeholder="Filipino">
+    </div>
+    <div class="form-divider"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Arrival to Island <span class="required">*</span></label>
+        <input class="form-input" type="date" id="arrivalDate" onchange="updateDepartureMin();validateArrivalDeparture()">
+        <div class="form-error" id="arrivalErr">Please select your arrival date</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Departure from Island <span class="required">*</span></label>
+        <input class="form-input" type="date" id="departureDate" onchange="validateArrivalDeparture()">
+        <div class="form-error" id="departureErr">Please select your departure date</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Hotel / Accommodation <span class="required">*</span></label>
+      <input class="form-input" type="text" id="accommodation" placeholder="e.g. Tepanee Beach Resort">
+    </div>
+    <button class="btn-continue" onclick="goToScreen(3)">Continue →</button>
+  </div>
+
+  <!-- SCREEN 2: CONTACT INFO -->
+  <div class="screen" id="screen-3">
+    <div class="section-header">
+      <h2 class="section-title">Contact Information</h2>
+      <div class="section-sub">How can we reach you?</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email Address <span class="required">*</span></label>
+      <input class="form-input" type="email" id="email" placeholder="juan@email.com" autocomplete="email" onblur="checkReturningDiver()">
+      <div class="form-error" id="emailErr">Please enter a valid email address</div>
+    </div>
+    <!-- Returning diver "Is this you?" prompt -->
+    <div class="returning-prompt" id="returningPrompt">
+      <div class="returning-prompt-title">Returning Diver Found</div>
+      <div class="returning-prompt-name" id="returningPromptName"></div>
+      <div class="returning-prompt-btns">
+        <button class="btn-returning-yes" onclick="confirmReturningDiver()">Yes, that's me</button>
+        <button class="btn-returning-no" onclick="denyReturningDiver()">No, different person</button>
+      </div>
+    </div>
+    <div class="duplicate-banner" id="duplicateBanner">⚠️ Duplicate email detected — the secretary will verify this during check-in.</div>
+    <div class="form-group">
+      <label class="form-label">Phone Number <span class="optional">(optional)</span></label>
+      <div class="phone-row" id="phoneRow">
+        <button type="button" class="phone-code-btn" id="phoneCodeBtn" onclick="openCountryPicker('phone')" aria-label="Select country code">
+          <span class="code-flag" id="phoneFlag">🇵🇭</span>
+          <span class="code-val" id="phoneCode">+63</span>
+          <span class="code-caret">▼</span>
+        </button>
+        <input class="phone-num-input" type="tel" id="phone" placeholder="9171234567" autocomplete="tel" inputmode="numeric">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">WhatsApp Number <span class="required">*</span></label>
+      <div class="phone-row" id="whatsappRow">
+        <button type="button" class="phone-code-btn" id="whatsappCodeBtn" onclick="openCountryPicker('whatsapp')" aria-label="Select country code">
+          <span class="code-flag" id="whatsappFlag">🇵🇭</span>
+          <span class="code-val" id="whatsappCode">+63</span>
+          <span class="code-caret">▼</span>
+        </button>
+        <input class="phone-num-input" type="tel" id="whatsapp" placeholder="9171234567" inputmode="numeric">
+      </div>
+      <div class="form-hint">We'll use this to send you updates about your dive</div>
+      <div class="form-error" id="whatsappErr">Please enter your WhatsApp number</div>
+    </div>
+    <button class="btn-continue" onclick="goToScreen(4)">Continue →</button>
+    <button class="btn-back" onclick="goToScreen(2)">← Back</button>
+  </div>
+
+  <!-- SCREEN 3: EMERGENCY CONTACT -->
+  <div class="screen" id="screen-4">
+    <div class="section-header">
+      <h2 class="section-title">Emergency Contact</h2>
+      <div class="section-sub">Who should we contact in case of emergency?</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Full Name <span class="required">*</span></label>
+      <input class="form-input" type="text" id="ecName" placeholder="Maria Santos" oninput="enforceEnglishAlpha(this)">
+      <div class="form-hint">Please use English alphabet only.</div>
+      <div class="form-error" id="ecNameErr">Please enter an emergency contact name</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Phone Number <span class="required">*</span></label>
+      <div class="phone-row" id="ecPhoneRow">
+        <button type="button" class="phone-code-btn" id="ecPhoneCodeBtn" onclick="openCountryPicker('ecPhone')" aria-label="Select country code">
+          <span class="code-flag" id="ecPhoneFlag">🇵🇭</span>
+          <span class="code-val" id="ecPhoneCode">+63</span>
+          <span class="code-caret">▼</span>
+        </button>
+        <input class="phone-num-input" type="tel" id="ecPhone" placeholder="9281234567" inputmode="numeric">
+      </div>
+      <div class="form-error" id="ecPhoneErr">Please enter an emergency contact phone number</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">WhatsApp <span class="required">*</span></label>
+      <input class="form-input" type="tel" id="ecWhatsapp" placeholder="09281234567">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="ecEmail" placeholder="maria@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Relationship <span class="required">*</span></label>
+      <select class="form-select" id="ecRelationship">
+        <option value="">Select relationship</option>
+        <option>Spouse</option><option>Parent</option><option>Sibling</option>
+        <option>Child</option><option>Friend</option><option>Other</option>
+      </select>
+      <div class="form-error" id="ecRelErr">Please select a relationship</div>
+    </div>
+    <button class="btn-continue" onclick="goToScreen(5)">Continue →</button>
+    <button class="btn-back" onclick="goToScreen(3)">← Back</button>
+  </div>
+
+  <!-- SCREEN 4: DIVER DETAILS -->
+  <div class="screen" id="screen-5">
+    <div class="section-header">
+      <h2 class="section-title">Diver Details</h2>
+      <div class="section-sub">Tell us about your diving experience</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Certification Level <span class="required">*</span></label>
+      <select class="form-select" id="certLevel" onchange="onCertChange()">
+        <option value="">Select certification</option>
+        <option>None</option><option>Open Water Diver</option>
+        <option>Advanced Open Water</option><option>Rescue Diver</option>
+        <option>Divemaster</option><option>Instructor</option>
+      </select>
+      <div class="form-error" id="certErr">Please select your certification level</div>
+    </div>
+    <div id="certDetailsBlock">
+    <div class="form-group">
+      <label class="form-label">Training Agency <span class="optional">(optional)</span></label>
+      <select class="form-select" id="agency">
+        <option value="">Select agency</option>
+        <option>PADI</option><option>SSI</option><option>NAUI</option><option>CMAS</option><option>Other</option>
+      </select>
+    </div>
+    <div id="diveExperienceRow">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Logged Dives <span class="required">*</span></label>
+          <input class="form-input" type="number" id="loggedDives" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Dive Date <span class="required">*</span></label>
+          <input class="form-input" type="date" id="lastDiveDate" onchange="validateLastDiveDate()">
+          <div class="form-error" id="lastDiveErr">Please enter your last dive date</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nitrox Certified?</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" id="nitroxYes" onclick="setToggle('nitrox',true)">✓ Yes</button>
+          <button type="button" class="toggle-btn active-no" id="nitroxNo" onclick="setToggle('nitrox',false)">✕ No</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Upload your certification card <span class="optional">(optional)</span></label>
+      <input type="file" accept="image/*" id="certCardFile" onchange="onCertCardFileChange(event)" style="display:none;">
+      <label for="certCardFile" class="cert-upload-zone" id="certUploadZone">
+        <svg class="cert-upload-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <span class="cert-upload-text">Tap to upload a photo</span>
+        <span class="cert-upload-sub">JPG or PNG</span>
+      </label>
+      <div class="form-hint" id="certCardHint">No problem — please have your certification card ready for the dive center to verify at check-in.</div>
+      <div id="certCardPreviewWrap" class="cert-preview-card" style="display:none;margin-top:0.6rem;">
+        <img id="certCardPreview" class="cert-preview-img" alt="Certification card preview">
+        <div class="cert-preview-info">
+          <span class="cert-preview-label">Certification card added</span>
+          <button type="button" class="cert-preview-remove" onclick="removeCertCard()">Remove</button>
+        </div>
+      </div>
+    </div>
+    </div><!-- end certDetailsBlock -->
+    <div class="form-group">
+      <label class="form-label">Food Allergies <span class="optional">(optional)</span></label>
+      <input class="form-input" type="text" id="foodAllergies" placeholder="e.g. Shellfish, Nuts — or leave blank if none">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Do you have dive insurance? <span class="optional">(optional)</span></label>
+      <div class="toggle-group">
+        <button type="button" class="toggle-btn" id="insuranceYes" onclick="setHasInsurance(true)">✓ Yes</button>
+        <button type="button" class="toggle-btn" id="insuranceNo" onclick="setHasInsurance(false)">✕ No</button>
+      </div>
+    </div>
+    <div id="insuranceYesBlock" style="display:none;">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Provider</label>
+          <input class="form-input" type="text" id="insuranceProvider" placeholder="e.g. DAN, World Nomads">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Policy Number</label>
+          <input class="form-input" type="text" id="insurancePolicyNumber" placeholder="Policy #">
+        </div>
+      </div>
+    </div>
+    <div id="insuranceNoBlock" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Would you like to get dive insurance?</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" id="wantsReferralYes" onclick="setWantsReferral(true)">✓ Yes</button>
+          <button type="button" class="toggle-btn" id="wantsReferralNo" onclick="setWantsReferral(false)">✕ No</button>
+        </div>
+      </div>
+      <div class="form-hint" id="insuranceReferralLinkBox" style="display:none;">
+        You can get dive insurance here: <a id="insuranceReferralAnchor" href="#" target="_blank" rel="noopener">Get dive insurance →</a>
+      </div>
+    </div>
+    <button class="btn-continue" onclick="continueFromDiverDetails()">Continue →</button>
+    <button class="btn-back" onclick="goToScreen(4)">← Back</button>
+  </div>
+
+  <!-- SCREEN 5: EQUIPMENT -->
+  <div class="screen" id="screen-6">
+    <div class="section-header">
+      <h2 class="section-title">Equipment Rental</h2>
+      <div class="section-sub">Do you need to rent equipment?</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Do you need equipment?</label>
+      <div class="toggle-group">
+        <button type="button" class="toggle-btn" id="equipYes" onclick="setEquipment(true)">✓ Yes</button>
+        <button type="button" class="toggle-btn active-no" id="equipNo" onclick="setEquipment(false)">✕ No — I have my own</button>
+      </div>
+    </div>
+    <div id="equipmentOptions" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Select the gear you need</label>
+        <div class="equip-quick-actions">
+          <button type="button" class="equip-quick-btn" onclick="selectAllEquipment()">Select all</button>
+          <button type="button" class="equip-quick-btn" onclick="clearAllEquipment()">Clear</button>
+        </div>
+      </div>
+      <!-- Dynamic equipment checklist loaded from equipment_rental_rates -->
+      <div class="partial-list show" id="partialList">
+        <div class="equip-loading" id="equipLoading">Loading available equipment...</div>
+      </div>
+      <div class="form-group" style="margin-top:1rem;">
+        <label class="form-label">Computer Rental <span class="optional">(separate rental)</span></label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" id="computerYes" onclick="setToggle('computer',true)">✓ Yes</button>
+          <button type="button" class="toggle-btn active-no" id="computerNo" onclick="setToggle('computer',false)">✕ No</button>
+        </div>
+        <div class="form-hint" id="computerRateHint">Rate will be confirmed by the dive center</div>
+      </div>
+    </div>
+    <button class="btn-continue" onclick="goToScreen(7)">Continue →</button>
+    <button class="btn-back" onclick="goToScreen(5)">← Back</button>
+  </div>
+
+  <!-- SCREEN 6: MEDICAL QUESTIONS -->
+  <div class="screen" id="screen-7">
+    <div class="section-header">
+      <h2 class="section-title">Health Declaration</h2>
+      <div class="section-sub">Please answer all questions honestly</div>
+    </div>
+    <div class="medical-error-box" id="medicalErr">Please answer all health questions before continuing.</div>
+    <div class="medical-friendly-note" id="medicalFriendlyNote">Thanks for letting us know. Additional requirements may be needed during arrival. The dive center team will guide you if anything is required.</div>
+    <div id="medicalQuestionsContainer">
+      <div class="medical-loading">Loading health questions...</div>
+    </div>
+    <button class="btn-continue" id="btnMedicalContinue" onclick="goToScreen(8)">Continue →</button>
+    <button class="btn-back" onclick="backFromMedical()">← Back</button>
+  </div>
+
+  <!-- SCREEN 7: WAIVER -->
+  <div class="screen" id="screen-8">
+    <div class="section-header">
+      <h2 class="section-title">Liability Waiver</h2>
+      <div class="section-sub">Please read and sign before submitting</div>
+    </div>
+    <div class="waiver-content-header" id="waiverContentHeader" style="display:none;align-items:center;gap:0.6rem;margin-bottom:0.75rem;">
+      <img id="waiverDcLogo" src="" alt="" style="width:32px;height:32px;border-radius:8px;object-fit:contain;display:none;">
+      <span id="waiverDcName" style="font-size:0.85rem;font-weight:600;color:var(--navy);"></span>
+    </div>
+    <div class="consent-text-box" id="waiverContentBox">
+      <div class="medical-loading">Loading waiver...</div>
+    </div>
+    <div class="waiver-agree" id="waiverAgreeBox" onclick="toggleWaiverAgree()">
+      <div class="waiver-check" id="waiverCheck"></div>
+      <div class="waiver-agree-text">I have read and fully understand the liability waiver. I voluntarily agree to its terms and conditions.</div>
+    </div>
+    <div class="form-error" id="waiverErr" style="margin-bottom:0.75rem;">Please agree to the waiver to continue</div>
+    <div class="sig-label">Your Signature <span style="color:var(--red);">*</span></div>
+    <div class="sig-wrap"><canvas id="signatureCanvas"></canvas><div class="sig-placeholder" id="sigPlaceholder">Sign here with your finger or mouse</div></div>
+    <div class="sig-actions"><button class="sig-clear" onclick="clearSignature()">Clear signature</button></div>
+    <div class="form-error" id="sigErr">Please provide your signature</div>
+    <div class="sig-date" id="sigDate"></div>
+    <div class="submit-gate-notice" id="submitGateNotice">
+      <strong>To enable submission, please complete:</strong>
+      <ul id="submitGateList"></ul>
+    </div>
+    <div class="submit-error-box" id="submitErr">Something went wrong. Please check your details and try again.</div>
+    <button class="btn-continue" id="btnSubmit" onclick="submitForm()" disabled>Submit Registration →</button>
+    <button class="btn-back" onclick="goToScreen(7)">← Back</button>
+  </div>
+
+  <!-- SCREEN 8: CONFIRMATION -->
+  <div class="screen" id="screen-9">
+    <div class="confirm-card">
+      <div class="confirm-icon">✅</div>
+      <h2 class="confirm-title">Thank you, <span class="confirm-name" id="confirmName">Diver</span>!</h2>
+      <p class="confirm-sub">Your registration has been submitted successfully. The dive center has received your details and will be ready for your arrival.</p>
+      <div class="confirm-details" id="confirmDetails"></div>
+      <p class="confirm-wave">🌊 See you underwater!</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="powered-by">Powered by <span>AquaDesk</span> · aquadesk.online</div>
+
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://xaabndtaevwgicibzcqm.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+const { createClient } = supabase;
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// State
+let currentScreen = 0;
+let diveCenterId = null;
+let existingDiverId = null;
+let isReturningDiver = false;
+let isDuplicateEmail = false;
+let currentGroupId = null;
+let currentGroup = null;
+let nitroxCertified = false;
+let needsEquipment = false;
+let needsComputer = false;
+let waiverAgreed = false;
+let signatureSigned = false;
+let checkedItems = {};
+let certCardBlob = null;
+let hasDiveInsurance = null; // null = unanswered (skippable), true/false once answered
+let wantsInsuranceReferral = null;
+let dcOffersInsurance = false;
+let dcInsuranceReferralLink = '';
+let medicalAnswers = {}; // { questionId: true/false }
+let medicalQuestions = []; // loaded from DB
+let equipmentRates = []; // loaded from DB
+let currentWaiverContentHtml = ''; // sanitized dive_centers.waiver_content, snapshotted at submit
+let isMinor = false;
+let existingDiverNotes = null;
+let privacyConsentAgreed = false;
+let currentPrivacyNotice = null; // { content } resolved from the platform-wide privacy_notice table
+let currentDcName = 'the dive center';
+
+const TOTAL_STEPS = 8;
+const screenLabels = ['Welcome','Data Privacy Consent','Personal Information','Contact Information','Emergency Contact','Diver Details','Equipment','Health Declaration','Waiver & Signature'];
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  diveCenterId = params.get('dc');
+  currentGroupId = params.get('group_id') || params.get('group') || params.get('g');
+
+  await loadGroupFromLink();
+  await loadDiveCenterData();
+  await loadPrivacyNotice();
+
+  setupSignaturePad();
+  document.getElementById('sigDate').textContent = 'Date: ' + new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const today = inputDate(new Date());
+  document.getElementById('birthday').max = today;
+  document.getElementById('lastDiveDate').max = today;
+  updateDepartureMin();
+}
+
+async function loadDiveCenterData() {
+  if (!diveCenterId) {
+    document.getElementById('dcName').textContent = 'Demo Dive Center';
+    renderWaiverContent('', null);
+    return;
+  }
+  const { data, error } = await client.from('dive_centers').select('name,logo_url,waiver_content,offers_dive_insurance,insurance_referral_link').eq('id', diveCenterId).single();
+  if (error || !data) {
+    document.getElementById('dcName').textContent = 'Demo Dive Center';
+    renderWaiverContent('', null);
+    return;
+  }
+  document.getElementById('dcName').textContent = data.name;
+  currentDcName = data.name || 'the dive center';
+  document.title = 'Diver Registration — ' + data.name;
+  dcOffersInsurance = data.offers_dive_insurance === true;
+  dcInsuranceReferralLink = data.insurance_referral_link || '';
+  renderWaiverContent(data.waiver_content, { name: data.name, logo_url: data.logo_url });
+}
+
+// Allow-list mirrors settings.html's waiver editor sanitizer — defense in depth,
+// re-sanitize here rather than trusting upstream sanitization alone.
+const WAIVER_ALLOWED_TAGS = ['p', 'br', 'b', 'strong', 'i', 'em', 'ul', 'ol', 'li'];
+const WAIVER_ALLOWED_ATTR = [];
+
+function renderWaiverContent(rawHtml, dc) {
+  const box = document.getElementById('waiverContentBox');
+  if (typeof DOMPurify === 'undefined') {
+    box.innerHTML = '<span style="color:var(--red);">Waiver text could not be loaded securely. Please contact the dive center.</span>';
+    currentWaiverContentHtml = '';
+    return;
+  }
+  const clean = DOMPurify.sanitize(rawHtml || '', { ALLOWED_TAGS: WAIVER_ALLOWED_TAGS, ALLOWED_ATTR: WAIVER_ALLOWED_ATTR });
+  currentWaiverContentHtml = clean;
+  box.innerHTML = clean || '<span style="color:var(--gray-400);">This dive center has not yet added waiver text. Please contact them directly before your dive.</span>';
+
+  const header = document.getElementById('waiverContentHeader');
+  if (dc && (dc.name || dc.logo_url)) {
+    header.style.display = 'flex';
+    document.getElementById('waiverDcName').textContent = dc.name || '';
+    const logoEl = document.getElementById('waiverDcLogo');
+    if (dc.logo_url) {
+      logoEl.src = dc.logo_url;
+      logoEl.style.display = 'block';
+    } else {
+      logoEl.style.display = 'none';
+    }
+  } else {
+    header.style.display = 'none';
+  }
+}
+
+async function loadGroupFromLink() {
+  if (!currentGroupId) return;
+  try {
+    const { data, error } = await client.from('groups').select('id,dive_center_id,group_name,leader_name,expected_count,arrival_date,is_active').eq('id', currentGroupId).single();
+    if (error || !data) { showGroupFallback(); return; }
+    if (data.is_active === false) { showGroupFallback(); return; }
+    currentGroup = data;
+    currentGroupId = data.id;
+    if (!diveCenterId && data.dive_center_id) diveCenterId = data.dive_center_id;
+    await showGroupBanner(data);
+  } catch (err) {
+    console.warn('Group link could not be loaded:', err);
+    showGroupFallback();
+  }
+}
+
+async function showGroupBanner(group) {
+  const banner = document.getElementById('groupBanner');
+  if (!banner) return;
+  banner.classList.add('show');
+  document.getElementById('groupBannerName').textContent = group.group_name || 'Group booking';
+
+  // Fetch current registered count for this group
+  let registeredCount = null;
+  try {
+    const { count } = await client.from('divers').select('id', { count: 'exact', head: true }).eq('group_id', group.id);
+    registeredCount = count;
+  } catch (e) {
+    // Count fetch failed — show expected only
+  }
+
+  const parts = [];
+  if (group.arrival_date) parts.push('Arrival: ' + group.arrival_date);
+  if (group.expected_count != null) {
+    const countStr = registeredCount !== null
+      ? registeredCount + '/' + group.expected_count + ' registered'
+      : 'Expected: ' + group.expected_count;
+    parts.push(countStr);
+  }
+  if (group.leader_name) parts.push('Leader: ' + group.leader_name);
+  document.getElementById('groupBannerSub').textContent = parts.length ? parts.join(' · ') : 'Your registration will be placed in this group folder.';
+}
+
+function showGroupFallback() {
+  const banner = document.getElementById('groupBanner');
+  if (!banner) return;
+  banner.classList.add('show');
+  document.getElementById('groupBannerName').textContent = 'Group registration link';
+  document.getElementById('groupBannerSub').textContent = 'Your registration will be placed with this group.';
+}
+
+// ─── MEDICAL QUESTIONS ───────────────────────────────────────────────────────
+
+async function loadMedicalQuestions() {
+  const container = document.getElementById('medicalQuestionsContainer');
+  if (!diveCenterId) {
+    container.innerHTML = '<p style="font-size:0.875rem;color:var(--gray-400);text-align:center;padding:1.5rem 0;">No health questions configured for this dive center.</p>';
+    return;
+  }
+  try {
+    const { data, error } = await client
+      .from('medical_questions')
+      .select('id,question_text,sort_order')
+      .eq('dive_center_id', diveCenterId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      medicalQuestions = [];
+      container.innerHTML = '<p style="font-size:0.875rem;color:var(--gray-400);text-align:center;padding:1.5rem 0;">No health questions configured for this dive center.</p>';
+      return;
+    }
+
+    medicalQuestions = data;
+    container.innerHTML = '';
+    data.forEach(function(q) {
+      const card = document.createElement('div');
+      card.className = 'medical-question-card';
+      card.innerHTML =
+        '<div class="medical-question-text">' + escapeHtml(q.question_text) + '</div>' +
+        '<div class="toggle-group">' +
+          '<button type="button" class="toggle-btn" id="mq-yes-' + q.id + '" onclick="setMedicalAnswer(' + q.id + ', true)">✓ Yes</button>' +
+          '<button type="button" class="toggle-btn" id="mq-no-' + q.id + '" onclick="setMedicalAnswer(' + q.id + ', false)">✕ No</button>' +
+        '</div>';
+      container.appendChild(card);
+    });
+    updateMedicalFriendlyNote();
+    updateSubmitGate();
+  } catch (err) {
+    console.error('Error loading medical questions:', err);
+    container.innerHTML = '<p style="font-size:0.875rem;color:var(--red);text-align:center;padding:1.5rem 0;">Could not load health questions. Please try refreshing.</p>';
+  }
+}
+
+function setMedicalAnswer(qId, val) {
+  medicalAnswers[qId] = val;
+  const yesBtn = document.getElementById('mq-yes-' + qId);
+  const noBtn = document.getElementById('mq-no-' + qId);
+  if (yesBtn) yesBtn.className = 'toggle-btn' + (val ? ' active-yes' : '');
+  if (noBtn) noBtn.className = 'toggle-btn' + (!val ? ' active-no' : '');
+  updateMedicalFriendlyNote();
+  updateSubmitGate();
+}
+
+function updateMedicalFriendlyNote() {
+  const note = document.getElementById('medicalFriendlyNote');
+  if (!note) return;
+  note.className = 'medical-friendly-note' + (anyMedicalYes() ? ' show' : '');
+}
+
+function allMedicalAnswered() {
+  if (medicalQuestions.length === 0) return true;
+  return medicalQuestions.every(function(q) {
+    return medicalAnswers[q.id] !== undefined;
+  });
+}
+
+function anyMedicalYes() {
+  return medicalQuestions.some(function(q) {
+    return medicalAnswers[q.id] === true;
+  });
+}
+
+// ─── EQUIPMENT RENTAL RATES ──────────────────────────────────────────────────
+
+async function loadEquipmentRates() {
+  if (!diveCenterId) return;
+  try {
+    const { data, error } = await client
+      .from('equipment_rental_rates')
+      .select('id,item_name,rate,charge_type')
+      .eq('dive_center_id', diveCenterId)
+      .eq('is_active', true)
+      .order('item_name', { ascending: true });
+
+    if (error) throw error;
+
+    equipmentRates = data || [];
+    renderPartialEquipmentList();
+    renderComputerRate();
+  } catch (err) {
+    console.error('Error loading equipment rates:', err);
+  }
+}
+
+function renderPartialEquipmentList() {
+  const list = document.getElementById('partialList');
+  // Remove the loading placeholder
+  const loading = document.getElementById('equipLoading');
+  if (loading) loading.remove();
+
+  if (equipmentRates.length === 0) {
+    list.innerHTML = '<p style="font-size:0.82rem;color:var(--gray-400);">No individual rental items configured. Please ask the dive center.</p>';
+    return;
+  }
+
+  // Known size-based items
+  const sizeItems = ['bcd', 'wetsuit', 'fins', 'boots'];
+  const bcdSizes = ['XXS','XS','S','M','L','XL','XXL','XXXL'];
+  const wetsuitSizes = ['XXS','XS','S','M','L','XL','XXL','XXXL','XXXXL'];
+  const finSizes = ['S','M','L','XL','XXL','XXXL'];
+  const bootSizes = ['38','39','40','41','42','43','44','45','46'];
+
+  // Filter out computer and Full Set from the checklist — computer is a separate toggle,
+  // and Full Set is a legacy billing-rate row only (no longer a selectable item).
+  const partialItems = equipmentRates.filter(function(r) {
+    const n = (r.item_name || '').toLowerCase();
+    return n && n !== 'computer' && n !== 'dive computer' && n !== 'full set';
+  });
+
+  if (partialItems.length === 0) {
+    list.innerHTML = '<p style="font-size:0.82rem;color:var(--gray-400);">No individual rental items configured. Please ask the dive center.</p>';
+    return;
+  }
+
+  list.innerHTML = '';
+  partialItems.forEach(function(r) {
+    const key = r.item_name.toLowerCase().replace(/\s+/g, '-');
+    const label = r.item_name;
+    const needsSize = sizeItems.includes(key) || sizeItems.some(function(s) { return key.includes(s); });
+    let sizeOptions = [];
+    if (key.includes('bcd')) sizeOptions = bcdSizes;
+    else if (key.includes('wetsuit')) sizeOptions = wetsuitSizes;
+    else if (key.includes('fin')) sizeOptions = finSizes;
+    else if (key.includes('boot')) sizeOptions = bootSizes;
+
+    const item = document.createElement('div');
+    item.className = 'check-item';
+    item.innerHTML =
+      '<div class="check-box" id="chk-' + key + '" onclick="toggleCheck(\'' + key + '\')"></div>' +
+      '<div class="check-label" onclick="toggleCheck(\'' + key + '\')">' + escapeHtml(label) + '</div>' +
+      (needsSize
+        ? '<select class="form-select check-size" id="size-' + key + '" style="display:none;">' +
+          '<option value="">Size</option>' +
+          sizeOptions.map(function(s) { return '<option>' + s + '</option>'; }).join('') +
+          '</select>'
+        : '') +
+      (key.includes('weight')
+        ? '<div class="weight-input" id="weight-input" style="display:none;"><input type="number" id="weightKg" placeholder="0" min="0" max="20"><span class="weight-unit">kg</span></div>'
+        : '');
+    list.appendChild(item);
+  });
+}
+
+function renderComputerRate() {
+  const computerItem = equipmentRates.find(function(r) {
+    return r.item_name && (r.item_name.toLowerCase() === 'computer' || r.item_name.toLowerCase() === 'dive computer');
+  });
+  if (computerItem && computerItem.rate) {
+    const hint = document.getElementById('computerRateHint');
+    if (hint) hint.textContent = '₱' + parseFloat(computerItem.rate).toLocaleString() + (computerItem.charge_type === 'per_day' ? ' per day' : '');
+  }
+}
+
+// ─── PRIVACY CONSENT ────────────────────────────────────────────────────────
+
+async function loadPrivacyNotice() {
+  const box = document.getElementById('privacyNoticeBox');
+  const { data, error } = await client.from('privacy_notice').select('content').eq('id', true).maybeSingle();
+  if (error || !data || !data.content) {
+    box.innerHTML = '<span style="color:var(--red);">Could not load the privacy notice. Please refresh the page or contact the dive center.</span>';
+    currentPrivacyNotice = null;
+    return;
+  }
+  // Substitute the [Dive Center Name] placeholder with the actual dive center name so the
+  // permanent per-diver snapshot reflects exactly the text shown, not an unfilled placeholder.
+  const resolvedContent = data.content.split('[Dive Center Name]').join(currentDcName);
+  currentPrivacyNotice = { content: resolvedContent };
+  const clean = (typeof DOMPurify !== 'undefined')
+    ? DOMPurify.sanitize(resolvedContent, { ALLOWED_TAGS: WAIVER_ALLOWED_TAGS, ALLOWED_ATTR: WAIVER_ALLOWED_ATTR })
+    : escapeHtml(resolvedContent);
+  box.innerHTML = clean;
+}
+
+function togglePrivacyAgree() {
+  privacyConsentAgreed = !privacyConsentAgreed;
+  document.getElementById('privacyAgreeBox').className = 'waiver-agree' + (privacyConsentAgreed ? ' checked' : '');
+  document.getElementById('privacyErr').classList.remove('show');
+}
+
+// ─── SUBMIT GATE ──────────────────────────────────────────────────────────────
+
+function updateSubmitGate() {
+  const btnSubmit = document.getElementById('btnSubmit');
+  if (!btnSubmit) return;
+
+  const missing = [];
+  if (!privacyConsentAgreed) missing.push('Consent to data privacy collection');
+  if (!waiverAgreed) missing.push('Agree to the waiver');
+  if (!signatureSigned) missing.push('Provide your signature');
+  if (!allMedicalAnswered()) missing.push('Answer all health questions');
+
+  if (missing.length === 0) {
+    btnSubmit.disabled = false;
+    document.getElementById('submitGateNotice').classList.remove('show');
+  } else {
+    btnSubmit.disabled = true;
+    const notice = document.getElementById('submitGateNotice');
+    const list = document.getElementById('submitGateList');
+    list.innerHTML = missing.map(function(m) { return '<li>' + m + '</li>'; }).join('');
+    notice.classList.add('show');
+  }
+}
+
+// ─── RETURNING DIVER ──────────────────────────────────────────────────────────
+
+async function checkReturningDiver() {
+  const email = document.getElementById('email').value.trim();
+  if (!email || !diveCenterId) return;
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!re.test(email)) return;
+
+  const { data: rows } = await client.rpc('check_returning_diver', { p_email: email, p_dive_center_id: diveCenterId });
+  const data = rows && rows[0];
+
+  if (data) {
+    // Show "Is this you?" prompt — do NOT pre-fill yet
+    document.getElementById('returningPromptName').textContent = 'Is this you? — ' + data.first_name + ' ' + data.last_name;
+    document.getElementById('returningPrompt').classList.add('show');
+    // Store for use on confirm
+    window._foundDiver = data;
+  } else {
+    // No match — treat as new diver, clear any prompt
+    document.getElementById('returningPrompt').classList.remove('show');
+    document.getElementById('duplicateBanner').classList.remove('show');
+    isReturningDiver = false;
+    existingDiverId = null;
+    isDuplicateEmail = false;
+    existingDiverNotes = null;
+    window._foundDiver = null;
+  }
+}
+
+async function confirmReturningDiver() {
+  // Diver said yes — pre-fill and mark as returning
+  const found = window._foundDiver;
+  if (!found) return;
+
+  isReturningDiver = true;
+  existingDiverId = found.id;
+  isDuplicateEmail = false;
+
+  document.getElementById('returningPrompt').classList.remove('show');
+  document.getElementById('duplicateBanner').classList.remove('show');
+  document.getElementById('returningBanner').classList.add('show');
+
+  // Fetch only the fields needed to pre-fill (no waiver/medical/contact data)
+  const { data: rows } = await client.rpc('get_diver_prefill', { p_diver_id: found.id, p_dive_center_id: diveCenterId });
+  const data = rows && rows[0];
+  if (data) {
+    existingDiverNotes = data.notes || null;
+    setIfValue('firstName', data.first_name);
+    setIfValue('lastName', data.last_name);
+    setIfValue('nationality', data.nationality);
+    setIfValue('accommodation', data.accommodation);
+    if (data.birthday) document.getElementById('birthday').value = data.birthday;
+    calculateAge();
+  }
+}
+
+function denyReturningDiver() {
+  // Different person — treat as new, flag duplicate
+  isReturningDiver = false;
+  existingDiverId = null;
+  isDuplicateEmail = true;
+  existingDiverNotes = null;
+  document.getElementById('returningPrompt').classList.remove('show');
+  document.getElementById('duplicateBanner').classList.add('show');
+  window._foundDiver = null;
+}
+
+function setIfValue(fieldId, value) {
+  if (value) document.getElementById(fieldId).value = value;
+}
+
+// ─── ENGLISH ALPHA LOCK ───────────────────────────────────────────────────────
+
+function enforceEnglishAlpha(input) {
+  // Allow: a-z A-Z space hyphen apostrophe dot (for names like O'Brien, St. John, Smith-Jones)
+  const cleaned = input.value.replace(/[^a-zA-Z\s\-'.]/g, '');
+  if (input.value !== cleaned) input.value = cleaned;
+}
+
+// ─── FORM NAVIGATION ──────────────────────────────────────────────────────────
+
+function inputDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+
+function startForm() {
+  goToScreen(1);
+  document.getElementById('progressWrap').style.display = 'block';
+}
+
+function goToScreen(num) {
+  if (num > currentScreen && currentScreen > 0 && !validateScreen(currentScreen)) return;
+  document.getElementById('screen-' + currentScreen).classList.remove('active');
+  document.getElementById('screen-' + num).classList.add('active');
+  currentScreen = num;
+  updateProgress();
+
+  // Lazy-load medical questions when entering screen 7
+  if (num === 7 && medicalQuestions.length === 0) {
+    loadMedicalQuestions();
+  }
+
+  // Lazy-load equipment rates when entering screen 6
+  if (num === 6 && equipmentRates.length === 0) {
+    loadEquipmentRates();
+  }
+
+  // Restore cert-based field visibility when returning to screen 5
+  if (num === 5) {
+    onCertChange();
+  }
+
+  // Setup signature pad when entering screen 8
+  if (num === 8) {
+    setTimeout(setupSignaturePad, 100);
+    updateSubmitGate();
+  }
+
+  window.scrollTo(0, 0);
+}
+
+function updateProgress() {
+  if (currentScreen === 0 || currentScreen === 9) {
+    document.getElementById('progressWrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('progressWrap').style.display = 'block';
+  const pct = (currentScreen / TOTAL_STEPS) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = screenLabels[currentScreen];
+  document.getElementById('progressCount').textContent = 'Step ' + currentScreen + ' of ' + TOTAL_STEPS;
+  const dots = document.getElementById('progressDots');
+  dots.innerHTML = Array.from({ length: TOTAL_STEPS }, function(_, i) {
+    const cls = i + 1 < currentScreen ? 'done' : i + 1 === currentScreen ? 'active' : '';
+    return '<div class="progress-dot ' + cls + '"></div>';
+  }).join('');
+}
+
+// ─── VALIDATION ───────────────────────────────────────────────────────────────
+
+function validateScreen(screen) {
+  let valid = true;
+  function showErr(id, errId, msg) {
+    const el = document.getElementById(id);
+    const err = document.getElementById(errId);
+    if (!el || !el.value.trim()) {
+      if (el) el.classList.add('error');
+      if (err) { if (msg) err.textContent = msg; err.classList.add('show'); }
+      valid = false;
+    } else {
+      el.classList.remove('error');
+      if (err) err.classList.remove('show');
+    }
+  }
+
+  if (screen === 1) {
+    if (!privacyConsentAgreed) {
+      document.getElementById('privacyErr').classList.add('show');
+      valid = false;
+    } else {
+      document.getElementById('privacyErr').classList.remove('show');
+    }
+  }
+  if (screen === 2) {
+    showErr('firstName', 'firstNameErr');
+    showErr('lastName', 'lastNameErr');
+    showErr('birthday', 'birthdayErr');
+    showErr('arrivalDate', 'arrivalErr');
+    showErr('departureDate', 'departureErr');
+    if (!validateBirthday()) valid = false;
+    if (!validateArrivalDeparture()) valid = false;
+  }
+  if (screen === 3) {
+    const email = document.getElementById('email');
+    const emailErr = document.getElementById('emailErr');
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.value || !re.test(email.value)) {
+      email.classList.add('error');
+      emailErr.classList.add('show');
+      valid = false;
+    } else {
+      email.classList.remove('error');
+      emailErr.classList.remove('show');
+    }
+    // Validate WhatsApp: check the number input portion, not the full combined value
+    const waNum = document.getElementById('whatsapp');
+    const waErr = document.getElementById('whatsappErr');
+    const waRow = document.getElementById('whatsappRow');
+    if (!waNum.value.trim()) {
+      if (waRow) waRow.classList.add('error');
+      waErr.classList.add('show');
+      valid = false;
+    } else {
+      if (waRow) waRow.classList.remove('error');
+      waErr.classList.remove('show');
+    }
+  }
+  if (screen === 4) {
+    showErr('ecName', 'ecNameErr');
+    // Validate ecPhone: check the number input portion only
+    const ecpNum = document.getElementById('ecPhone');
+    const ecpErr = document.getElementById('ecPhoneErr');
+    const ecpRow = document.getElementById('ecPhoneRow');
+    if (!ecpNum.value.trim()) {
+      if (ecpRow) ecpRow.classList.add('error');
+      ecpErr.classList.add('show');
+      valid = false;
+    } else {
+      if (ecpRow) ecpRow.classList.remove('error');
+      ecpErr.classList.remove('show');
+    }
+    const rel = document.getElementById('ecRelationship');
+    if (!rel.value) {
+      rel.classList.add('error');
+      document.getElementById('ecRelErr').classList.add('show');
+      valid = false;
+    } else {
+      rel.classList.remove('error');
+      document.getElementById('ecRelErr').classList.remove('show');
+    }
+  }
+  if (screen === 5) {
+    const cert = document.getElementById('certLevel');
+    if (!cert.value) {
+      cert.classList.add('error');
+      document.getElementById('certErr').classList.add('show');
+      valid = false;
+    } else {
+      cert.classList.remove('error');
+      document.getElementById('certErr').classList.remove('show');
+    }
+    if (document.getElementById('certLevel').value !== 'None' && !validateLastDiveDate()) valid = false;
+  }
+  if (screen === 7) {
+    // Medical questions — all must be answered
+    if (!allMedicalAnswered()) {
+      document.getElementById('medicalErr').classList.add('show');
+      valid = false;
+    } else {
+      document.getElementById('medicalErr').classList.remove('show');
+    }
+  }
+  return valid;
+}
+
+function validateBirthday() {
+  const el = document.getElementById('birthday');
+  const err = document.getElementById('birthdayErr');
+  if (!el.value) { err.textContent = 'Please enter your birthday'; err.classList.add('show'); el.classList.add('error'); return false; }
+  const todayStr = inputDate(new Date());
+  if (el.value > todayStr) { err.textContent = 'Birthday cannot be in the future'; err.classList.add('show'); el.classList.add('error'); return false; }
+  const age = getAge(el.value);
+  if (age < 10) { err.textContent = 'Divers must be at least 10 years old'; err.classList.add('show'); el.classList.add('error'); return false; }
+  err.classList.remove('show');
+  el.classList.remove('error');
+  return true;
+}
+
+function getAge(dateStr) {
+  const b = new Date(dateStr + 'T00:00:00');
+  const t = new Date();
+  let age = t.getFullYear() - b.getFullYear();
+  const m = t.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < b.getDate())) age--;
+  return age;
+}
+
+function updateDepartureMin() {
+  const arrival = document.getElementById('arrivalDate').value;
+  const dep = document.getElementById('departureDate');
+  dep.min = arrival || '';
+  if (dep.value && arrival && dep.value < arrival) dep.value = '';
+}
+
+function validateArrivalDeparture() {
+  const arrival = document.getElementById('arrivalDate');
+  const dep = document.getElementById('departureDate');
+  const arrivalErr = document.getElementById('arrivalErr');
+  const depErr = document.getElementById('departureErr');
+  let ok = true;
+  if (!arrival.value) { arrivalErr.textContent = 'Please select your arrival date'; arrivalErr.classList.add('show'); arrival.classList.add('error'); ok = false; }
+  else { arrivalErr.classList.remove('show'); arrival.classList.remove('error'); }
+  if (!dep.value) { depErr.textContent = 'Please select your departure date'; depErr.classList.add('show'); dep.classList.add('error'); ok = false; }
+  else if (arrival.value && dep.value < arrival.value) { depErr.textContent = 'Departure cannot be before arrival'; depErr.classList.add('show'); dep.classList.add('error'); ok = false; }
+  else { depErr.classList.remove('show'); dep.classList.remove('error'); }
+  return ok;
+}
+
+function validateLastDiveDate() {
+  const el = document.getElementById('lastDiveDate');
+  const err = document.getElementById('lastDiveErr');
+  if (!el.value) { err.textContent = 'Please enter your last dive date'; err.classList.add('show'); el.classList.add('error'); return false; }
+  const today = inputDate(new Date());
+  if (el.value > today) { err.textContent = 'Last dive date cannot be in the future'; err.classList.add('show'); el.classList.add('error'); return false; }
+  err.classList.remove('show');
+  el.classList.remove('error');
+  return true;
+}
+
+// ─── SECRETARY-FACING REGISTRATION NOTES ──────────────────────────────────────
+
+function isLastDiveOlderThanSixMonths(dateStr) {
+  if (!dateStr) return false;
+  const lastDive = new Date(dateStr + 'T00:00:00');
+  if (isNaN(lastDive.getTime())) return false;
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setMonth(cutoff.getMonth() - 6);
+  return lastDive < cutoff;
+}
+
+function buildSecretaryNotes(baseNotes, lastDiveDate) {
+  const reminder = '[AquaDesk registration reminder] Last dive was more than 6 months ago. Please check if a checkout or refresh dive is needed.';
+  const cleaned = String(baseNotes || '').replace(/\n?\[AquaDesk registration reminder\] Last dive was more than 6 months ago\. Please check if a checkout or refresh dive is needed\./g, '').trim();
+  if (!isLastDiveOlderThanSixMonths(lastDiveDate)) return cleaned || null;
+  return cleaned ? cleaned + '\n' + reminder : reminder;
+}
+
+// ─── FIELD HELPERS ────────────────────────────────────────────────────────────
+
+function calculateAge() {
+  const bday = document.getElementById('birthday').value;
+  if (!bday) { document.getElementById('age').value = ''; return; }
+  const age = getAge(bday);
+  document.getElementById('age').value = age >= 0 ? age : '';
+  isMinor = age < 18;
+  document.getElementById('minorBanner').className = 'minor-banner' + (isMinor ? ' show' : '');
+}
+
+function formatWhatsApp(input) {
+  // Legacy stub — no longer used. Kept to avoid errors if called.
+}
+
+// ─── COUNTRY PICKER ────────────────────────────────────────────────────────────
+
+// Dial codes: { flag, name, code }
+var COUNTRIES = [
+  {flag:'🇦🇫',name:'Afghanistan',code:'+93'},{flag:'🇦🇱',name:'Albania',code:'+355'},
+  {flag:'🇩🇿',name:'Algeria',code:'+213'},{flag:'🇦🇩',name:'Andorra',code:'+376'},
+  {flag:'🇦🇴',name:'Angola',code:'+244'},{flag:'🇦🇬',name:'Antigua and Barbuda',code:'+1268'},
+  {flag:'🇦🇷',name:'Argentina',code:'+54'},{flag:'🇦🇲',name:'Armenia',code:'+374'},
+  {flag:'🇦🇺',name:'Australia',code:'+61'},{flag:'🇦🇹',name:'Austria',code:'+43'},
+  {flag:'🇦🇿',name:'Azerbaijan',code:'+994'},{flag:'🇧🇸',name:'Bahamas',code:'+1242'},
+  {flag:'🇧🇭',name:'Bahrain',code:'+973'},{flag:'🇧🇩',name:'Bangladesh',code:'+880'},
+  {flag:'🇧🇧',name:'Barbados',code:'+1246'},{flag:'🇧🇾',name:'Belarus',code:'+375'},
+  {flag:'🇧🇪',name:'Belgium',code:'+32'},{flag:'🇧🇿',name:'Belize',code:'+501'},
+  {flag:'🇧🇯',name:'Benin',code:'+229'},{flag:'🇧🇹',name:'Bhutan',code:'+975'},
+  {flag:'🇧🇴',name:'Bolivia',code:'+591'},{flag:'🇧🇦',name:'Bosnia and Herzegovina',code:'+387'},
+  {flag:'🇧🇼',name:'Botswana',code:'+267'},{flag:'🇧🇷',name:'Brazil',code:'+55'},
+  {flag:'🇧🇳',name:'Brunei',code:'+673'},{flag:'🇧🇬',name:'Bulgaria',code:'+359'},
+  {flag:'🇧🇫',name:'Burkina Faso',code:'+226'},{flag:'🇧🇮',name:'Burundi',code:'+257'},
+  {flag:'🇨🇻',name:'Cabo Verde',code:'+238'},{flag:'🇰🇭',name:'Cambodia',code:'+855'},
+  {flag:'🇨🇲',name:'Cameroon',code:'+237'},{flag:'🇨🇦',name:'Canada',code:'+1'},
+  {flag:'🇨🇫',name:'Central African Republic',code:'+236'},{flag:'🇹🇩',name:'Chad',code:'+235'},
+  {flag:'🇨🇱',name:'Chile',code:'+56'},{flag:'🇨🇳',name:'China',code:'+86'},
+  {flag:'🇨🇴',name:'Colombia',code:'+57'},{flag:'🇰🇲',name:'Comoros',code:'+269'},
+  {flag:'🇨🇬',name:'Congo',code:'+242'},{flag:'🇨🇩',name:'Congo (DRC)',code:'+243'},
+  {flag:'🇨🇷',name:'Costa Rica',code:'+506'},{flag:'🇭🇷',name:'Croatia',code:'+385'},
+  {flag:'🇨🇺',name:'Cuba',code:'+53'},{flag:'🇨🇾',name:'Cyprus',code:'+357'},
+  {flag:'🇨🇿',name:'Czech Republic',code:'+420'},{flag:'🇩🇰',name:'Denmark',code:'+45'},
+  {flag:'🇩🇯',name:'Djibouti',code:'+253'},{flag:'🇩🇲',name:'Dominica',code:'+1767'},
+  {flag:'🇩🇴',name:'Dominican Republic',code:'+1809'},{flag:'🇪🇨',name:'Ecuador',code:'+593'},
+  {flag:'🇪🇬',name:'Egypt',code:'+20'},{flag:'🇸🇻',name:'El Salvador',code:'+503'},
+  {flag:'🇬🇶',name:'Equatorial Guinea',code:'+240'},{flag:'🇪🇷',name:'Eritrea',code:'+291'},
+  {flag:'🇪🇪',name:'Estonia',code:'+372'},{flag:'🇸🇿',name:'Eswatini',code:'+268'},
+  {flag:'🇪🇹',name:'Ethiopia',code:'+251'},{flag:'🇫🇯',name:'Fiji',code:'+679'},
+  {flag:'🇫🇮',name:'Finland',code:'+358'},{flag:'🇫🇷',name:'France',code:'+33'},
+  {flag:'🇬🇦',name:'Gabon',code:'+241'},{flag:'🇬🇲',name:'Gambia',code:'+220'},
+  {flag:'🇬🇪',name:'Georgia',code:'+995'},{flag:'🇩🇪',name:'Germany',code:'+49'},
+  {flag:'🇬🇭',name:'Ghana',code:'+233'},{flag:'🇬🇷',name:'Greece',code:'+30'},
+  {flag:'🇬🇩',name:'Grenada',code:'+1473'},{flag:'🇬🇹',name:'Guatemala',code:'+502'},
+  {flag:'🇬🇳',name:'Guinea',code:'+224'},{flag:'🇬🇼',name:'Guinea-Bissau',code:'+245'},
+  {flag:'🇬🇾',name:'Guyana',code:'+592'},{flag:'🇭🇹',name:'Haiti',code:'+509'},
+  {flag:'🇭🇳',name:'Honduras',code:'+504'},{flag:'🇭🇺',name:'Hungary',code:'+36'},
+  {flag:'🇮🇸',name:'Iceland',code:'+354'},{flag:'🇮🇳',name:'India',code:'+91'},
+  {flag:'🇮🇩',name:'Indonesia',code:'+62'},{flag:'🇮🇷',name:'Iran',code:'+98'},
+  {flag:'🇮🇶',name:'Iraq',code:'+964'},{flag:'🇮🇪',name:'Ireland',code:'+353'},
+  {flag:'🇮🇱',name:'Israel',code:'+972'},{flag:'🇮🇹',name:'Italy',code:'+39'},
+  {flag:'🇯🇲',name:'Jamaica',code:'+1876'},{flag:'🇯🇵',name:'Japan',code:'+81'},
+  {flag:'🇯🇴',name:'Jordan',code:'+962'},{flag:'🇰🇿',name:'Kazakhstan',code:'+7'},
+  {flag:'🇰🇪',name:'Kenya',code:'+254'},{flag:'🇰🇮',name:'Kiribati',code:'+686'},
+  {flag:'🇽🇰',name:'Kosovo',code:'+383'},{flag:'🇰🇼',name:'Kuwait',code:'+965'},
+  {flag:'🇰🇬',name:'Kyrgyzstan',code:'+996'},{flag:'🇱🇦',name:'Laos',code:'+856'},
+  {flag:'🇱🇻',name:'Latvia',code:'+371'},{flag:'🇱🇧',name:'Lebanon',code:'+961'},
+  {flag:'🇱🇸',name:'Lesotho',code:'+266'},{flag:'🇱🇷',name:'Liberia',code:'+231'},
+  {flag:'🇱🇾',name:'Libya',code:'+218'},{flag:'🇱🇮',name:'Liechtenstein',code:'+423'},
+  {flag:'🇱🇹',name:'Lithuania',code:'+370'},{flag:'🇱🇺',name:'Luxembourg',code:'+352'},
+  {flag:'🇲🇬',name:'Madagascar',code:'+261'},{flag:'🇲🇼',name:'Malawi',code:'+265'},
+  {flag:'🇲🇾',name:'Malaysia',code:'+60'},{flag:'🇲🇻',name:'Maldives',code:'+960'},
+  {flag:'🇲🇱',name:'Mali',code:'+223'},{flag:'🇲🇹',name:'Malta',code:'+356'},
+  {flag:'🇲🇭',name:'Marshall Islands',code:'+692'},{flag:'🇲🇷',name:'Mauritania',code:'+222'},
+  {flag:'🇲🇺',name:'Mauritius',code:'+230'},{flag:'🇲🇽',name:'Mexico',code:'+52'},
+  {flag:'🇫🇲',name:'Micronesia',code:'+691'},{flag:'🇲🇩',name:'Moldova',code:'+373'},
+  {flag:'🇲🇨',name:'Monaco',code:'+377'},{flag:'🇲🇳',name:'Mongolia',code:'+976'},
+  {flag:'🇲🇪',name:'Montenegro',code:'+382'},{flag:'🇲🇦',name:'Morocco',code:'+212'},
+  {flag:'🇲🇿',name:'Mozambique',code:'+258'},{flag:'🇲🇲',name:'Myanmar',code:'+95'},
+  {flag:'🇳🇦',name:'Namibia',code:'+264'},{flag:'🇳🇷',name:'Nauru',code:'+674'},
+  {flag:'🇳🇵',name:'Nepal',code:'+977'},{flag:'🇳🇱',name:'Netherlands',code:'+31'},
+  {flag:'🇳🇿',name:'New Zealand',code:'+64'},{flag:'🇳🇮',name:'Nicaragua',code:'+505'},
+  {flag:'🇳🇪',name:'Niger',code:'+227'},{flag:'🇳🇬',name:'Nigeria',code:'+234'},
+  {flag:'🇲🇰',name:'North Macedonia',code:'+389'},{flag:'🇳🇴',name:'Norway',code:'+47'},
+  {flag:'🇴🇲',name:'Oman',code:'+968'},{flag:'🇵🇰',name:'Pakistan',code:'+92'},
+  {flag:'🇵🇼',name:'Palau',code:'+680'},{flag:'🇵🇸',name:'Palestine',code:'+970'},
+  {flag:'🇵🇦',name:'Panama',code:'+507'},{flag:'🇵🇬',name:'Papua New Guinea',code:'+675'},
+  {flag:'🇵🇾',name:'Paraguay',code:'+595'},{flag:'🇵🇪',name:'Peru',code:'+51'},
+  {flag:'🇵🇭',name:'Philippines',code:'+63'},{flag:'🇵🇱',name:'Poland',code:'+48'},
+  {flag:'🇵🇹',name:'Portugal',code:'+351'},{flag:'🇶🇦',name:'Qatar',code:'+974'},
+  {flag:'🇷🇴',name:'Romania',code:'+40'},{flag:'🇷🇺',name:'Russia',code:'+7'},
+  {flag:'🇷🇼',name:'Rwanda',code:'+250'},{flag:'🇰🇳',name:'Saint Kitts and Nevis',code:'+1869'},
+  {flag:'🇱🇨',name:'Saint Lucia',code:'+1758'},{flag:'🇻🇨',name:'Saint Vincent and the Grenadines',code:'+1784'},
+  {flag:'🇼🇸',name:'Samoa',code:'+685'},{flag:'🇸🇲',name:'San Marino',code:'+378'},
+  {flag:'🇸🇹',name:'Sao Tome and Principe',code:'+239'},{flag:'🇸🇦',name:'Saudi Arabia',code:'+966'},
+  {flag:'🇸🇳',name:'Senegal',code:'+221'},{flag:'🇷🇸',name:'Serbia',code:'+381'},
+  {flag:'🇸🇨',name:'Seychelles',code:'+248'},{flag:'🇸🇱',name:'Sierra Leone',code:'+232'},
+  {flag:'🇸🇬',name:'Singapore',code:'+65'},{flag:'🇸🇰',name:'Slovakia',code:'+421'},
+  {flag:'🇸🇮',name:'Slovenia',code:'+386'},{flag:'🇸🇧',name:'Solomon Islands',code:'+677'},
+  {flag:'🇸🇴',name:'Somalia',code:'+252'},{flag:'🇿🇦',name:'South Africa',code:'+27'},
+  {flag:'🇸🇸',name:'South Sudan',code:'+211'},{flag:'🇪🇸',name:'Spain',code:'+34'},
+  {flag:'🇱🇰',name:'Sri Lanka',code:'+94'},{flag:'🇸🇩',name:'Sudan',code:'+249'},
+  {flag:'🇸🇷',name:'Suriname',code:'+597'},{flag:'🇸🇪',name:'Sweden',code:'+46'},
+  {flag:'🇨🇭',name:'Switzerland',code:'+41'},{flag:'🇸🇾',name:'Syria',code:'+963'},
+  {flag:'🇹🇼',name:'Taiwan',code:'+886'},{flag:'🇹🇯',name:'Tajikistan',code:'+992'},
+  {flag:'🇹🇿',name:'Tanzania',code:'+255'},{flag:'🇹🇭',name:'Thailand',code:'+66'},
+  {flag:'🇹🇱',name:'Timor-Leste',code:'+670'},{flag:'🇹🇬',name:'Togo',code:'+228'},
+  {flag:'🇹🇴',name:'Tonga',code:'+676'},{flag:'🇹🇹',name:'Trinidad and Tobago',code:'+1868'},
+  {flag:'🇹🇳',name:'Tunisia',code:'+216'},{flag:'🇹🇷',name:'Turkey',code:'+90'},
+  {flag:'🇹🇲',name:'Turkmenistan',code:'+993'},{flag:'🇹🇻',name:'Tuvalu',code:'+688'},
+  {flag:'🇺🇬',name:'Uganda',code:'+256'},{flag:'🇺🇦',name:'Ukraine',code:'+380'},
+  {flag:'🇦🇪',name:'United Arab Emirates',code:'+971'},{flag:'🇬🇧',name:'United Kingdom',code:'+44'},
+  {flag:'🇺🇸',name:'United States',code:'+1'},{flag:'🇺🇾',name:'Uruguay',code:'+598'},
+  {flag:'🇺🇿',name:'Uzbekistan',code:'+998'},{flag:'🇻🇺',name:'Vanuatu',code:'+678'},
+  {flag:'🇻🇦',name:'Vatican City',code:'+39'},{flag:'🇻🇪',name:'Venezuela',code:'+58'},
+  {flag:'🇻🇳',name:'Vietnam',code:'+84'},{flag:'🇾🇪',name:'Yemen',code:'+967'},
+  {flag:'🇿🇲',name:'Zambia',code:'+260'},{flag:'🇿🇼',name:'Zimbabwe',code:'+263'}
+];
+
+// State: which field is the picker currently targeting
+var cpTargetField = null;
+
+// Selected codes per field (keyed by field id)
+var phoneSelections = {
+  phone:    { flag:'🇵🇭', code:'+63' },
+  whatsapp: { flag:'🇵🇭', code:'+63' },
+  ecPhone:  { flag:'🇵🇭', code:'+63' }
+};
+
+function openCountryPicker(fieldId) {
+  cpTargetField = fieldId;
+  document.getElementById('cpSearch').value = '';
+  renderCountryList(COUNTRIES);
+  document.getElementById('cpOverlay').classList.add('show');
+  // Trigger open animation next frame
+  requestAnimationFrame(function() {
+    document.getElementById('cpSheet').classList.add('open');
+  });
+  // Focus search after animation
+  setTimeout(function() {
+    document.getElementById('cpSearch').focus();
+  }, 280);
+}
+
+function closeCountryPicker() {
+  document.getElementById('cpSheet').classList.remove('open');
+  document.getElementById('cpOverlay').classList.remove('show');
+  cpTargetField = null;
+}
+
+function filterCountries(query) {
+  var q = query.trim().toLowerCase();
+  if (!q) { renderCountryList(COUNTRIES); return; }
+  var filtered = COUNTRIES.filter(function(c) {
+    return c.name.toLowerCase().includes(q) || c.code.includes(q);
+  });
+  renderCountryList(filtered);
+}
+
+function renderCountryList(list) {
+  var container = document.getElementById('cpList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="cp-empty">No countries found</div>';
+    return;
+  }
+  container.innerHTML = list.map(function(c) {
+    return '<div class="cp-item" onclick="selectCountry(\'' + c.flag + '\',\'' + c.code.replace(/'/g,"\\'") + '\')">' +
+      '<span class="cp-item-flag">' + c.flag + '</span>' +
+      '<span class="cp-item-name">' + escapeHtml(c.name) + '</span>' +
+      '<span class="cp-item-code">' + escapeHtml(c.code) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function selectCountry(flag, code) {
+  if (!cpTargetField) return;
+  phoneSelections[cpTargetField] = { flag: flag, code: code };
+  // Update button display
+  document.getElementById(cpTargetField + 'Flag').textContent = flag;
+  document.getElementById(cpTargetField + 'Code').textContent = code;
+  closeCountryPicker();
+  // Focus the number input
+  var numInput = document.getElementById(cpTargetField);
+  if (numInput) numInput.focus();
+}
+
+// Build full international phone string from a field
+function buildPhoneValue(fieldId) {
+  var sel = phoneSelections[fieldId] || { code: '+63' };
+  var raw = (document.getElementById(fieldId).value || '').replace(/\D/g, '');
+  if (!raw) return '';
+  // Strip leading zero
+  if (raw.charAt(0) === '0') raw = raw.slice(1);
+  return sel.code + raw;
+}
+
+
+function setToggle(type, val) {
+  if (type === 'nitrox') {
+    nitroxCertified = val;
+    document.getElementById('nitroxYes').className = 'toggle-btn' + (val ? ' active-yes' : '');
+    document.getElementById('nitroxNo').className = 'toggle-btn' + (!val ? ' active-no' : '');
+  }
+  if (type === 'computer') {
+    needsComputer = val;
+    document.getElementById('computerYes').className = 'toggle-btn' + (val ? ' active-yes' : '');
+    document.getElementById('computerNo').className = 'toggle-btn' + (!val ? ' active-no' : '');
+  }
+}
+
+function setHasInsurance(val) {
+  hasDiveInsurance = val;
+  document.getElementById('insuranceYes').className = 'toggle-btn' + (val ? ' active-yes' : '');
+  document.getElementById('insuranceNo').className = 'toggle-btn' + (!val ? ' active-no' : '');
+  document.getElementById('insuranceYesBlock').style.display = val ? 'block' : 'none';
+  document.getElementById('insuranceNoBlock').style.display = val ? 'none' : 'block';
+  if (val) {
+    // Switching to "Yes" — the referral sub-question no longer applies
+    wantsInsuranceReferral = null;
+    document.getElementById('wantsReferralYes').className = 'toggle-btn';
+    document.getElementById('wantsReferralNo').className = 'toggle-btn';
+    document.getElementById('insuranceReferralLinkBox').style.display = 'none';
+  }
+}
+
+function setWantsReferral(val) {
+  wantsInsuranceReferral = val;
+  document.getElementById('wantsReferralYes').className = 'toggle-btn' + (val ? ' active-yes' : '');
+  document.getElementById('wantsReferralNo').className = 'toggle-btn' + (!val ? ' active-no' : '');
+  const box = document.getElementById('insuranceReferralLinkBox');
+  if (val && dcOffersInsurance && dcInsuranceReferralLink) {
+    document.getElementById('insuranceReferralAnchor').href = dcInsuranceReferralLink;
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function onCertChange() {
+  const cert = document.getElementById('certLevel').value;
+  const block = document.getElementById('certDetailsBlock');
+  if (cert === 'None') {
+    block.style.display = 'none';
+    // Clear values and errors so they don't block validation
+    document.getElementById('lastDiveDate').value = '';
+    document.getElementById('lastDiveErr').classList.remove('show');
+    document.getElementById('lastDiveDate').classList.remove('error');
+    // Reset nitrox to No — irrelevant for non-certified divers
+    nitroxCertified = false;
+    document.getElementById('nitroxYes').className = 'toggle-btn';
+    document.getElementById('nitroxNo').className = 'toggle-btn active-no';
+    // Clear any selected cert card — field is hidden and not required for non-certified divers
+    certCardBlob = null;
+    const certFileEl = document.getElementById('certCardFile');
+    if (certFileEl) certFileEl.value = '';
+    const certPreviewWrap = document.getElementById('certCardPreviewWrap');
+    if (certPreviewWrap) certPreviewWrap.style.display = 'none';
+    const certZone = document.getElementById('certUploadZone');
+    if (certZone) certZone.style.display = '';
+  } else {
+    block.style.display = '';
+  }
+}
+
+function continueFromDiverDetails() {
+  // Cert = None: skip equipment screen, go straight to medical
+  // All other certs: go to equipment screen as normal
+  const cert = document.getElementById('certLevel').value;
+  goToScreen(cert === 'None' ? 7 : 6);
+}
+
+function backFromMedical() {
+  // Cert = None: skip equipment screen going back, return to diver details
+  // All other certs: go back to equipment screen as normal
+  const cert = document.getElementById('certLevel').value;
+  goToScreen(cert === 'None' ? 5 : 6);
+}
+
+function setEquipment(val) {
+  needsEquipment = val;
+  document.getElementById('equipYes').className = 'toggle-btn' + (val ? ' active-yes' : '');
+  document.getElementById('equipNo').className = 'toggle-btn' + (!val ? ' active-no' : '');
+  document.getElementById('equipmentOptions').style.display = val ? 'block' : 'none';
+}
+
+function selectAllEquipment() {
+  document.querySelectorAll('#partialList .check-item').forEach(function(row) {
+    const box = row.querySelector('.check-box');
+    if (!box) return;
+    const item = box.id.replace('chk-', '');
+    if (!checkedItems[item]) toggleCheck(item);
+  });
+}
+
+function clearAllEquipment() {
+  Object.keys(checkedItems).forEach(function(item) {
+    if (checkedItems[item]) toggleCheck(item);
+  });
+}
+
+function toggleCheck(item) {
+  checkedItems[item] = !checkedItems[item];
+  const box = document.getElementById('chk-' + item);
+  if (box) box.className = 'check-box' + (checkedItems[item] ? ' checked' : '');
+  const sizeEl = document.getElementById('size-' + item);
+  if (sizeEl) sizeEl.style.display = checkedItems[item] ? 'block' : 'none';
+  const weightInput = document.getElementById('weight-input');
+  if (item === 'weights' && weightInput) weightInput.style.display = checkedItems[item] ? 'flex' : 'none';
+}
+
+// ─── WAIVER ───────────────────────────────────────────────────────────────────
+
+function toggleWaiverAgree() {
+  waiverAgreed = !waiverAgreed;
+  document.getElementById('waiverAgreeBox').className = 'waiver-agree' + (waiverAgreed ? ' checked' : '');
+  document.getElementById('waiverErr').className = 'form-error';
+  updateSubmitGate();
+}
+
+// ─── SIGNATURE PAD ────────────────────────────────────────────────────────────
+
+function setupSignaturePad() {
+  const canvas = document.getElementById('signatureCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = 160;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  let drawing = false;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  }
+
+  function start(e) {
+    e.preventDefault();
+    drawing = true;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    document.getElementById('sigPlaceholder').style.opacity = '0';
+    signatureSigned = true;
+    updateSubmitGate();
+  }
+
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  }
+
+  function stop() { drawing = false; }
+
+  canvas.removeEventListener('mousedown', canvas._start);
+  canvas.removeEventListener('mousemove', canvas._draw);
+  canvas.removeEventListener('mouseup', canvas._stop);
+  canvas.removeEventListener('mouseleave', canvas._stop);
+  canvas.removeEventListener('touchstart', canvas._start);
+  canvas.removeEventListener('touchmove', canvas._draw);
+  canvas.removeEventListener('touchend', canvas._stop);
+
+  canvas._start = start; canvas._draw = draw; canvas._stop = stop;
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stop);
+  canvas.addEventListener('mouseleave', stop);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', stop);
+}
+
+function clearSignature() {
+  const canvas = document.getElementById('signatureCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('sigPlaceholder').style.opacity = '1';
+  signatureSigned = false;
+  updateSubmitGate();
+}
+
+// ─── CERTIFICATION CARD ─────────────────────────────────────────────────────
+
+function onCertCardFileChange(event) {
+  const file = event.target.files[0];
+  const previewWrap = document.getElementById('certCardPreviewWrap');
+  const preview = document.getElementById('certCardPreview');
+  const zone = document.getElementById('certUploadZone');
+  if (!file) {
+    certCardBlob = null;
+    previewWrap.style.display = 'none';
+    if (zone) zone.style.display = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const maxDim = 1600;
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+        else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(function(blob) {
+        certCardBlob = blob;
+        preview.src = canvas.toDataURL('image/jpeg', 0.7);
+        previewWrap.style.display = 'flex';
+        if (zone) zone.style.display = 'none';
+      }, 'image/jpeg', 0.7);
+    };
+    img.onerror = function() {
+      showToast('Could not read that image. Please try a different file.', 'error');
+      certCardBlob = null;
+      event.target.value = '';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeCertCard() {
+  certCardBlob = null;
+  const certFileEl = document.getElementById('certCardFile');
+  if (certFileEl) certFileEl.value = '';
+  const previewWrap = document.getElementById('certCardPreviewWrap');
+  if (previewWrap) previewWrap.style.display = 'none';
+  const zone = document.getElementById('certUploadZone');
+  if (zone) zone.style.display = '';
+}
+
+// ─── SUBMIT ───────────────────────────────────────────────────────────────────
+
+async function submitForm() {
+  if (!privacyConsentAgreed) {
+    goToScreen(1);
+    document.getElementById('privacyErr').classList.add('show');
+    return;
+  }
+  if (!waiverAgreed) { document.getElementById('waiverErr').classList.add('show'); return; }
+  if (!signatureSigned) { document.getElementById('sigErr').classList.add('show'); return; }
+  if (!allMedicalAnswered()) {
+    showSubmitError('Please answer all health questions before submitting.');
+    return;
+  }
+
+  document.getElementById('sigErr').classList.remove('show');
+  document.getElementById('submitErr').classList.remove('show');
+  document.getElementById('loadingOverlay').classList.add('show');
+
+  try {
+    const canvas = document.getElementById('signatureCanvas');
+    const signatureUrl = canvas.toDataURL();
+    const whatsappFormatted = buildPhoneValue('whatsapp');
+    const phoneFormatted = buildPhoneValue('phone');
+    const ecPhoneFormatted = buildPhoneValue('ecPhone');
+    const equipmentData = buildEquipmentData();
+    const ageVal = parseInt(document.getElementById('age').value) || null;
+
+    const diverData = {
+      dive_center_id: diveCenterId || null,
+      group_id: currentGroupId || null,
+      first_name: document.getElementById('firstName').value.trim(),
+      last_name: document.getElementById('lastName').value.trim(),
+      birthday: document.getElementById('birthday').value,
+      age: ageVal,
+      is_minor: isMinor,
+      nationality: document.getElementById('nationality').value.trim(),
+      arrival_date: document.getElementById('arrivalDate').value,
+      departure_date: document.getElementById('departureDate').value,
+      accommodation: document.getElementById('accommodation').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: phoneFormatted || null,
+      whatsapp: whatsappFormatted,
+      emergency_contact_name: document.getElementById('ecName').value.trim(),
+      emergency_contact_phone: ecPhoneFormatted,
+      emergency_contact_email: document.getElementById('ecEmail').value.trim(),
+      emergency_contact_relationship: document.getElementById('ecRelationship').value,
+      certification_level: document.getElementById('certLevel').value,
+      training_agency: document.getElementById('agency').value,
+      logged_dives: parseInt(document.getElementById('loggedDives').value) || 0,
+      last_dive_date: document.getElementById('lastDiveDate').value || null,
+      nitrox_certified: nitroxCertified,
+      food_allergies: document.getElementById('foodAllergies').value.trim(),
+      has_dive_insurance: hasDiveInsurance,
+      insurance_provider: hasDiveInsurance === true ? (document.getElementById('insuranceProvider').value.trim() || null) : null,
+      insurance_policy_number: hasDiveInsurance === true ? (document.getElementById('insurancePolicyNumber').value.trim() || null) : null,
+      wants_insurance_referral: hasDiveInsurance === false ? wantsInsuranceReferral : null,
+      needs_equipment: needsEquipment,
+      equipment_preference: needsEquipment ? 'partial' : 'none',
+      equipment_requested: equipmentData ? JSON.stringify(equipmentData) : null,
+      waiver_signed: true,
+      waiver_opened: true,
+      waiver_date: new Date().toISOString().split('T')[0],
+      waiver_signature_url: signatureUrl,
+      waiver_content_snapshot: currentWaiverContentHtml || null,
+      medical_flag: anyMedicalYes(),
+      medical_answers: medicalQuestions.length > 0 ? medicalAnswers : null,
+      medical_answers_snapshot: buildMedicalAnswersSnapshot(),
+      privacy_notice_snapshot: currentPrivacyNotice ? currentPrivacyNotice.content : null,
+      privacy_consent_at: new Date().toISOString(),
+      duplicate_email_flag: isDuplicateEmail,
+      notes: buildSecretaryNotes(existingDiverNotes, document.getElementById('lastDiveDate').value || null),
+    };
+
+    // Cert card: the storage policy requires a matching diver row to exist before it will
+    // accept the upload, so we decide the diver's id up front and write the diver record first.
+    // cert_card_url is intentionally left out of this initial write — it's only set after the
+    // upload actually succeeds (see below), so a failed upload never leaves the diver row
+    // pointing at a file that doesn't exist.
+    const targetDiverId = (isReturningDiver && existingDiverId) ? existingDiverId : generateUuid();
+    if (!isReturningDiver) diverData.id = targetDiverId;
+
+    let result;
+    if (isReturningDiver && existingDiverId) {
+      result = await client.rpc('update_returning_diver_registration', { p_diver_id: existingDiverId, p_diver_data: diverData });
+    } else {
+      result = await client.from('divers').insert(diverData);
+    }
+    if (result.error) throw result.error;
+
+    // New divers: the returning-diver RPC already writes a history row internally;
+    // for new divers there's no RPC in the loop, so write it here — same open-insert
+    // trust model as the divers row itself.
+    if (!isReturningDiver) {
+      const { error: histErr } = await client.from('diver_registrations').insert({
+        diver_id: targetDiverId,
+        dive_center_id: diveCenterId,
+        waiver_signed: diverData.waiver_signed,
+        waiver_date: diverData.waiver_date,
+        waiver_signature_url: diverData.waiver_signature_url,
+        waiver_content_snapshot: diverData.waiver_content_snapshot,
+        medical_flag: diverData.medical_flag,
+        medical_answers: diverData.medical_answers,
+        medical_answers_snapshot: diverData.medical_answers_snapshot,
+        privacy_notice_snapshot: diverData.privacy_notice_snapshot,
+        privacy_consent_at: diverData.privacy_consent_at,
+        arrival_date: diverData.arrival_date,
+        departure_date: diverData.departure_date,
+        certification_level: diverData.certification_level,
+        equipment_requested: diverData.equipment_requested,
+        group_id: diverData.group_id,
+        needs_equipment: diverData.needs_equipment,
+        equipment_preference: diverData.equipment_preference,
+      });
+      if (histErr) console.error('Could not save registration history:', histErr);
+    }
+
+    // Upload the cert card now that the diver row exists. Optional — log and move on if it fails.
+    // cert_card_url is only linked after a confirmed successful upload, via an RPC (anon has no
+    // direct UPDATE grant on divers — see set_diver_cert_card_url), so diver-form.html never
+    // shows a "View Cert Card" button for a file that isn't actually there.
+    if (certCardBlob) {
+      try {
+        const path = diveCenterId + '/' + targetDiverId + '.jpg';
+        const { error: certUploadErr } = await client.storage.from('cert-cards').upload(path, certCardBlob, { upsert: true, contentType: 'image/jpeg' });
+        if (certUploadErr) {
+          console.error('Cert card upload failed:', certUploadErr);
+        } else {
+          const { error: urlSaveErr } = await client.rpc('set_diver_cert_card_url', { p_diver_id: targetDiverId, p_dive_center_id: diveCenterId });
+          if (urlSaveErr) console.error('Cert card uploaded but could not link it to the diver record:', urlSaveErr);
+          else diverData.cert_card_url = path;
+        }
+      } catch (certErr) {
+        console.error('Cert card upload failed:', certErr);
+      }
+    }
+
+    showConfirmation(diverData);
+  } catch (err) {
+    console.error('Submission error:', err);
+    showSubmitError('Something went wrong. Please check your details and try again.');
+  } finally {
+    document.getElementById('loadingOverlay').classList.remove('show');
+  }
+}
+
+function buildMedicalAnswersSnapshot() {
+  if (!medicalQuestions.length) return null;
+  return medicalQuestions.map(function(q) {
+    return { question_text: q.question_text, answer: medicalAnswers[q.id] === true };
+  });
+}
+
+function showSubmitError(message) {
+  const el = document.getElementById('submitErr');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function buildEquipmentData() {
+  if (!needsEquipment) return null;
+  const items = {};
+  Object.keys(checkedItems).forEach(function(item) {
+    if (checkedItems[item]) {
+      const sizeEl = document.getElementById('size-' + item);
+      items[item] = sizeEl ? sizeEl.value : true;
+    }
+  });
+  const wkgEl = document.getElementById('weightKg');
+  if (checkedItems['weights'] && wkgEl) items.weights_kg = wkgEl.value;
+  items.computer = needsComputer;
+  return { type: 'partial', items: items };
+}
+
+function showConfirmation(data) {
+  document.getElementById('screen-8').classList.remove('active');
+  document.getElementById('screen-9').classList.add('active');
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('confirmName').textContent = data.first_name;
+  const minorNote = isMinor ? '<div class="confirm-detail-row"><span class="confirm-detail-label">Note</span><span class="confirm-detail-value" style="color:var(--orange);">Additional documents may be needed during arrival</span></div>' : '';
+  const medicalNote = anyMedicalYes() ? '<div class="confirm-detail-row"><span class="confirm-detail-label">Health</span><span class="confirm-detail-value" style="color:var(--teal-mid);">Additional requirements may be needed during arrival</span></div>' : '';
+  document.getElementById('confirmDetails').innerHTML =
+    '<div class="confirm-detail-row"><span class="confirm-detail-label">Name</span><span class="confirm-detail-value">' + data.first_name + ' ' + data.last_name + '</span></div>' +
+    '<div class="confirm-detail-row"><span class="confirm-detail-label">Arrival</span><span class="confirm-detail-value">' + data.arrival_date + '</span></div>' +
+    '<div class="confirm-detail-row"><span class="confirm-detail-label">Departure</span><span class="confirm-detail-value">' + data.departure_date + '</span></div>' +
+    '<div class="confirm-detail-row"><span class="confirm-detail-label">Certification</span><span class="confirm-detail-value">' + data.certification_level + '</span></div>' +
+    (currentGroupId ? '<div class="confirm-detail-row"><span class="confirm-detail-label">Group</span><span class="confirm-detail-value">' + ((currentGroup && currentGroup.group_name) || 'Group registration') + '</span></div>' : '') +
+    minorNote +
+    medicalNote +
+    '<div class="confirm-detail-row"><span class="confirm-detail-label">Waiver</span><span class="confirm-detail-value" style="color:var(--green);">✓ Signed</span></div>';
+  window.scrollTo(0, 0);
+}
+
+// ─── UTILITY ──────────────────────────────────────────────────────────────────
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function generateUuid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  // Fallback for older browsers without crypto.randomUUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+init();
+</script>
+
+<!-- ─── COUNTRY PICKER MODAL ──────────────────────────────────────────────────── -->
+<div class="cp-overlay" id="cpOverlay" onclick="closeCountryPicker()"></div>
+<div class="cp-sheet" id="cpSheet" role="dialog" aria-label="Select country code">
+  <div class="cp-sheet-header">
+    <div class="cp-sheet-title">Select Country</div>
+    <button class="cp-close-btn" onclick="closeCountryPicker()" aria-label="Close">✕</button>
+  </div>
+  <div class="cp-search-wrap">
+    <input class="cp-search" type="text" id="cpSearch" placeholder="Search country or code..." oninput="filterCountries(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+  <div class="cp-list" id="cpList"></div>
+</div>
+
+</body>
+</html>

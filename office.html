@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaDesk</title>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:      #1A3C5E;
+    --navy-dark: #0F2540;
+    --navy-mid:  #244d73;
+    --teal:      #00A8AB;
+    --teal-light:#E0F7F8;
+    --white:     #FFFFFF;
+    --off-white: #F8FAFC;
+    --gray-100:  #F1F5F9;
+    --gray-200:  #E2E8F0;
+    --gray-400:  #94A3B8;
+    --gray-600:  #475569;
+    --dark:      #0F172A;
+    --red:       #DC2626;
+    --red-light: #FEF2F2;
+    --green:     #16A34A;
+    --green-light:#F0FDF4;
+    --amber:     #D97706;
+    --amber-light:#FFFBEB;
+    --font-display: 'DM Serif Display', serif;
+    --font-body:    'DM Sans', sans-serif;
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.14);
+    --radius:    12px;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--off-white);
+    color: var(--dark);
+    min-height: 100vh;
+  }
+
+  /* ── GATE (checking session) ── */
+  #gate {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 2rem;
+    text-align: center;
+  }
+  #gate .spinner-lg {
+    width: 32px; height: 32px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── LOGIN CARD ── */
+  #loginGate {
+    display: none;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  #loginGate.show { display: flex; }
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    padding: 2.25rem;
+  }
+  .login-card .brand { justify-content: center; margin-bottom: 1.5rem; }
+  .login-card-title { font-family: var(--font-display); font-size: 1.5rem; color: var(--navy); text-align: center; margin-bottom: 0.3rem; }
+  .login-card-sub { font-size: 0.85rem; color: var(--gray-600); text-align: center; margin-bottom: 1.6rem; }
+  .login-error {
+    display: none;
+    background: var(--red-light);
+    border: 1px solid #FECACA;
+    color: var(--red);
+    font-size: 0.84rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 8px;
+    margin-bottom: 1.1rem;
+  }
+  .login-error.show { display: block; }
+  .login-btn-submit {
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--navy);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    margin-top: 0.4rem;
+    transition: background 0.2s;
+  }
+  .login-btn-submit:hover { background: var(--navy-dark); }
+  .login-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  #gate p { color: var(--gray-600); font-size: 0.95rem; max-width: 360px; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; }
+  #app.show { display: block; }
+
+  .topbar {
+    background: var(--navy);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .brand { display: flex; align-items: center; gap: 0.6rem; }
+  .brand img { width: 30px; height: 30px; border-radius: 7px; object-fit: contain; }
+  .brand-name { font-family: var(--font-display); font-size: 1.15rem; color: var(--white); letter-spacing: -0.02em; }
+  .brand-name span { color: var(--teal); }
+  .brand-tag { font-size: 0.68rem; color: var(--teal); background: rgba(0,168,171,0.15); padding: 0.2rem 0.55rem; border-radius: 999px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 0.6rem; }
+  .topbar-right { display: flex; align-items: center; gap: 1rem; }
+  .topbar-user { font-size: 0.85rem; color: rgba(255,255,255,0.75); }
+  .btn-signout {
+    background: rgba(255,255,255,0.08);
+    color: var(--white);
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-signout:hover { background: rgba(255,255,255,0.16); }
+
+  .main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+  .page-title { font-family: var(--font-display); font-size: 2rem; color: var(--navy); letter-spacing: -0.02em; }
+  .page-sub { color: var(--gray-600); font-size: 0.9rem; margin-top: 0.25rem; }
+
+  .btn {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 600;
+    border-radius: 9px;
+    padding: 0.7rem 1.2rem;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-navy { background: var(--navy); color: var(--white); }
+  .btn-navy:hover { background: var(--navy-dark); }
+  .btn-teal { background: var(--teal); color: var(--white); }
+  .btn-teal:hover { background: #009597; }
+  .btn-ghost { background: var(--white); color: var(--navy); border: 1px solid var(--gray-200); }
+  .btn-ghost:hover { background: var(--gray-100); }
+  .btn-danger { background: var(--red-light); color: var(--red); border: 1px solid #FECACA; }
+  .btn-danger:hover { background: #FEE2E2; }
+  .btn-sm { padding: 0.42rem 0.75rem; font-size: 0.78rem; }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* ── STATS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.75rem; }
+  .stat-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 1.1rem 1.3rem; }
+  .stat-num { font-family: var(--font-display); font-size: 1.7rem; color: var(--navy); }
+  .stat-label { font-size: 0.78rem; color: var(--gray-600); margin-top: 0.15rem; }
+
+  /* ── PANEL ── */
+  .panel { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; }
+  .panel-head { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .panel-head-title { font-weight: 600; color: var(--navy); font-size: 1.02rem; }
+  .search-input {
+    padding: 0.6rem 0.9rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    width: 260px;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--teal); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gray-400);
+    font-weight: 600;
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
+  }
+  tbody td { padding: 0.95rem 1.5rem; border-bottom: 1px solid var(--gray-100); font-size: 0.88rem; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--off-white); }
+
+  .dc-name { font-weight: 600; color: var(--navy); }
+  .dc-owner { color: var(--gray-600); font-size: 0.82rem; margin-top: 0.1rem; }
+
+  .badge { display: inline-block; padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.74rem; font-weight: 600; text-transform: capitalize; }
+  .badge-active { background: var(--green-light); color: var(--green); }
+  .badge-trial { background: var(--teal-light); color: var(--teal); }
+  .badge-suspended { background: var(--red-light); color: var(--red); }
+  .badge-cancelled { background: var(--gray-100); color: var(--gray-600); }
+
+  select.inline-select {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 7px;
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+    color: var(--dark);
+    outline: none;
+  }
+
+  .row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .empty-state { padding: 3rem 1.5rem; text-align: center; color: var(--gray-400); font-size: 0.9rem; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.5);
+    align-items: center; justify-content: center;
+    z-index: 50;
+    padding: 1.5rem;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 480px;
+    padding: 1.75rem;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title { font-family: var(--font-display); font-size: 1.35rem; color: var(--navy); margin-bottom: 0.3rem; }
+  .modal-sub { font-size: 0.85rem; color: var(--gray-600); margin-bottom: 1.25rem; line-height: 1.5; }
+  .form-group { margin-bottom: 1rem; }
+  .form-label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--navy); margin-bottom: 0.4rem; }
+  .form-input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--teal); }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .modal-actions { display: flex; gap: 0.6rem; margin-top: 1.4rem; }
+  .modal-actions .btn { flex: 1; justify-content: center; }
+  .modal-error {
+    display: none;
+    background: var(--red-light);
+    border: 1px solid #FECACA;
+    color: var(--red);
+    font-size: 0.84rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  .modal-error.show { display: block; }
+  .credential-box {
+    background: var(--teal-light);
+    border: 1px solid rgba(0,168,171,0.25);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    font-size: 0.85rem;
+    color: var(--navy);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  .credential-box code { background: rgba(255,255,255,0.6); padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600; }
+
+  /* ── CONFIRM MODAL ── */
+  .confirm-text { font-size: 0.92rem; color: var(--dark); line-height: 1.6; margin-bottom: 1.4rem; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy);
+    color: var(--white);
+    padding: 0.85rem 1.4rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 100;
+    max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); }
+  .toast.success { background: var(--green); }
+
+  @media (max-width: 860px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .main { padding: 1.25rem; }
+    .search-input { width: 100%; }
+    table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; }
+    tbody tr { border-bottom: 1px solid var(--gray-200); padding: 0.9rem 1.25rem; }
+    tbody td { padding: 0.3rem 0; border: none; }
+    tbody td::before { content: attr(data-label); display: block; font-size: 0.7rem; text-transform: uppercase; color: var(--gray-400); font-weight: 600; margin-bottom: 0.15rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── GATE (checking existing session) ── -->
+<div id="gate">
+  <div class="spinner-lg"></div>
+  <p id="gateMsg">Checking session…</p>
+</div>
+
+<!-- ── LOGIN GATE (self-contained sign-in) ── -->
+<div id="loginGate">
+  <div class="login-card">
+    <div class="brand">
+      <img src="logo.png" alt="" style="width:30px;height:30px;border-radius:7px;object-fit:contain;">
+      <div class="brand-name" style="color:var(--navy);">Aqua<span style="color:var(--teal);">Desk</span></div>
+    </div>
+    <div class="login-card-title">Sign In</div>
+    <div class="login-card-sub">This page is restricted. Enter your credentials to continue.</div>
+
+    <div class="login-error" id="loginError"></div>
+
+    <form id="loginForm" onsubmit="handleOfficeLogin(event)">
+      <div class="form-group">
+        <label class="form-label" for="officeEmail">Email</label>
+        <input class="form-input" type="email" id="officeEmail" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="officePassword">Password</label>
+        <input class="form-input" type="password" id="officePassword" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="login-btn-submit" id="officeLoginBtn">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <div class="topbar">
+
+    <div class="brand">
+      <img src="logo.png" alt="">
+      <div class="brand-name">Aqua<span>Desk</span></div>
+      <div class="brand-tag">Platform Admin</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-user" id="topbarUser"></div>
+      <button class="btn-signout" onclick="handleSignOut()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Dive Centers</div>
+        <div class="page-sub">Create accounts, manage access, and keep subscriptions in good standing.</div>
+      </div>
+      <button class="btn btn-teal" onclick="openCreateModal()">+ New Dive Center</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Total dive centers</div></div>
+      <div class="stat-card"><div class="stat-num" id="statActive">—</div><div class="stat-label">Active / trial</div></div>
+      <div class="stat-card"><div class="stat-num" id="statSuspended">—</div><div class="stat-label">Suspended</div></div>
+      <div class="stat-card"><div class="stat-num" id="statThisMonth">—</div><div class="stat-label">Created this month</div></div>
+      <div class="stat-card" style="border-color:#e0453c;"><div class="stat-num" id="statOverdue" style="color:#e0453c;">—</div><div class="stat-label">Overdue (past grace period)</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-head-title">All Dive Centers</div>
+        <input class="search-input" id="searchInput" placeholder="Search by name or owner email…" oninput="renderTable()">
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Dive Center</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="dcTableBody">
+          <tr><td colspan="4"><div class="empty-state">Loading dive centers…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── CREATE DIVE CENTER MODAL ── -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal-card">
+    <div class="modal-title">New Dive Center</div>
+    <div class="modal-sub">This creates the dive center record and an Owner login in one step. The owner will be asked to set their own password on first sign-in.</div>
+    <div class="modal-error" id="createError"></div>
+
+    <div class="form-group">
+      <label class="form-label">Dive Center Name</label>
+      <input class="form-input" id="newDcName" placeholder="e.g. Malapascua Blue Reef Divers">
+    </div>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="form-label">Dive Center Email</label>
+        <input class="form-input" id="newDcEmail" type="email" placeholder="info@divecenter.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input class="form-input" id="newDcPhone" placeholder="Optional">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Address</label>
+      <input class="form-input" id="newDcAddress" placeholder="Optional">
+    </div>
+    <hr style="border:none;border-top:1px solid var(--gray-200);margin:1.1rem 0;">
+    <div class="form-group">
+      <label class="form-label">Owner Full Name</label>
+      <input class="form-input" id="newOwnerName" placeholder="e.g. Martin King Lomosad">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Owner Login Email</label>
+      <input class="form-input" id="newOwnerEmail" type="email" placeholder="owner@divecenter.com">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
+      <button class="btn btn-teal" id="createSubmitBtn" onclick="submitCreateDiveCenter()">Create Dive Center</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CREDENTIALS RESULT MODAL ── -->
+<div class="modal-overlay" id="credsModal">
+  <div class="modal-card">
+    <div class="modal-title">Dive Center Created</div>
+    <div class="modal-sub">Share these sign-in details with the owner. They'll be required to set their own password on first login.</div>
+    <div class="credential-box" id="credsBox"></div>
+    <div class="modal-actions">
+      <button class="btn btn-navy" style="flex:1;" onclick="closeModal('credsModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM MODAL ── -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-card">
+    <div class="modal-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-text" id="confirmText"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── START BILLING MODAL ── -->
+<div class="modal-overlay" id="startBillingModal">
+  <div class="modal-card">
+    <div class="modal-title">Start Billing</div>
+    <div class="modal-sub" id="startBillingSub">Ends the free trial and sets the first due date.</div>
+    <div class="form-group">
+      <label class="form-label">First payment due date</label>
+      <input class="form-input" type="date" id="startBillingDueDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Monthly amount (PHP)</label>
+      <input class="form-input" type="number" id="startBillingAmount" value="4000">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('startBillingModal')">Cancel</button>
+      <button class="btn btn-teal" id="startBillingSubmitBtn" onclick="submitStartBilling()">Start Billing</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://xaabndtaevwgicibzcqm.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+const { createClient } = supabase;
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const TEMP_PASSWORD = 'aquadesk123'; // same convention used for secretary accounts
+
+let diveCenters = []; // [{id,name,email,phone,address,subscription_status,billing_due_date,last_payment_date,billing_amount,created_at,owner:{id,full_name,email,is_active}}]
+let currentAdmin = null;
+let startBillingDcId = null;
+
+function daysOverdue(dc) {
+  if (!dc.billing_due_date || dc.subscription_status !== 'active') return 0;
+  const GRACE_DAYS = 5; // matches Service Agreement 3.3
+  const due = new Date(dc.billing_due_date + 'T00:00:00');
+  const graceEnd = new Date(due);
+  graceEnd.setDate(graceEnd.getDate() + GRACE_DAYS);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor((today - graceEnd) / 86400000);
+  return diffDays > 0 ? diffDays : 0;
+}
+
+// ── AUTH GATE ────────────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await client.auth.getSession();
+  if (!session) {
+    showLoginGate();
+    return;
+  }
+  await verifyAndEnter(session.user.id, session.user.email);
+}
+init();
+
+function showLoginGate() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('loginGate').classList.add('show');
+  document.getElementById('officeEmail').focus();
+}
+
+async function handleOfficeLogin(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('loginError');
+  errEl.classList.remove('show');
+
+  const email = document.getElementById('officeEmail').value.trim();
+  const password = document.getElementById('officePassword').value;
+  const btn = document.getElementById('officeLoginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  // Deliberately generic error message below for both a wrong password AND
+  // a valid-but-non-admin account — this page should never confirm or deny
+  // whether a given email has an account at all.
+  const GENERIC_FAIL = 'Incorrect email or password.';
+
+  try {
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (error || !data?.user) {
+      errEl.textContent = GENERIC_FAIL;
+      errEl.classList.add('show');
+      return;
+    }
+    await verifyAndEnter(data.user.id, data.user.email, GENERIC_FAIL);
+  } catch (err) {
+    errEl.textContent = GENERIC_FAIL;
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
+async function verifyAndEnter(userId, userEmail, genericFailMsg) {
+  const { data, error } = await client
+    .from('users')
+    .select('id, full_name, email, is_platform_admin')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data || data.is_platform_admin !== true) {
+    await client.auth.signOut();
+    document.getElementById('gate').style.display = 'none';
+    showLoginGate();
+    if (genericFailMsg) {
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = genericFailMsg;
+      errEl.classList.add('show');
+    }
+    return;
+  }
+
+  currentAdmin = data;
+  document.getElementById('topbarUser').textContent = (data.full_name || userEmail) + ' · Platform Admin';
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('loginGate').classList.remove('show');
+  document.getElementById('app').classList.add('show');
+
+  await loadDiveCenters();
+}
+
+async function handleSignOut() {
+  await client.auth.signOut();
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('officeEmail').value = '';
+  document.getElementById('officePassword').value = '';
+  showLoginGate();
+}
+
+
+// ── ADMIN EDGE FUNCTION CALL ───────────────────────────────────────────────
+async function callAdmin(action, payload) {
+  const { data: { session } } = await client.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-console`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (session?.access_token || '')
+    },
+    body: JSON.stringify({ action, ...payload })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.error || 'Request failed (' + res.status + ')');
+  }
+  return json;
+}
+
+// ── LOAD + RENDER ───────────────────────────────────────────────────────────
+async function loadDiveCenters() {
+  try {
+    const json = await callAdmin('list_dive_centers', {});
+    diveCenters = json.diveCenters || [];
+    renderStats();
+    renderTable();
+  } catch (e) {
+    document.getElementById('dcTableBody').innerHTML =
+      `<tr><td colspan="4"><div class="empty-state">Could not load dive centers: ${esc(e.message)}</div></td></tr>`;
+    showToast('Could not load dive centers: ' + e.message, 'error');
+  }
+}
+
+function renderStats() {
+  const total = diveCenters.length;
+  const suspended = diveCenters.filter(d => d.subscription_status === 'suspended').length;
+  const active = total - suspended;
+  const overdue = diveCenters.filter(d => daysOverdue(d) > 0).length;
+  const now = new Date();
+  const thisMonth = diveCenters.filter(d => {
+    const c = d.created_at ? new Date(d.created_at) : null;
+    return c && c.getFullYear() === now.getFullYear() && c.getMonth() === now.getMonth();
+  }).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statSuspended').textContent = suspended;
+  document.getElementById('statThisMonth').textContent = thisMonth;
+  document.getElementById('statOverdue').textContent = overdue;
+}
+
+function renderTable() {
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  const list = diveCenters.filter(d => {
+    if (!q) return true;
+    return (d.name || '').toLowerCase().includes(q) || (d.owner?.email || '').toLowerCase().includes(q);
+  });
+
+  const body = document.getElementById('dcTableBody');
+  if (list.length === 0) {
+    body.innerHTML = `<tr><td colspan="4"><div class="empty-state">No dive centers match your search.</div></td></tr>`;
+    return;
+  }
+
+  body.innerHTML = list.map(d => {
+    const status = d.subscription_status || 'trial';
+    const created = d.created_at ? new Date(d.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+    const ownerEmail = d.owner?.email || '—';
+    const ownerName = d.owner?.full_name || '';
+    const isSuspended = status === 'suspended';
+    const overdue = daysOverdue(d);
+    const lockedUntil = d.owner?.locked_until ? new Date(d.owner.locked_until) : null;
+    const isLocked = lockedUntil && lockedUntil.getTime() > Date.now();
+    const dueLabel = d.billing_due_date
+      ? `Due ${new Date(d.billing_due_date + 'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}`
+      : 'Billing not started';
+
+    return `
+    <tr>
+      <td data-label="Dive Center">
+        <div class="dc-name">${esc(d.name || 'Untitled')}</div>
+        <div class="dc-owner">${esc(ownerName ? ownerName + ' · ' : '')}${esc(ownerEmail)}</div>
+        ${isLocked ? `<div style="font-size:0.75rem;color:#e0453c;margin-top:0.2rem;">🔒 Locked out until ${esc(lockedUntil.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}))}</div>` : ''}
+      </td>
+      <td data-label="Status">
+        <select class="inline-select" onchange="changeStatus('${d.id}', this.value)">
+          ${['trial','active','suspended','cancelled'].map(s => `<option value="${s}" ${s===status?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}
+        </select>
+        <div style="font-size:0.75rem;color:${overdue > 0 ? '#e0453c' : '#8a8f98'};margin-top:0.25rem;">
+          ${overdue > 0 ? `⚠ ${overdue} day${overdue>1?'s':''} overdue` : dueLabel}
+        </div>
+      </td>
+      <td data-label="Created">${created}</td>
+      <td data-label="Actions">
+        <div class="row-actions">
+          ${!d.billing_due_date
+            ? `<button class="btn btn-teal btn-sm" onclick="openStartBillingModal('${d.id}','${esc(d.name||'this dive center')}')">Start Billing</button>`
+            : `<button class="btn btn-teal btn-sm" onclick="confirmMarkPaid('${d.id}','${esc(d.name||'this dive center')}')">Mark as Paid</button>`}
+          ${ownerEmail !== '—' ? `<button class="btn btn-ghost btn-sm" onclick="sendReset('${esc(ownerEmail)}')">Reset Link</button>` : ''}
+          ${isLocked ? `<button class="btn btn-danger btn-sm" onclick="confirmUnlockLogin('${esc(ownerEmail)}','${esc(ownerName||ownerEmail)}')">Unlock Login</button>` : ''}
+          ${isSuspended
+            ? `<button class="btn btn-ghost btn-sm" onclick="confirmToggleSuspend('${d.id}','${esc(d.name||'this dive center')}', false)">Reactivate</button>`
+            : `<button class="btn btn-danger btn-sm" onclick="confirmToggleSuspend('${d.id}','${esc(d.name||'this dive center')}', true)">Suspend</button>`}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CREATE DIVE CENTER ──────────────────────────────────────────────────────
+function openCreateModal() {
+  ['newDcName','newDcEmail','newDcPhone','newDcAddress','newOwnerName','newOwnerEmail'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('createError').classList.remove('show');
+  document.getElementById('createModal').classList.add('show');
+}
+
+async function submitCreateDiveCenter() {
+  const name = document.getElementById('newDcName').value.trim();
+  const email = document.getElementById('newDcEmail').value.trim();
+  const phone = document.getElementById('newDcPhone').value.trim();
+  const address = document.getElementById('newDcAddress').value.trim();
+  const ownerName = document.getElementById('newOwnerName').value.trim();
+  const ownerEmail = document.getElementById('newOwnerEmail').value.trim().toLowerCase();
+
+  const errEl = document.getElementById('createError');
+  errEl.classList.remove('show');
+
+  if (!name || !ownerName || !ownerEmail) {
+    errEl.textContent = 'Dive center name, owner name, and owner email are required.';
+    errEl.classList.add('show');
+    return;
+  }
+  if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
+    errEl.textContent = 'Please enter a valid owner email address.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const btn = document.getElementById('createSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  try {
+    const json = await callAdmin('create_dive_center', {
+      name, email, phone, address, ownerName, ownerEmail, tempPassword: TEMP_PASSWORD
+    });
+    closeModal('createModal');
+    document.getElementById('credsBox').innerHTML =
+      `<strong>${esc(name)}</strong><br>
+       Login email: <code>${esc(ownerEmail)}</code><br>
+       Temporary password: <code>${esc(TEMP_PASSWORD)}</code><br>
+       They'll be prompted to set a new password on first sign-in.`;
+    document.getElementById('credsModal').classList.add('show');
+    showToast('Dive center created.', 'success');
+    await loadDiveCenters();
+  } catch (e) {
+    errEl.textContent = e.message || 'Could not create dive center.';
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create Dive Center';
+  }
+}
+
+// ── PASSWORD RESET ──────────────────────────────────────────────────────────
+async function sendReset(email) {
+  if (!email) { showToast('No owner email on file.', 'error'); return; }
+  try {
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html'
+    });
+    if (error) throw error;
+    showToast('Password reset link sent to ' + email + '.', 'success');
+  } catch (e) {
+    showToast('Could not send reset link: ' + e.message, 'error');
+  }
+}
+
+// ── UNLOCK LOGIN ─────────────────────────────────────────────────────────
+function confirmUnlockLogin(email, name) {
+  document.getElementById('confirmTitle').textContent = 'Unlock this login?';
+  document.getElementById('confirmText').textContent =
+    `${name} was locked out after too many failed sign-in attempts. This clears the lockout immediately so they can try signing in again.`;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.className = 'btn btn-teal';
+  btn.textContent = 'Unlock';
+  btn.onclick = async () => {
+    closeModal('confirmModal');
+    try {
+      await callAdmin('unlock_login', { email });
+      showToast('Login unlocked for ' + email + '.', 'success');
+      await loadDiveCenters();
+    } catch (e) {
+      showToast('Could not unlock login: ' + e.message, 'error');
+    }
+  };
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+// ── SUSPEND / REACTIVATE ────────────────────────────────────────────────────
+function confirmToggleSuspend(dcId, dcName, suspend) {
+  document.getElementById('confirmTitle').textContent = suspend ? 'Suspend dive center?' : 'Reactivate dive center?';
+  document.getElementById('confirmText').textContent = suspend
+    ? `${dcName} will be signed out and blocked from logging back in until reactivated.`
+    : `${dcName} will regain full access immediately.`;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.className = suspend ? 'btn btn-danger' : 'btn btn-teal';
+  btn.textContent = suspend ? 'Suspend' : 'Reactivate';
+  btn.onclick = async () => {
+    closeModal('confirmModal');
+    await changeStatus(dcId, suspend ? 'suspended' : 'active');
+  };
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+async function changeStatus(dcId, status) {
+  try {
+    await callAdmin('update_dive_center', { diveCenterId: dcId, subscription_status: status });
+    const dc = diveCenters.find(d => d.id === dcId);
+    if (dc) dc.subscription_status = status;
+    renderStats();
+    renderTable();
+    showToast('Status updated to ' + status + '.', 'success');
+  } catch (e) {
+    showToast('Could not update status: ' + e.message, 'error');
+    renderTable();
+  }
+}
+
+// ── START BILLING ────────────────────────────────────────────────────────
+function openStartBillingModal(dcId, dcName) {
+  startBillingDcId = dcId;
+  document.getElementById('startBillingSub').textContent = `Ends ${dcName}'s free trial and sets their first due date.`;
+  const defaultDue = new Date();
+  defaultDue.setDate(defaultDue.getDate() + 30);
+  document.getElementById('startBillingDueDate').value = defaultDue.toISOString().split('T')[0];
+  document.getElementById('startBillingAmount').value = 4000;
+  document.getElementById('startBillingModal').classList.add('show');
+}
+
+async function submitStartBilling() {
+  const dueDate = document.getElementById('startBillingDueDate').value;
+  const amount = parseFloat(document.getElementById('startBillingAmount').value) || 4000;
+  if (!dueDate) { showToast('Please pick a due date.', 'error'); return; }
+
+  const btn = document.getElementById('startBillingSubmitBtn');
+  btn.disabled = true;
+  try {
+    await callAdmin('start_billing', { diveCenterId: startBillingDcId, dueDate, amount });
+    const dc = diveCenters.find(d => d.id === startBillingDcId);
+    if (dc) { dc.billing_due_date = dueDate; dc.billing_amount = amount; dc.subscription_status = 'active'; }
+    closeModal('startBillingModal');
+    renderStats(); renderTable();
+    showToast('Billing started.', 'success');
+  } catch (e) {
+    showToast('Could not start billing: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── MARK AS PAID ────────────────────────────────────────────────────────
+function confirmMarkPaid(dcId, dcName) {
+  document.getElementById('confirmTitle').textContent = 'Mark as paid?';
+  document.getElementById('confirmText').textContent =
+    `Records today's payment for ${dcName} and moves their due date forward one month. If they were suspended, this reactivates them.`;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.className = 'btn btn-teal';
+  btn.textContent = 'Mark as Paid';
+  btn.onclick = async () => {
+    closeModal('confirmModal');
+    try {
+      const json = await callAdmin('mark_paid', { diveCenterId: dcId });
+      const dc = diveCenters.find(d => d.id === dcId);
+      if (dc) {
+        dc.billing_due_date = json.newDueDate;
+        dc.last_payment_date = json.paidOn;
+        dc.subscription_status = 'active';
+      }
+      renderStats(); renderTable();
+      showToast('Payment recorded. Next due date: ' + json.newDueDate, 'success');
+    } catch (e) {
+      showToast('Could not record payment: ' + e.message, 'error');
+    }
+  };
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function esc(v) { return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c] || c)); }
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

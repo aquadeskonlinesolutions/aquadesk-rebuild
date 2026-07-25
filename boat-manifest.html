@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boat Manifest — AquaDesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1A3C5E;--navy-dark:#0F2540;--teal:#00A8AB;--teal-mid:#007B7D;--teal-light:#E0F7F8;--white:#fff;--off-white:#F8FAFC;--gray-100:#F1F5F9;--gray-200:#E2E8F0;--gray-300:#CBD5E1;--gray-400:#94A3B8;--gray-500:#64748B;--gray-600:#475569;--gray-700:#334155;--dark:#0F172A;--red:#DC2626;--red-light:#FEF2F2;--green:#16A34A;--green-light:#F0FDF4;--orange:#D97706;--orange-light:#FFFBEB;--blue-light:#EFF6FF;--purple-light:#F5F3FF;--font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;--radius:12px;--sidebar-w:260px;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 16px rgba(0,0,0,.08)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-body);background:var(--off-white);color:var(--dark);min-height:100vh;display:flex;font-size:15px}
+button,input,select,textarea{font-family:var(--font-body)}
+button:disabled,input:disabled,select:disabled,textarea:disabled{opacity:.6;cursor:not-allowed}
+.sidebar{width:var(--sidebar-w);background:var(--navy);min-height:100vh;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;overflow-y:auto}
+.sidebar-brand{display:flex;align-items:center;gap:.75rem;padding:1.5rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.brand-img{width:38px;height:38px;border-radius:9px;object-fit:contain}
+.brand-name{font-family:var(--font-display);font-size:1.3rem;color:var(--white);letter-spacing:-.02em}
+.brand-name span{color:var(--teal)}
+.sidebar-dc{padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.dc-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.3rem}
+.dc-name{font-size:.95rem;font-weight:600;color:var(--white)}
+.dc-role{font-size:.75rem;color:var(--teal);margin-top:.2rem}
+.sidebar-nav{padding:1rem 0;flex:1}
+.nav-section-label{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:.75rem 1.25rem .4rem}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;font-size:.95rem;color:rgba(255,255,255,.6);text-decoration:none;cursor:pointer;transition:.2s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.nav-item.active{background:rgba(0,168,171,.12);color:var(--white);border-left-color:var(--teal);font-weight:600}
+.nav-icon{font-size:1.1rem;width:22px;text-align:center}
+.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,.07)}
+.sidebar-user{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
+.user-avatar{width:36px;height:36px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+.user-name{font-size:.85rem;font-weight:600;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-email{font-size:.72rem;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-logout{width:100%;padding:.6rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:rgba(255,255,255,.5);font-size:.85rem;cursor:pointer}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+.page-title{font-family:var(--font-display);font-size:1.6rem;color:var(--navy);letter-spacing:-.02em}
+.page-subtitle{font-size:.85rem;color:var(--gray-400);margin-top:.1rem}
+.content{padding:1.5rem 2rem 3rem;flex:1}
+.btn{border:none;border-radius:10px;cursor:pointer;font-weight:600;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;text-decoration:none;white-space:nowrap}
+.btn-navy{background:var(--navy);color:white;padding:.78rem 1.25rem}
+.btn-navy:hover{background:var(--navy-dark)}
+.btn-teal{background:var(--teal);color:white;padding:.78rem 1.25rem}
+.btn-teal:hover{background:var(--teal-mid)}
+.btn-ghost{background:white;color:var(--navy);border:1.5px solid var(--gray-200);padding:.72rem 1.1rem}
+.btn-ghost:hover{border-color:var(--teal);background:var(--teal-light)}
+.btn-soft{background:var(--teal-light);color:var(--teal-mid);border:1px solid rgba(0,168,171,.22);padding:.62rem .9rem}
+.btn-danger{background:var(--red-light);color:var(--red);border:1px solid #FECACA;padding:.62rem .9rem}
+.btn-sm{padding:.45rem .72rem;font-size:.78rem;border-radius:8px}
+.card{background:white;border:1px solid var(--gray-200);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem}
+.card-body{padding:1rem 1.25rem}
+.input{width:100%;padding:.8rem 1rem;border:1.5px solid var(--gray-200);border-radius:10px;outline:none;background:white;font-size:.95rem}
+.input:focus{border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,168,171,.1)}
+.form-label{display:block;font-size:.84rem;font-weight:700;color:var(--navy);margin-bottom:.38rem}
+.notice{background:var(--teal-light);border:1px solid rgba(0,168,171,.24);color:var(--teal-mid);border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem}
+.notice.warn{background:var(--orange-light);border-color:#FCD34D;color:#92400E}
+.empty{padding:2.25rem 1rem;text-align:center;color:var(--gray-500)}
+.empty .empty-title{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:.25rem}
+.date-card{background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap}
+.lock-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem;font-size:.88rem;font-weight:600}
+.lock-banner.locked{background:var(--orange-light);border:1px solid #FCD34D;color:#92400E}
+.lock-banner.editable{background:var(--green-light);border:1px solid #86EFAC;color:var(--green)}
+
+/* ── Manifest sheet (the printable form) ───────────────────────────────── */
+.sheet{background:white;border:1px solid var(--gray-200);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:2.5rem 3rem;max-width:920px;margin:0 auto;color:#000;opacity:0;transition:opacity .35s ease}
+.sheet.show{opacity:1}
+.sheet-gov{text-align:center;line-height:1.55}
+.sheet-gov .l1{font-weight:700;letter-spacing:.05em}
+.sheet-gov .l2{font-weight:600}
+.sheet-gov .l3{font-weight:800;font-size:1.05rem;letter-spacing:.04em}
+.sheet-lead{text-align:center;line-height:2.2;font-size:.96rem;margin:1.25rem auto 1.4rem;max-width:760px}
+.fillin{font-weight:700;border-bottom:1px solid #000;padding:0 .35rem;white-space:nowrap}
+.fillin.blank{display:inline-block;min-width:120px}
+.man-table{width:100%;border-collapse:collapse;margin:.4rem 0 1.4rem;font-size:.86rem}
+.man-table th,.man-table td{border:1px solid #000;padding:.34rem .4rem;text-align:left;vertical-align:middle;height:1.7rem}
+.man-table th{background:var(--gray-100);font-weight:700;text-align:center;font-size:.8rem}
+.man-table td.c{text-align:center}
+.man-table tr.staff-row td{background:#FAFAFA;font-style:italic}
+.dp-line{margin:.45rem 0;font-weight:700;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.sheet-input{border:none;border-bottom:1px solid #000;outline:none;font-family:var(--font-body);font-size:.92rem;font-weight:600;padding:.15rem .35rem;background:transparent;min-width:220px}
+.sheet-input:focus{background:var(--teal-light)}
+.sheet-input[readonly]{border-bottom:1px dotted var(--gray-400);color:#000;cursor:default}
+.sheet-oath{line-height:2;font-size:.94rem;margin:1.4rem 0 0;text-align:left}
+.sign-block{margin-top:2rem;line-height:1.7;display:table;margin-left:auto;margin-right:1rem}
+.sign-name{font-weight:700;border-bottom:1px solid #000;display:inline-block;min-width:260px;text-align:center;padding-bottom:.1rem}
+.sign-role{font-style:italic}
+.subscribed{margin-top:2rem;line-height:2.1;font-size:.94rem;text-align:left}
+.notary-block{margin-top:1.5rem;margin-right:1rem;text-align:right}
+.notary-block .sign-name{min-width:300px}
+.sheet-footnote{margin-top:.6rem;margin-left:auto;width:48%;font-size:.85rem;line-height:1.5}
+.lock-chip{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.25rem .7rem;font-size:.74rem;font-weight:800;background:var(--orange-light);color:#92400E;border:1px solid #FCD34D}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:300}
+.modal-overlay.show{display:flex}
+.modal{background:white;border-radius:var(--radius);width:92%;max-width:480px;box-shadow:0 18px 60px rgba(0,0,0,.18);overflow:hidden}
+.modal-head{padding:1.25rem 1.5rem;background:var(--navy);color:white}
+.modal-title{font-family:var(--font-display);font-size:1.45rem}
+.modal-sub{font-size:.85rem;color:rgba(255,255,255,.68);margin-top:.25rem;line-height:1.5}
+.modal-body{padding:1.25rem 1.5rem;max-height:55vh;overflow:auto}
+.modal-actions{padding:1rem 1.5rem;border-top:1px solid var(--gray-200);display:flex;justify-content:flex-end;gap:.75rem}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:white;padding:.8rem 1.25rem;border-radius:10px;opacity:0;transition:.25s;z-index:500;box-shadow:var(--shadow-md)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--red)}
+.toast.success{background:var(--green)}
+.hide{display:none!important}
+
+@media(max-width:1100px){.sheet{padding:1.5rem 1.25rem}.sheet-footnote{width:100%}.sidebar:hover{width:var(--sidebar-collapsed)}.sidebar.open{width:var(--sidebar-w)}}
+:root{--sidebar-collapsed:54px}
+.sidebar{width:var(--sidebar-collapsed);transition:width .25s ease;overflow:hidden;z-index:200}
+.sidebar:hover,.sidebar.open{width:var(--sidebar-w)}
+.brand-name,.sidebar-dc,.nav-section-label,.user-info,.btn-logout,.nav-item-label{opacity:0;transition:opacity .15s ease;white-space:nowrap;overflow:hidden}
+.sidebar:hover .brand-name,.sidebar:hover .sidebar-dc,.sidebar:hover .nav-section-label,.sidebar:hover .user-info,.sidebar:hover .btn-logout,.sidebar:hover .nav-item-label,.sidebar.open .brand-name,.sidebar.open .sidebar-dc,.sidebar.open .nav-section-label,.sidebar.open .user-info,.sidebar.open .btn-logout,.sidebar.open .nav-item-label{opacity:1}
+.sidebar-brand{display:flex;align-items:center;gap:.75rem;padding:1.25rem 0;padding-left:calc((var(--sidebar-collapsed) - 38px) / 2);border-bottom:1px solid rgba(255,255,255,.07);overflow:hidden;min-width:var(--sidebar-w)}
+.sidebar-dc{padding:.75rem 0 .75rem calc((var(--sidebar-collapsed) - 22px) / 2);border-bottom:1px solid rgba(255,255,255,.07);min-width:var(--sidebar-w);overflow:hidden;white-space:nowrap}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;padding-left:calc((var(--sidebar-collapsed) - 22px) / 2);font-size:.95rem;color:rgba(255,255,255,.6);text-decoration:none;cursor:pointer;transition:.2s;border-left:3px solid transparent;min-width:var(--sidebar-w);white-space:nowrap}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}.nav-item.active{background:rgba(0,168,171,.12);color:var(--white);border-left-color:var(--teal);font-weight:500}
+.sidebar-footer{padding:.75rem 0;padding-left:calc((var(--sidebar-collapsed) - 36px) / 2);border-top:1px solid rgba(255,255,255,.07);min-width:var(--sidebar-w);overflow:hidden}
+.sidebar-user{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;white-space:nowrap}
+.sidebar-overlay{display:none;position:fixed;inset:0;z-index:199}
+.sidebar-overlay.open{display:block}
+.main{margin-left:var(--sidebar-collapsed)}
+
+/* ── Print: only the manifest sheet is visible ─────────────────────────── */
+@media print{
+  .no-print{display:none!important}
+  body{display:block;background:white}
+  .main{margin-left:0}
+  .topbar{display:none!important}
+  .content{padding:0}
+  .sheet{box-shadow:none;border:none;border-radius:0;max-width:100%;margin:0;padding:4mm 6mm;opacity:1!important;font-size:9px}
+  .man-table th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .man-table tr.staff-row td{background:#f5f5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sheet-input{border-bottom:1px solid #000}
+  /* ── one-page compaction (print only) ───────────────────────────────── */
+  .sheet-gov{line-height:1.15}
+  .sheet-gov .l3{font-size:.9rem}
+  .sheet-lead{line-height:1.4;font-size:.88rem;margin:.35rem auto .4rem;max-width:100%}
+  .man-table{margin:.2rem 0 .4rem;font-size:.76rem}
+  .man-table th,.man-table td{padding:.03rem .25rem;height:auto;line-height:1.1}
+  .man-table th{font-size:.74rem}
+  .dp-line{margin:.12rem 0;font-size:.88rem}
+  .sheet-oath{line-height:1.35;margin:.4rem 0 0;font-size:.88rem}
+  .sign-block{margin-top:.5rem;line-height:1.2}
+  .subscribed{margin-top:.5rem;line-height:1.35;font-size:.88rem}
+  .notary-block{margin-top:.4rem}
+  .sheet-footnote{margin-top:.2rem;line-height:1.2;font-size:.78rem}
+  @page{size:A4 portrait;margin:8mm}
+}
+</style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="sidebar no-print" id="sidebar"><div class="sidebar-brand"><img src="logo.png" class="brand-img" onerror="this.outerHTML='<div style=\'width:38px;height:38px;background:var(--teal);border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;\'>AD</div>'"><div class="brand-name">Aqua<span>Desk</span></div></div><div class="sidebar-dc"><div class="dc-label">Dive Center</div><div class="dc-name" id="dcName">Loading...</div><div class="dc-role" id="userRole">—</div></div><nav class="sidebar-nav"><div class="nav-section-label">Operations</div><a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span><span class="nav-item-label">Dashboard</span></a><a class="nav-item" href="divers.html"><span class="nav-icon">🤿</span><span class="nav-item-label">Diver</span></a><a class="nav-item" href="scheduling.html"><span class="nav-icon">🚤</span><span class="nav-item-label">Scheduling</span></a><a class="nav-item" href="diver-form.html"><span class="nav-icon">📋</span><span class="nav-item-label">Diver Form</span></a><a class="nav-item active" href="boat-manifest.html"><span class="nav-icon">🚢</span><span class="nav-item-label">Boat Manifest</span></a><div class="nav-section-label owner-only" style="display:none">Management</div><a class="nav-item" href="reports.html"><span class="nav-icon">📈</span><span class="nav-item-label">Reports</span></a><a class="nav-item owner-only" style="display:none" href="settings.html"><span class="nav-icon">⚙️</span><span class="nav-item-label">Settings</span></a></nav><div class="sidebar-footer"><div class="sidebar-user"><div class="user-avatar" id="userAvatar">?</div><div class="user-info"><div class="user-name" id="userName">Loading...</div><div class="user-email" id="userEmail">—</div></div></div><button class="btn-logout" onclick="handleLogout()">↩ Sign Out</button></div></aside>
+
+<div class="main">
+  <div class="topbar no-print">
+    <div>
+      <div class="page-title">Boat Manifest</div>
+      <div class="page-subtitle">Bureau of Customs passenger manifest — pre-filled from scheduling</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.35rem">
+      <button class="btn btn-navy" id="btnPrint" onclick="doPrint()" disabled>🖨 Print Manifest</button>
+      <span style="font-size:.72rem;color:var(--gray-400)">Tip: turn off headers &amp; footers in the print dialog to remove browser watermarks.</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Trip selection -->
+    <div class="date-card no-print">
+      <div style="max-width:230px;flex:0 0 auto;min-width:190px">
+        <label class="form-label">Trip date</label>
+        <input type="date" id="tripDate" class="input" onchange="onDateChange()">
+      </div>
+      <div style="flex:1;min-width:280px">
+        <label class="form-label">Select a trip</label>
+        <select id="tripSelect" class="input" onchange="onSelectTrip()">
+          <option value="">— Choose a trip —</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="emptyState" class="empty card no-print">
+      <div class="empty-title">No trip selected</div>
+      <div>Pick a date, then choose a trip to generate its manifest.</div>
+    </div>
+
+
+    <!-- Manifest sheet -->
+    <div id="manifestSheet" class="sheet hide">
+      <div class="sheet-gov">
+        <div class="l1">REPUBLIC OF THE PHILIPPINES</div>
+        <div class="l2">DEPARTMENT OF FINANCE</div>
+        <div class="l3">BUREAU OF CUSTOMS</div>
+      </div>
+
+      <p class="sheet-lead">
+        A complete list of all passengers taken on board in
+        <span class="fillin" id="leadBoat">—</span>
+        sailing from the Port of <span class="fillin">Malapascua</span> Island on the
+        <span class="fillin" id="leadDay">__</span> day of
+        <span class="fillin" id="leadMonth">___</span> for the port of
+        <span class="fillin" id="leadDest">________</span>
+      </p>
+
+      <table class="man-table">
+        <thead>
+          <tr>
+            <th style="width:38px">No</th>
+            <th>Name</th>
+            <th style="width:52px">Age</th>
+            <th style="width:52px">Sex</th>
+            <th style="width:120px">Nationality</th>
+            <th>Place of Residence</th>
+            <th style="width:62px">Paying</th>
+            <th style="width:74px">Non-Paying</th>
+          </tr>
+        </thead>
+        <tbody id="passengerBody"></tbody>
+      </table>
+
+      <div class="dp-line">DISTRICT OF
+        <input type="text" class="sheet-input" id="fDistrict" placeholder="________________" onchange="onEditField()">
+      </div>
+      <div class="dp-line">PORT OF
+        <input type="text" class="sheet-input" id="fPort" placeholder="________________" onchange="onEditField()">
+      </div>
+
+      <p class="sheet-oath">
+        I <span class="fillin" id="oathCaptain">—</span> master of the
+        <span class="fillin" id="oathBoat">—</span> do solemnly swear that the following is full and
+        complete manifest of all crews taken onboard said vessel on its present voyage, and statements
+        contained therein are true and correct to the best of my knowledge and behalf.
+      </p>
+
+      <div class="sign-block">
+        <div class="sign-name" id="signCaptain">—</div>
+        <div style="display:block;min-width:260px;text-align:center;font-style:italic;font-size:.88rem;margin-top:.15rem">Master</div>
+      </div>
+
+      <p class="subscribed">
+        SUBSCRIBED AND SWORN to before me this
+        <input type="text" class="sheet-input" id="fSwornDate" style="min-width:280px" placeholder="__________ day of _____________" onchange="onEditField()">
+      </p>
+
+      <div class="notary-block">
+        <div class="sign-name">&nbsp;</div>
+        <p class="sheet-footnote" style="text-align:right;margin-top:.35rem">Empowered to administer oath under the provision Section 1147 of the administrative code</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://xaabndtaevwgicibzcqm.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+const { createClient }=supabase;
+const client=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let currentUser=null,currentUserData=null,diveCenterId=null,selectedDate='';
+let schedules=[],boats=[],divers=[],staffList=[],manifests=[];
+let currentSchedule=null,currentManifest=null,currentMeta={},currentScheduleDivers=[];
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function fmtDate(date){if(!date)return '—';return new Date(date+'T00:00:00').toLocaleDateString('en-PH',{month:'long',day:'numeric',year:'numeric'});}
+function fmtTime(t){if(!t)return '';const p=String(t).split(':');let hh=parseInt(p[0],10);const mm=p[1]||'00';const ap=hh>=12?'PM':'AM';hh=hh%12;if(hh===0)hh=12;return hh+':'+mm+' '+ap;}
+function fullName(d){return d?`${d.first_name||''} ${d.last_name||''}`.trim():'';}
+function ordinal(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+function calcAge(birthday){if(!birthday)return '';const b=new Date(birthday+'T00:00:00');if(isNaN(b))return '';const t=new Date();let a=t.getFullYear()-b.getFullYear();const m=t.getMonth()-b.getMonth();if(m<0||(m===0&&t.getDate()<b.getDate()))a--;return a>=0?a:'';}
+function diverById(id){return divers.find(d=>d.id===id);}
+function boatById(id){return boats.find(b=>b.id===id);}
+function manifestForSchedule(id){return manifests.find(m=>m.schedule_id===id)||null;}
+function parseMeta(s){try{return JSON.parse(s&&s.notes||'{}')||{};}catch(e){return {};}}
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',2800);}
+function comingSoon(e){e.preventDefault();showToast('This section is coming later.','success');}
+
+// boat name: fleet record → scheduling notes → joiner field; always prefixed MBCA
+function rawBoatName(s){const b=boatById(s.boat_id);if(b&&b.name)return b.name;const m=parseMeta(s);if(m.boatName)return m.boatName;if(s.joiner_boat_name)return s.joiner_boat_name;return 'Unknown Boat';}
+function displayBoatName(s){let n=String(rawBoatName(s)).trim();if(!/^mbca\b/i.test(n))n='MBCA '+n;return n;}
+// captain: fleet record → captain typed in scheduling notes
+function captainForSchedule(s){const b=boatById(s.boat_id);if(b&&b.captain)return b.captain;const m=parseMeta(s);return m.captain||'';}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function init(){
+  const {data:{session}}=await client.auth.getSession();
+  if(!session){location.href='login.html';return;}
+  currentUser=session.user;
+  const {data:userData,error}=await client.from('users').select('*,dive_centers(*)').eq('id',currentUser.id).single();
+  if(error||!userData){showToast('Could not load user.','error');return;}
+  currentUserData=userData;diveCenterId=userData.dive_center_id;
+  document.getElementById('dcName').textContent=userData.dive_centers?.name||'My Dive Center';
+  document.getElementById('userRole').textContent=userData.role==='owner'?'👑 Owner':'🗂️ Secretary';
+  document.getElementById('userName').textContent=userData.full_name||'User';
+  document.getElementById('userEmail').textContent=currentUser.email||'';
+  document.getElementById('userAvatar').textContent=(userData.full_name||'U')[0].toUpperCase();
+  if(userData.role==='owner')document.querySelectorAll('.owner-only').forEach(el=>el.style.display='flex');
+
+  selectedDate=todayStr();
+  document.getElementById('tripDate').value=selectedDate;
+
+  await loadData();
+  populateTripDropdown();
+}
+
+async function loadData(){
+  const [schedRes,boatsRes,diversRes,staffRes,manRes]=await Promise.all([
+    client.from('schedules').select('*').eq('dive_center_id',diveCenterId),
+    client.from('boats').select('*').eq('dive_center_id',diveCenterId),
+    client.from('divers').select('*').eq('dive_center_id',diveCenterId),
+    client.from('staff').select('*').eq('dive_center_id',diveCenterId),
+    client.from('manifests').select('*').eq('dive_center_id',diveCenterId)
+  ]);
+  // own + rental boats only — exclude join rides (is_joiner = true)
+  schedules=(schedRes.data||[]).filter(s=>!s.is_joiner);
+  boats=boatsRes.data||[];divers=diversRes.data||[];staffList=staffRes.data||[];
+  manifests=manRes.data||[];
+}
+
+// ── date + trip dropdown ──────────────────────────────────────────────────────
+function clearSheet(){
+  currentSchedule=null;currentManifest=null;currentMeta={};currentScheduleDivers=[];
+  const sheet=document.getElementById('manifestSheet');
+  sheet.classList.add('hide');sheet.classList.remove('show');
+  document.getElementById('emptyState').classList.remove('hide');
+  document.getElementById('btnPrint').disabled=true;
+}
+
+function onDateChange(){
+  selectedDate=document.getElementById('tripDate').value;
+  document.getElementById('tripSelect').value='';
+  populateTripDropdown();
+  clearSheet();
+}
+
+function populateTripDropdown(){
+  const list=schedules
+    .filter(s=>selectedDate&&s.schedule_date===selectedDate)
+    .sort((a,b)=>(a.departure_time||'').localeCompare(b.departure_time||''));
+  const sel=document.getElementById('tripSelect');
+  let html='<option value="">— Choose a trip —</option>';
+  list.forEach(s=>{
+    const m=manifestForSchedule(s.id);
+    let suffix='';
+    if(m&&m.locked)suffix=' 🔒';
+    else if(m&&m.last_edited_at)suffix=' ✏️ edited';
+    const label=`${displayBoatName(s)} — ${s.dive_site||'No sites'} — ${fmtTime(s.departure_time)}`.trim();
+    html+=`<option value="${esc(s.id)}">${esc(label)}${suffix}</option>`;
+  });
+  sel.innerHTML=html;
+}
+
+// ── select a trip → build manifest ────────────────────────────────────────────
+async function onSelectTrip(){
+  const id=document.getElementById('tripSelect').value;
+  if(!id){clearSheet();return;}
+  currentSchedule=schedules.find(s=>s.id===id)||null;
+  if(!currentSchedule){clearSheet();return;}
+  currentManifest=manifestForSchedule(id);
+  currentMeta=parseMeta(currentSchedule);
+  // passengers are linked by schedule_id (schedule_divers rows carry no dive_center_id)
+  const {data}=await client.from('schedule_divers').select('*').eq('schedule_id',id);
+  currentScheduleDivers=data||[];
+  document.getElementById('emptyState').classList.add('hide');
+  renderManifest();
+  const sheet=document.getElementById('manifestSheet');
+  sheet.classList.remove('hide');sheet.classList.remove('show');
+  void sheet.offsetWidth;
+  requestAnimationFrame(()=>sheet.classList.add('show'));
+}
+
+function renderManifest(){
+  const s=currentSchedule;if(!s)return;
+  const boatName=displayBoatName(s);
+  const captain=captainForSchedule(s);
+  const d=new Date(s.schedule_date+'T00:00:00');
+
+  document.getElementById('leadBoat').textContent=boatName;
+  document.getElementById('leadDay').textContent=isNaN(d)?'__':ordinal(d.getDate());
+  document.getElementById('leadMonth').textContent=isNaN(d)?'___':d.toLocaleDateString('en-PH',{month:'long',year:'numeric'});
+  document.getElementById('leadDest').textContent=s.dive_site||'________';
+  document.getElementById('oathBoat').textContent=boatName;
+  document.getElementById('oathCaptain').textContent=captain||'________________';
+  document.getElementById('signCaptain').textContent=captain||'\u00A0';
+
+  document.getElementById('fDistrict').value=currentManifest?.district||'';
+  document.getElementById('fPort').value=currentManifest?.port||'';
+  document.getElementById('fSwornDate').value='';
+
+  // divers — from schedule_divers (linked by schedule_id)
+  const diverList=[];const seenD=new Set();
+  currentScheduleDivers.forEach(r=>{
+    if(r.diver_id&&!seenD.has(r.diver_id)){seenD.add(r.diver_id);const dv=diverById(r.diver_id);if(dv)diverList.push(dv);}
+  });
+  let rowsHtml='';let n=0;
+  diverList.forEach(dv=>{
+    n++;
+    rowsHtml+=`<tr>
+      <td class="c">${n}</td>
+      <td>${esc(fullName(dv))}</td>
+      <td class="c">${esc(calcAge(dv.birthday))}</td>
+      <td class="c"></td>
+      <td>${esc(dv.nationality||'')}</td>
+      <td>${esc(dv.accommodation||'')}</td>
+      <td class="c"></td>
+      <td class="c"></td>
+    </tr>`;
+  });
+  const target=Math.max(32,n);
+  for(let i=n+1;i<=target;i++){
+    rowsHtml+=`<tr><td class="c">${i}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+  }
+  document.getElementById('passengerBody').innerHTML=rowsHtml;
+
+  applyLockState();
+}
+
+function applyLockState(){
+  document.getElementById('btnPrint').disabled=false;
+}
+
+// ── edits while unlocked — persist District / Port only ───────────────────────
+async function onEditField(){
+  if(!currentManifest)return;
+  const district=document.getElementById('fDistrict').value;
+  const port=document.getElementById('fPort').value;
+  const now=new Date().toISOString();
+  const {data,error}=await client.from('manifests').update({
+    district:district===''?null:district,
+    port:port===''?null:port,
+    last_edited_at:now
+  }).eq('id',currentManifest.id).select().single();
+  if(error||!data){showToast('Could not save the change.','error');return;}
+  currentManifest=data;
+  const idx=manifests.findIndex(m=>m.id===currentManifest.id);
+  if(idx>=0)manifests[idx]=currentManifest;
+  populateTripDropdown();
+}
+
+// ── print → save + lock ───────────────────────────────────────────────────────
+function doPrint(){
+  if(!currentSchedule){showToast('Select a trip first.','error');return;}
+  window.print();
+}
+
+
+
+
+
+async function handleLogout(){await client.auth.signOut();location.href='login.html';}
+const _sidebar=document.getElementById('sidebar');
+const _overlay=document.getElementById('sidebarOverlay');
+_sidebar.addEventListener('click',function(e){if(window.innerWidth<=1100&&!_sidebar.classList.contains('open')){e.preventDefault();_sidebar.classList.add('open');_overlay.classList.add('open');document.body.style.overflow='hidden';}});
+_overlay.addEventListener('click',function(){_sidebar.classList.remove('open');_overlay.classList.remove('open');document.body.style.overflow='';});
+
+init();
+</script>
+</body>
+</html>

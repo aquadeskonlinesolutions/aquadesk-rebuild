@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaDesk — Dive Center Operations Software</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:       #1A3C5E;
+    --navy-dark:  #0F2540;
+    --navy-mid:   #244d73;
+    --teal:       #00A8AB;
+    --teal-light: #E0F7F8;
+    --teal-mid:   #007B7D;
+    --white:      #FFFFFF;
+    --off-white:  #F8FAFC;
+    --gray-100:   #F1F5F9;
+    --gray-200:   #E2E8F0;
+    --gray-400:   #94A3B8;
+    --gray-600:   #475569;
+    --gray-700:   #334155;
+    --dark:       #0F172A;
+    --green:      #16A34A;
+    --green-light:#F0FDF4;
+    --orange:     #D97706;
+    --red:        #DC2626;
+    --font-display: 'DM Serif Display', serif;
+    --font-body:    'DM Sans', sans-serif;
+    --radius:     12px;
+    --radius-lg:  20px;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--white);
+    color: var(--dark);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NAVBAR ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+  }
+
+  .nav-icon {
+    width: 36px; height: 36px;
+    background: var(--navy);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  .nav-name {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+  }
+
+  .nav-name span { color: var(--teal); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    text-decoration: none;
+    font-weight: 400;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--navy); }
+
+  .nav-cta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .btn-ghost {
+    padding: 0.5rem 1.25rem;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--navy);
+    background: transparent;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--navy);
+    background: var(--gray-100);
+  }
+
+  .btn-primary {
+    padding: 0.5rem 1.25rem;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--white);
+    background: var(--navy);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .btn-primary:hover { background: var(--navy-dark); }
+
+  .btn-primary-lg {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  .btn-outline-lg {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    color: var(--navy);
+    background: transparent;
+    border: 1.5px solid var(--navy);
+    font-family: var(--font-body);
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+  }
+
+  .btn-outline-lg:hover {
+    background: var(--navy);
+    color: var(--white);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 8rem 2rem 5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.875rem;
+    background: var(--teal-light);
+    border: 1px solid rgba(0,168,171,0.2);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--teal-mid);
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-eyebrow-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.25rem, 4vw, 3.25rem);
+    color: var(--navy);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--teal);
+  }
+
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--gray-600);
+    line-height: 1.7;
+    margin-bottom: 2rem;
+    max-width: 440px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 0.875rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .hero-note {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  /* Hero visual */
+  .hero-visual {
+    position: relative;
+  }
+
+  .hero-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(26,60,94,0.12);
+  }
+
+  .hero-card-header {
+    background: var(--navy);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hero-card-title {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--white);
+    letter-spacing: -0.01em;
+  }
+
+  .hero-card-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .hero-card-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+  }
+
+  .hero-card-body { padding: 1.25rem; }
+
+  .mini-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .mini-stat {
+    background: var(--off-white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-align: center;
+  }
+
+  .mini-stat-num {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--navy);
+    line-height: 1;
+    margin-bottom: 0.2rem;
+  }
+
+  .mini-stat-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gray-400);
+  }
+
+  .mini-diver-row {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--gray-100);
+    gap: 0.75rem;
+  }
+
+  .mini-diver-row:last-child { border-bottom: none; }
+
+  .mini-avatar {
+    width: 28px; height: 28px;
+    background: var(--navy);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--white);
+    flex-shrink: 0;
+  }
+
+  .mini-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--dark);
+    flex: 1;
+  }
+
+  .mini-cert {
+    font-size: 0.72rem;
+    color: var(--gray-400);
+  }
+
+  .mini-badge {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+
+  .badge-paid { background: var(--green-light); color: var(--green); }
+  .badge-pending { background: #FFFBEB; color: var(--orange); }
+  .badge-diving { background: var(--teal-light); color: var(--teal-mid); }
+
+  /* Floating badges */
+  .float-badge {
+    position: absolute;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 0.6rem 0.875rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--dark);
+    white-space: nowrap;
+  }
+
+  .float-badge-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+
+  .float-1 {
+    top: -1.5rem;
+    right: -1.5rem;
+  }
+
+  .float-2 {
+    bottom: -1rem;
+    left: -1.5rem;
+  }
+
+  /* ── SECTION STYLES ── */
+  section {
+    padding: 5rem 2rem;
+  }
+
+  .section-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-eyebrow {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    color: var(--navy);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .section-sub {
+    font-size: 1rem;
+    color: var(--gray-600);
+    text-align: center;
+    max-width: 540px;
+    margin: 0 auto 3.5rem;
+    line-height: 1.7;
+  }
+
+  /* ── PAIN POINTS ── */
+  .pain-section {
+    background: var(--navy);
+    padding: 4rem 2rem;
+  }
+
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .pain-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+  }
+
+  .pain-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.875rem;
+    opacity: 0.8;
+  }
+
+  .pain-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 0.5rem;
+  }
+
+  .pain-desc {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.6;
+  }
+
+  .pain-header {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 3rem;
+  }
+
+  .pain-header-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 0.75rem;
+  }
+
+  .pain-header-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    color: var(--white);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── FEATURES ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+
+  .feature-card:hover {
+    box-shadow: 0 4px 20px rgba(26,60,94,0.08);
+    border-color: var(--teal);
+  }
+
+  .feature-icon {
+    width: 44px; height: 44px;
+    background: var(--teal-light);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-desc {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-section {
+    background: var(--off-white);
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    position: relative;
+  }
+
+  .steps-grid::before {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: 15%;
+    right: 15%;
+    height: 1px;
+    background: var(--gray-200);
+    z-index: 0;
+  }
+
+  .step-card {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-num {
+    width: 56px; height: 56px;
+    background: var(--white);
+    border: 2px solid var(--teal);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--teal);
+    margin: 0 auto 1rem;
+  }
+
+  .step-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 0.4rem;
+  }
+
+  .step-desc {
+    font-size: 0.82rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+  }
+
+  /* ── PRICING ── */
+  .pricing-card {
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--white);
+    border: 2px solid var(--navy);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(26,60,94,0.12);
+  }
+
+  .pricing-header {
+    background: var(--navy);
+    padding: 2rem 2.5rem;
+    text-align: center;
+  }
+
+  .pricing-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 0.5rem;
+  }
+
+  .pricing-price {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    color: var(--white);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+
+  .pricing-price span {
+    font-size: 1.2rem;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .pricing-period {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .pricing-body {
+    padding: 2rem 2.5rem;
+  }
+
+  .pricing-setup {
+    background: var(--off-white);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .pricing-setup-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+  }
+
+  .pricing-setup-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  .pricing-features {
+    list-style: none;
+    margin-bottom: 1.75rem;
+  }
+
+  .pricing-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+    color: var(--gray-700);
+    border-bottom: 1px solid var(--gray-100);
+  }
+
+  .pricing-features li:last-child { border-bottom: none; }
+
+  .pricing-check {
+    width: 18px; height: 18px;
+    background: var(--green-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    color: var(--green);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .pricing-trial {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--gray-400);
+    margin-top: 1rem;
+  }
+
+  /* ── TESTIMONIAL / PROMISE ── */
+  .promise-section {
+    background: var(--teal-light);
+    border-top: 1px solid rgba(0,168,171,0.15);
+    border-bottom: 1px solid rgba(0,168,171,0.15);
+    padding: 4rem 2rem;
+  }
+
+  .promise-inner {
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .promise-quote {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    color: var(--navy);
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+  }
+
+  .promise-author {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    background: var(--navy);
+    padding: 5rem 2rem;
+    text-align: center;
+  }
+
+  .cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    color: var(--white);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+
+  .cta-title em {
+    font-style: italic;
+    color: var(--teal);
+  }
+
+  .cta-sub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 2.5rem;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.7;
+  }
+
+  .cta-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-teal {
+    padding: 0.875rem 2rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--navy);
+    background: var(--teal);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: background 0.2s;
+  }
+
+  .btn-teal:hover { background: #009396; }
+
+  .btn-white-outline {
+    padding: 0.875rem 2rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--white);
+    background: transparent;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+  }
+
+  .btn-white-outline:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.5);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--navy-dark);
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .footer-brand {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-brand span { color: var(--teal); }
+
+  .footer-text {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* ── ANIMATIONS ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+  .reveal-delay-6 { transition-delay: 0.6s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; gap: 2.5rem; padding: 7rem 1.5rem 4rem; }
+    .hero-visual { display: none; }
+    .pain-grid, .features-grid { grid-template-columns: 1fr 1fr; }
+    .steps-grid { grid-template-columns: 1fr 1fr; }
+    .steps-grid::before { display: none; }
+    .nav-links { display: none; }
+  }
+
+  @media (max-width: 600px) {
+    .pain-grid, .features-grid, .steps-grid { grid-template-columns: 1fr; }
+    section { padding: 3.5rem 1.25rem; }
+    .pricing-card { margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-brand">
+    <img src="logo.png" style="width:36px;height:36px;border-radius:9px;object-fit:contain;">
+    <div class="nav-name">Aqua<span>Desk</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="/login.html" class="btn-ghost">Sign in</a>
+    <a href="https://aquadesk-demo.netlify.app/demo.html" class="btn-ghost" style="color:var(--teal);border-color:var(--teal)">Explore Demo</a>
+    <a href="#" onclick="openDemoModal(); return false;" class="btn-primary">Request a demo →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section style="padding: 0;">
+  <div class="hero">
+    <div>
+      <div class="hero-eyebrow">
+        <div class="hero-eyebrow-dot"></div>
+        Built for Philippine dive centers
+      </div>
+      <h1 class="hero-title">
+        The paper forms<br>
+        stop <em>here.</em>
+      </h1>
+      <p class="hero-sub">
+        AquaDesk is a complete operations system for dive centers — digital diver registration, automatic billing, daily scheduling, and real-time reporting. All in one place.
+      </p>
+      <div class="hero-actions">
+        <a href="#" onclick="openDemoModal(); return false;" class="btn-primary btn-primary-lg">Request a free demo →</a>
+        <a href="https://aquadesk-demo.netlify.app/demo.html" class="btn-outline-lg" style="color:var(--teal);border-color:var(--teal)">Explore Demo</a>
+        <a href="#how" class="btn-outline-lg">See how it works</a>
+      </div>
+      <div class="hero-note">
+        ✓ 14-day free trial &nbsp;·&nbsp; ✓ No credit card required &nbsp;·&nbsp; ✓ Setup in 1 day
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="float-badge float-1">
+        <div class="float-badge-icon" style="background:#E0F7F8;">✅</div>
+        New diver registered
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-header">
+          <div class="hero-card-title">AquaDesk · Dashboard</div>
+          <div class="hero-card-dots">
+            <div class="hero-card-dot"></div>
+            <div class="hero-card-dot"></div>
+            <div class="hero-card-dot"></div>
+          </div>
+        </div>
+        <div class="hero-card-body">
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-num">24</div>
+              <div class="mini-stat-label">Active divers</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-num">3</div>
+              <div class="mini-stat-label">Boats out</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-num" style="color:var(--teal);">₱68k</div>
+              <div class="mini-stat-label">Today</div>
+            </div>
+          </div>
+          <div style="font-size:0.72rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--gray-400); margin-bottom:0.5rem;">Active divers</div>
+          <div class="mini-diver-row">
+            <div class="mini-avatar">JS</div>
+            <div style="flex:1;">
+              <div class="mini-name">Juan Santos</div>
+              <div class="mini-cert">Advanced Open Water</div>
+            </div>
+            <span class="mini-badge badge-diving">Diving</span>
+          </div>
+          <div class="mini-diver-row">
+            <div class="mini-avatar" style="background:var(--teal);">MC</div>
+            <div style="flex:1;">
+              <div class="mini-name">Maria Cruz</div>
+              <div class="mini-cert">Open Water</div>
+            </div>
+            <span class="mini-badge badge-paid">Paid</span>
+          </div>
+          <div class="mini-diver-row">
+            <div class="mini-avatar" style="background:#7C3AED;">DL</div>
+            <div style="flex:1;">
+              <div class="mini-name">David Lee</div>
+              <div class="mini-cert">Rescue Diver</div>
+            </div>
+            <span class="mini-badge badge-pending">Pending</span>
+          </div>
+        </div>
+      </div>
+      <div class="float-badge float-2">
+        <div class="float-badge-icon" style="background:#FEF9C3;">💰</div>
+        Bill settled · ₱7,700
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAIN POINTS -->
+<div class="pain-section">
+  <div class="pain-header">
+    <div class="pain-header-eyebrow">Sound familiar?</div>
+    <h2 class="pain-header-title">Every dive center faces the same problems</h2>
+  </div>
+  <div class="pain-grid">
+    <div class="pain-card reveal">
+      <div class="pain-icon">📋</div>
+      <div class="pain-title">Paper registration forms</div>
+      <div class="pain-desc">Divers fill out forms at the front desk. Handwriting is illegible. Forms get lost. Information has to be re-entered manually.</div>
+    </div>
+    <div class="pain-card reveal reveal-delay-1">
+      <div class="pain-icon">🧮</div>
+      <div class="pain-title">Manual billing calculations</div>
+      <div class="pain-desc">Secretaries add up dive rates, taxes, and surcharges by hand. Errors happen. Disputes follow. Time is wasted.</div>
+    </div>
+    <div class="pain-card reveal reveal-delay-2">
+      <div class="pain-icon">🪣</div>
+      <div class="pain-title">Whiteboard scheduling</div>
+      <div class="pain-desc">Tomorrow's dive plan is written on a board. Boats, divemasters, tank counts — all done manually every single morning.</div>
+    </div>
+    <div class="pain-card reveal reveal-delay-3">
+      <div class="pain-icon">📁</div>
+      <div class="pain-title">No diver history</div>
+      <div class="pain-desc">A returning diver fills out the same form again. There's no record of their previous visits, certifications, or preferences.</div>
+    </div>
+    <div class="pain-card reveal reveal-delay-4">
+      <div class="pain-icon">💸</div>
+      <div class="pain-title">Lost revenue</div>
+      <div class="pain-desc">No system means no reporting. Owners have no idea how much money was made today, this week, or this month without counting receipts.</div>
+    </div>
+    <div class="pain-card reveal reveal-delay-5">
+      <div class="pain-icon">😤</div>
+      <div class="pain-title">Overwhelmed secretaries</div>
+      <div class="pain-desc">Front desk staff are buried in paperwork instead of helping divers. Peak hours are chaotic. Mistakes are inevitable.</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-eyebrow">Everything you need</div>
+    <h2 class="section-title">One system. Every operation.</h2>
+    <p class="section-sub">AquaDesk replaces every manual process in your dive center with a clean, fast, and reliable digital system.</p>
+
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">Digital diver registration</div>
+        <div class="feature-desc">Send divers a registration link before they arrive. They fill it out on their phone — personal info, certifications, emergency contacts, and digital waiver signature.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">📋</div>
+        <div class="feature-title">Smart diver form</div>
+        <div class="feature-desc">Secretary searches a diver, loads their record, adds activity rows, and the bill calculates automatically. Supports PHP, USD, and EUR with custom exchange rates.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">🖨️</div>
+        <div class="feature-title">Invoice printing</div>
+        <div class="feature-desc">Generate a clean, formatted invoice for any diver in one click. Shows all activity line items, payment breakdown, and totals. Password-protected once paid.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">🚤</div>
+        <div class="feature-title">Dive scheduling board</div>
+        <div class="feature-desc">Plan tomorrow's dives on a digital board. Assign divers to boats and divemasters, calculate air and nitrox tanks, and save — diver forms update automatically.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-4">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Bulk activity updates</div>
+        <div class="feature-desc">When a boat returns, select it and mark all divers as completed at once. No more searching each diver individually after every dive.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-5">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Owner dashboard</div>
+        <div class="feature-desc">Real-time revenue today, this week, and this month. Active divers, boats out, pending bills, low tank alerts — everything at a glance from any device.</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">👥</div>
+        <div class="feature-title">Group bookings</div>
+        <div class="feature-desc">Send one registration link to a group of 40 divers. Track who has registered, who hasn't, and schedule the entire group in bulk.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">💼</div>
+        <div class="feature-title">Staff & payroll</div>
+        <div class="feature-desc">Track divemaster commissions automatically. Manage salary, daily rate, and per-dive commission. Generate payroll summaries every two weeks.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">🏪</div>
+        <div class="feature-title">Equipment & tank inventory</div>
+        <div class="feature-desc">Track BCDs, wetsuits, and all rental equipment. Monitor air and nitrox tank counts with low-stock alerts before operations begin.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="how-section">
+  <div class="section-inner">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="section-title">Up and running in one day</h2>
+    <p class="section-sub">We set everything up for you. Your team gets trained. Operations start the next morning.</p>
+
+    <div class="steps-grid">
+      <div class="step-card reveal">
+        <div class="step-num">1</div>
+        <div class="step-title">We onboard your dive center</div>
+        <div class="step-desc">We configure AquaDesk with your boats, staff, activity rates, and branding. Takes a few hours.</div>
+      </div>
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-num">2</div>
+        <div class="step-title">We train your secretaries</div>
+        <div class="step-desc">A hands-on session with your front desk team. Simple enough that anyone can learn in under an hour.</div>
+      </div>
+      <div class="step-card reveal reveal-delay-2">
+        <div class="step-num">3</div>
+        <div class="step-title">Divers register before arrival</div>
+        <div class="step-desc">Send your registration link via WhatsApp or email. Divers arrive already in the system.</div>
+      </div>
+      <div class="step-card reveal reveal-delay-3">
+        <div class="step-num">4</div>
+        <div class="step-title">Operations run themselves</div>
+        <div class="step-desc">Scheduling, billing, reporting — all automated. Your team focuses on divers, not paperwork.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROMISE -->
+<div class="promise-section">
+  <div class="promise-inner">
+    <div class="promise-quote">
+      "Built by someone who has worked in Malapascua dive centers. Every feature was designed around how Philippine dive operations actually work — not how a software company thinks they work."
+    </div>
+    <div class="promise-author">— Martin King Lomosad, Founder · AquaDesk Solutions · Malapascua Island</div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="section-inner">
+    <div class="section-eyebrow">Simple pricing</div>
+    <h2 class="section-title">One plan. Everything included.</h2>
+    <p class="section-sub">No tiers, no hidden fees, no surprises. Every dive center gets the full system.</p>
+
+    <div class="pricing-card reveal">
+      <div class="pricing-header">
+        <div class="pricing-name">AquaDesk Complete</div>
+        <div class="pricing-price">₱4,000 <span>/mo</span></div>
+        <div class="pricing-period">Everything included · Cancel anytime</div>
+      </div>
+      <div class="pricing-body">
+        <div class="pricing-setup" style="justify-content:center;">
+          <div class="pricing-setup-label" style="text-align:center;">NO ACTIVATION OR SETUP FEE.</div>    
+        </div>
+        <ul class="pricing-features">
+          <li><div class="pricing-check">✓</div>Digital diver registration — mobile optimized</li>
+          <li><div class="pricing-check">✓</div>Smart diver form with automatic billing</li>
+          <li><div class="pricing-check">✓</div>Multi-currency support — PHP, USD, EUR</li>
+          <li><div class="pricing-check">✓</div>Invoice printing — password protected</li>
+          <li><div class="pricing-check">✓</div>Daily scheduling board with tank calculator</li>
+          <li><div class="pricing-check">✓</div>Bulk activity updates when boats return</li>
+          <li><div class="pricing-check">✓</div>Owner dashboard with revenue reporting</li>
+          <li><div class="pricing-check">✓</div>Group booking management</li>
+          <li><div class="pricing-check">✓</div>Staff commissions and payroll</li>
+          <li><div class="pricing-check">✓</div>Equipment and tank inventory</li>
+          <li><div class="pricing-check">✓</div>Unlimited secretaries and divers</li>
+          <li><div class="pricing-check">✓</div>Personal WhatsApp support</li>
+        </ul>
+        <a href="#" onclick="openDemoModal(); return false;" class="btn-primary" style="width:100%; justify-content:center; padding:0.875rem; font-size:1rem; border-radius:10px;">
+          Request a free demo →
+        </a>
+        <div class="pricing-trial">14-day free trial · No credit card required</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2 class="cta-title">Ready to go <em>paperless?</em></h2>
+  <p class="cta-sub">Join the first dive centers in the Philippines running on AquaDesk. Setup takes one day. Results start immediately.</p>
+  <div class="cta-actions">
+    <a href="#" onclick="openDemoModal(); return false;" class="btn-teal">Request a demo →</a>
+    <a href="/login.html" class="btn-white-outline">Sign in</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">Aqua<span>Desk</span> Solutions</div>
+  <div class="footer-text">aquadesk.online · mkbusiness.ai@gmail.com · Built in Malapascua Island, Philippines · © 2026</div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+<!-- ── DEMO REQUEST MODAL ── -->
+<div id="demoModal" role="dialog" aria-modal="true" aria-labelledby="demoModalTitle" style="display:none;">
+  <div class="dm-overlay" onclick="closeDemoModal()"></div>
+  <div class="dm-card">
+    <button class="dm-close" onclick="closeDemoModal()" aria-label="Close">×</button>
+    <h2 id="demoModalTitle" class="dm-title">Request a Free Demo</h2>
+    <p class="dm-sub">We'll reach out within 24 hours to set up your personalised walkthrough.</p>
+
+    <div id="dmSuccess" class="dm-success" style="display:none;">
+      ✓ Thank you! We'll be in touch soon.
+    </div>
+
+    <form id="demoForm" novalidate>
+      <!-- Honeypot: hidden from real users, bots fill it, Web3Forms rejects it -->
+      <input type="text" name="botcheck" style="display:none;" tabindex="-1" autocomplete="off">
+      <div class="dm-field">
+        <label for="dmName">Full Name</label>
+        <input type="text" id="dmName" placeholder="Juan dela Cruz" autocomplete="name">
+        <span class="dm-error" id="dmNameErr">Please enter your full name.</span>
+      </div>
+      <div class="dm-field">
+        <label for="dmEmail">Email</label>
+        <input type="email" id="dmEmail" placeholder="juan@divecenter.ph" autocomplete="email">
+        <span class="dm-error" id="dmEmailErr">Please enter a valid email address.</span>
+      </div>
+      <div class="dm-field">
+        <label for="dmWhatsApp">WhatsApp Number</label>
+        <input type="tel" id="dmWhatsApp" placeholder="+63 917 123 4567" autocomplete="tel">
+        <span class="dm-error" id="dmWhatsAppErr">Please enter your WhatsApp number.</span>
+      </div>
+      <span class="dm-error dm-submit-error" id="dmSubmitErr" style="display:none;">Something went wrong. Please try again.</span>
+      <button type="submit" class="dm-submit" id="dmSubmitBtn">Send Request</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  /* Modal backdrop + card */
+  #demoModal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .dm-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+  }
+  .dm-card {
+    position: relative;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem 2rem;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 24px 64px rgba(15,23,42,0.18);
+    animation: dmSlideIn 0.22s ease;
+  }
+  @keyframes dmSlideIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Close button */
+  .dm-close {
+    position: absolute;
+    top: 1rem; right: 1.2rem;
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--gray-400);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .dm-close:hover { color: var(--dark); }
+
+  /* Header */
+  .dm-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--navy);
+    margin-bottom: 0.4rem;
+  }
+  .dm-sub {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    margin-bottom: 1.6rem;
+    line-height: 1.5;
+  }
+
+  /* Success message */
+  .dm-success {
+    background: var(--green-light);
+    color: var(--green);
+    border: 1px solid #bbf7d0;
+    border-radius: var(--radius);
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  /* Fields */
+  .dm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1.1rem;
+  }
+  .dm-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    letter-spacing: 0.01em;
+  }
+  .dm-field input {
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--dark);
+    background: var(--off-white);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .dm-field input:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(0,168,171,0.12);
+    background: var(--white);
+  }
+  .dm-field input.dm-invalid {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+  }
+
+  /* Inline errors */
+  .dm-error {
+    font-size: 0.8rem;
+    color: var(--red);
+    display: none;
+  }
+  .dm-error.visible { display: block; }
+
+  .dm-submit-error {
+    display: none;
+    margin-bottom: 0.75rem;
+  }
+  .dm-submit-error.visible { display: block !important; }
+
+  /* Submit button — matches .btn-primary */
+  .dm-submit {
+    width: 100%;
+    padding: 0.875rem;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-top: 0.4rem;
+  }
+  .dm-submit:hover:not(:disabled) { background: var(--navy-dark); }
+  .dm-submit:active:not(:disabled) { transform: scale(0.98); }
+  .dm-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Mobile */
+  @media (max-width: 480px) {
+    .dm-card { padding: 2rem 1.25rem 1.5rem; }
+    .dm-title { font-size: 1.35rem; }
+  }
+</style>
+
+<script>
+  function openDemoModal() {
+    const modal = document.getElementById('demoModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('dmName').focus();
+  }
+
+  function closeDemoModal() {
+    const modal = document.getElementById('demoModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    // Reset form state
+    document.getElementById('demoForm').style.display = '';
+    document.getElementById('dmSuccess').style.display = 'none';
+    ['dmName','dmEmail','dmWhatsApp'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = '';
+      el.classList.remove('dm-invalid');
+    });
+    ['dmNameErr','dmEmailErr','dmWhatsAppErr','dmSubmitErr'].forEach(id => {
+      document.getElementById(id).classList.remove('visible');
+    });
+    document.getElementById('dmSubmitBtn').disabled = false;
+  }
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('demoModal').style.display === 'flex') {
+      closeDemoModal();
+    }
+  });
+
+  document.getElementById('demoForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const nameEl    = document.getElementById('dmName');
+    const emailEl   = document.getElementById('dmEmail');
+    const waEl      = document.getElementById('dmWhatsApp');
+    const submitErr = document.getElementById('dmSubmitErr');
+    const btn       = document.getElementById('dmSubmitBtn');
+
+    // Clear previous errors
+    [nameEl, emailEl, waEl].forEach(el => el.classList.remove('dm-invalid'));
+    ['dmNameErr','dmEmailErr','dmWhatsAppErr'].forEach(id =>
+      document.getElementById(id).classList.remove('visible')
+    );
+    submitErr.classList.remove('visible');
+
+    // Validate
+    let valid = true;
+    if (!nameEl.value.trim()) {
+      nameEl.classList.add('dm-invalid');
+      document.getElementById('dmNameErr').classList.add('visible');
+      valid = false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailEl.value.trim() || !emailRegex.test(emailEl.value.trim())) {
+      emailEl.classList.add('dm-invalid');
+      document.getElementById('dmEmailErr').classList.add('visible');
+      valid = false;
+    }
+    if (!waEl.value.trim()) {
+      waEl.classList.add('dm-invalid');
+      document.getElementById('dmWhatsAppErr').classList.add('visible');
+      valid = false;
+    }
+    if (!valid) return;
+
+    // Submit
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    const name     = nameEl.value.trim();
+    const email    = emailEl.value.trim();
+    const whatsapp = waEl.value.trim();
+
+    try {
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // ⚠️  BEFORE LAUNCH: Rotate this key at web3forms.com and update it here.
+          // The key below is exposed in public source code and should be replaced.
+          access_key: '0c9fd835-55e6-4b52-9063-9de2b6998a08',
+          botcheck: document.querySelector('#demoForm input[name="botcheck"]').value,
+          subject: 'New Demo Request — ' + name,
+          name: name,
+          email: email,
+          whatsapp: whatsapp,
+          message: `Name: ${name}\nEmail: ${email}\nWhatsApp: ${whatsapp}`
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        document.getElementById('demoForm').style.display = 'none';
+        document.getElementById('dmSuccess').style.display = 'block';
+      } else {
+        throw new Error('Submission failed');
+      }
+    } catch (err) {
+      submitErr.classList.add('visible');
+      btn.disabled = false;
+      btn.textContent = 'Send Request';
+    }
+  });
+</script>
+</body>
+</html>

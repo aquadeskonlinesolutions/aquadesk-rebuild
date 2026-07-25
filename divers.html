@@ -1,0 +1,1628 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Diver Management — AquaDesk</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"><style>
+:root{--navy:#1A3C5E;--navy-dark:#0F2540;--teal:#00A8AB;--teal-light:#E0F7F8;--teal-mid:#007B7D;--white:#fff;--off-white:#F8FAFC;--gray-100:#F1F5F9;--gray-200:#E2E8F0;--gray-300:#CBD5E1;--gray-400:#94A3B8;--gray-600:#475569;--gray-700:#334155;--dark:#0F172A;--red:#DC2626;--red-light:#FEF2F2;--green:#16A34A;--green-light:#F0FDF4;--orange:#D97706;--orange-light:#FFFBEB;--purple:#7C3AED;--purple-light:#F5F3FF;--font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;--radius:12px;--sidebar-w:260px;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 16px rgba(0,0,0,.08)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}body{font-family:var(--font-body);background:var(--off-white);color:var(--dark);min-height:100vh;display:flex;font-size:15px}button,input,select,textarea{font-family:var(--font-body)}.sidebar{width:var(--sidebar-w);background:var(--navy);min-height:100vh;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;overflow-y:auto}.sidebar-brand{display:flex;align-items:center;gap:.75rem;padding:1.5rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07)}.brand-img{width:38px;height:38px;border-radius:9px;object-fit:contain}.brand-name{font-family:var(--font-display);font-size:1.3rem;color:var(--white)}.brand-name span{color:var(--teal)}.sidebar-dc{padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07)}.dc-label{font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.3rem}.dc-name{font-size:.95rem;font-weight:500;color:var(--white)}.dc-role{font-size:.75rem;color:var(--teal);margin-top:.2rem}.sidebar-nav{padding:1rem 0;flex:1}.nav-section-label{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:.75rem 1.25rem .4rem}.nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;font-size:.95rem;color:rgba(255,255,255,.6);text-decoration:none;cursor:pointer;transition:.2s;border-left:3px solid transparent}.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}.nav-item.active{background:rgba(0,168,171,.12);color:var(--white);border-left-color:var(--teal);font-weight:500}.nav-sub{padding-left:3.25rem;font-size:.86rem}.nav-icon{font-size:1.1rem;width:22px;text-align:center}.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,.07)}.sidebar-user{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}.user-avatar{width:36px;height:36px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--white)}.user-info{min-width:0}.user-name{font-size:.85rem;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.user-email{font-size:.72rem;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.btn-logout{width:100%;padding:.6rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:rgba(255,255,255,.5);font-size:.85rem;cursor:pointer}.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}.topbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}.page-title{font-family:var(--font-display);font-size:1.55rem;color:var(--navy)}.page-subtitle{font-size:.85rem;color:var(--gray-400);margin-top:.1rem}.content{padding:1.5rem 2rem 3rem;flex:1}.btn{border:none;border-radius:10px;cursor:pointer;font-weight:500;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;text-decoration:none;white-space:nowrap}.btn-navy{background:var(--navy);color:var(--white);padding:.75rem 1.25rem}.btn-navy:hover{background:var(--navy-dark)}.btn-teal{background:var(--teal);color:var(--white);padding:.75rem 1.25rem}.btn-teal:hover{background:var(--teal-mid)}.btn-ghost{background:var(--white);color:var(--navy);border:1.5px solid var(--gray-200);padding:.7rem 1.1rem}.btn-ghost:hover{border-color:var(--teal);background:var(--teal-light)}.btn-soft{background:var(--teal-light);color:var(--teal-mid);border:1px solid rgba(0,168,171,.2);padding:.6rem .9rem}.btn-red{background:var(--red);color:var(--white);padding:.75rem 1.25rem}.btn-red:hover{background:#b91c1c}.btn-sm{padding:.45rem .75rem;font-size:.78rem;border-radius:8px}.card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem}.card-header{padding:1.1rem 1.25rem;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;gap:1rem}.card-title{font-size:1rem;font-weight:600;color:var(--navy)}.card-sub{font-size:.8rem;color:var(--gray-400);margin-top:.15rem}.card-body{padding:1rem 1.25rem}.input{width:100%;padding:.8rem 1rem;border:1.5px solid var(--gray-200);border-radius:10px;outline:none;background:var(--white);font-size:.95rem}.input:focus{border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,168,171,.1)}.search-wrap{position:relative;flex:1}.search-icon{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--gray-400)}.search-input{padding-left:2.8rem}.mode-tabs{display:flex;gap:.5rem;background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius);padding:.6rem;margin-bottom:1.25rem}.mode-tab{flex:1;padding:.9rem;border-radius:10px;border:none;background:var(--gray-100);color:var(--gray-600);font-weight:600;cursor:pointer}.mode-tab.active{background:var(--navy);color:var(--white)}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}.checkbox{width:18px;height:18px;accent-color:var(--teal);cursor:pointer}.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.22rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;white-space:nowrap}.badge-teal{background:var(--teal-light);color:var(--teal-mid)}.badge-green{background:var(--green-light);color:var(--green)}.badge-orange{background:var(--orange-light);color:var(--orange)}.badge-gray{background:var(--gray-100);color:var(--gray-600)}.badge-purple{background:var(--purple-light);color:var(--purple)}.badge-red{background:var(--red-light);color:var(--red)}.empty{padding:2rem 1rem;text-align:center;color:var(--gray-400)}.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:white;padding:.8rem 1.25rem;border-radius:10px;opacity:0;transition:.25s;z-index:500;box-shadow:var(--shadow-md)}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.error{background:var(--red)}.toast.success{background:var(--green)}.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:300}.modal-overlay.show{display:flex}.modal{background:var(--white);border-radius:var(--radius);width:92%;max-width:520px;box-shadow:0 18px 60px rgba(0,0,0,.18);overflow:hidden}.modal-lg{max-width:700px}.modal-head{padding:1.25rem 1.5rem;background:var(--navy);color:var(--white)}.modal-title{font-family:var(--font-display);font-size:1.45rem}.modal-sub{font-size:.85rem;color:rgba(255,255,255,.65);margin-top:.25rem;line-height:1.5}.modal-body{padding:1.25rem 1.5rem;max-height:65vh;overflow-y:auto}.modal-actions{padding:1rem 1.5rem;border-top:1px solid var(--gray-200);display:flex;justify-content:flex-end;gap:.75rem}.form-group{margin-bottom:1rem}.form-label{display:block;font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:.4rem}.row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}.equip-group-section{margin-bottom:1.5rem}.equip-mgmt-table{width:100%;border-collapse:collapse;font-size:.85rem}.equip-mgmt-table th{text-align:center;padding:.6rem .5rem;background:var(--off-white);color:var(--navy);font-weight:600;font-size:.75rem;border-bottom:2px solid var(--gray-200);white-space:nowrap}.equip-mgmt-table th:first-child,.equip-mgmt-table td:first-child{text-align:left}.equip-mgmt-table td{text-align:center;padding:.55rem .5rem;border-bottom:1px solid var(--gray-100);color:var(--dark)}.equip-mgmt-table td.c{color:var(--teal-mid);font-weight:600}.equip-remarks-input{width:100%;min-width:140px;padding:.4rem .6rem;border:1.5px solid var(--gray-200);border-radius:8px;font-size:.82rem}.equip-remarks-input:focus{outline:none;border-color:var(--teal)}
+.rate-modal-dates{margin-bottom:1rem;padding:.75rem 1rem;background:var(--gray-100);border-radius:10px}.rate-modal-dateline{font-size:.85rem;color:var(--gray-600);line-height:1.7}.rate-modal-dateline strong{color:var(--navy)}.rate-modal-option{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border:1.5px solid var(--gray-200);border-radius:10px;margin-bottom:.5rem;cursor:pointer;transition:border-color .2s}.rate-modal-option:hover{border-color:var(--teal)}.rate-modal-option:has(input:checked){border-color:var(--teal);background:var(--teal-light)}.rate-modal-option input{accent-color:var(--teal)}.rate-modal-option-name{flex:1;font-size:.9rem;font-weight:500;color:var(--dark)}.rate-modal-option-price{font-size:.9rem;font-weight:600;color:var(--navy)}.rate-modal-custom{margin-top:.75rem}.rate-modal-empty{font-size:.85rem;color:var(--gray-400);padding:.5rem 0}
+
+.group-card,.group-review{border:1px solid var(--gray-200);border-radius:12px;padding:1rem;margin-bottom:1rem;background:var(--off-white)}.diver-card{border:1px solid var(--gray-200);border-radius:12px;background:var(--white);padding:1rem;display:flex;align-items:flex-start;gap:.85rem;transition:.2s}.group-card:hover,.diver-card:hover{border-color:var(--teal);box-shadow:var(--shadow-md)}.group-card.checked{border-color:var(--teal);background:var(--teal-light)}.card-list{display:flex;flex-direction:column;gap:.75rem}.item-name{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:.15rem}.item-meta{font-size:.78rem;color:var(--gray-600);line-height:1.55}.toolbar{display:flex;gap:.75rem;align-items:center;margin-bottom:1.25rem}.member-section{border:1px solid var(--gray-200);border-radius:12px;margin-bottom:1rem;overflow:hidden}.member-head{background:var(--gray-100);padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between}.member-title{font-weight:700;color:var(--navy)}.member-list{padding:.75rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.65rem}.pill-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.inline-note{background:var(--teal-light);border:1px solid rgba(0,168,171,.22);color:var(--navy);border-radius:12px;padding:.9rem 1rem;margin-bottom:1rem;line-height:1.5}.inline-note.warn{background:var(--orange-light);border-color:rgba(217,119,6,.22)}.inline-note-title{font-weight:700;margin-bottom:.25rem}.muted-note{font-size:.78rem;color:var(--gray-500,#64748B);margin-top:.35rem}
+
+/* Experience tagging modal */
+.exp-diver-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--gray-100);gap:1rem}.exp-diver-row:last-child{border-bottom:none}.exp-diver-name{font-weight:600;color:var(--navy);font-size:.95rem}.exp-diver-meta{font-size:.75rem;color:var(--gray-600)}.exp-toggle{display:flex;gap:.4rem}.exp-btn{padding:.35rem .7rem;border-radius:8px;border:1.5px solid var(--gray-200);background:var(--white);color:var(--gray-600);font-size:.8rem;font-weight:600;cursor:pointer;transition:.15s}.exp-btn.fun.active{background:var(--teal);border-color:var(--teal);color:var(--white)}.exp-btn.course.active{background:var(--navy);border-color:var(--navy);color:var(--white)}.exp-bulk-bar{display:flex;gap:.5rem;align-items:center;padding:.75rem 0;border-bottom:1px solid var(--gray-200);margin-bottom:.25rem}.exp-bulk-label{font-size:.82rem;color:var(--gray-600);font-weight:600;margin-right:.25rem}
+#experienceModal .modal{max-width:960px}.exp-toggle{align-items:center;flex-wrap:wrap;justify-content:flex-end}.exp-course-select{min-width:240px;max-width:280px;padding:.38rem .6rem;border-radius:8px;border:1.5px solid var(--gray-200);background:var(--white);color:var(--navy);font-size:.8rem;font-weight:600;outline:none}.exp-course-select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,168,171,.1)}.exp-course-empty{min-width:240px;font-size:.75rem;color:var(--orange);font-weight:600}
+
+/* Bulk review modal */
+.review-diver-row{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 0;border-bottom:1px solid var(--gray-100)}.review-diver-row:last-child{border-bottom:none}.review-diver-name{font-weight:600;color:var(--navy);font-size:.9rem;margin-bottom:.2rem}.review-diver-detail{font-size:.78rem;color:var(--gray-600);line-height:1.5}.review-flag{font-size:.72rem;font-weight:600;padding:.18rem .5rem;border-radius:6px;display:inline-block;margin-top:.3rem}.review-flag.exception{background:var(--orange-light);color:var(--orange)}.review-flag.ok{background:var(--green-light);color:var(--green)}.review-total-row{display:flex;justify-content:space-between;padding:.6rem 0;font-size:.85rem}.review-total-row strong{color:var(--navy)}.review-summary-bar{background:var(--gray-100);border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:var(--gray-700)}
+
+/* Flag badges on diver cards */
+.diver-flags{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.35rem}
+
+/* Diver card layout fix */
+.member-list{grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.8rem;align-items:stretch}
+.diver-card{display:flex;flex-direction:column;align-items:stretch;gap:.75rem;min-width:0;height:100%;padding:1rem;border-radius:14px;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.diver-card-head{display:flex;align-items:flex-start;gap:.7rem;min-width:0}
+.diver-card-head .checkbox{margin-top:.12rem;flex-shrink:0}
+.diver-card-title-wrap{min-width:0;flex:1}
+.diver-card-name{font-size:1rem;font-weight:800;color:var(--navy);line-height:1.25;overflow-wrap:break-word}
+.diver-card-main{display:flex;flex-direction:column;gap:.38rem;min-width:0}
+.diver-card-detail{font-size:.8rem;color:var(--gray-600);line-height:1.4;overflow-wrap:break-word}
+.diver-card-detail strong{color:var(--navy);font-weight:700}
+.diver-bill-stack{display:grid;gap:.28rem;margin-top:.2rem}
+.diver-bill-row{display:flex;justify-content:space-between;gap:.75rem;font-size:.78rem;line-height:1.35;color:var(--gray-600);border-top:1px solid var(--gray-100);padding-top:.28rem}
+.diver-bill-row span{color:var(--gray-600);flex-shrink:0}
+.diver-bill-row strong{color:var(--navy);font-weight:800;text-align:right;overflow-wrap:anywhere}
+.diver-statuses{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.25rem}
+.diver-card .diver-flags{margin-top:0}
+.diver-card-actions{margin-top:auto;display:grid;gap:.45rem}
+.diver-card-actions .btn{width:100%;max-width:100%;justify-content:center}
+.diver-open-btn{padding:.55rem .85rem;border-radius:9px;font-weight:700}
+@media(max-width:700px){.member-list{grid-template-columns:1fr}.card-header{align-items:flex-start;flex-direction:column}.card-header .btn{align-self:flex-start}}
+
+/* Role-based visibility */
+.owner-only{display:none}
+
+/* Grouping selection state */
+.diver-card.grouping-selected{border-color:var(--teal);box-shadow:0 0 0 2.5px rgba(0,168,171,.35),var(--shadow-md);background:var(--teal-light)}
+
+/* Floating grouping action bar */
+#groupingActionBar{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--navy);color:var(--white);border-radius:14px;padding:.85rem 1.5rem;display:none;align-items:center;gap:1rem;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.22);white-space:nowrap}
+#groupingActionBar.show{display:flex}
+#groupingActionBar .bar-label{font-size:.92rem;font-weight:600}
+#groupingActionBar .bar-note{font-size:.78rem;color:rgba(255,255,255,.55);margin-left:-.25rem}
+
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}.topbar{padding:1rem}.content{padding:1rem}.row{grid-template-columns:1fr}.sidebar:hover{width:var(--sidebar-collapsed)}.sidebar.open{width:var(--sidebar-w)}}
+:root{--sidebar-collapsed:54px}
+.sidebar{width:var(--sidebar-collapsed);transition:width .25s ease;overflow:hidden;z-index:200}
+.sidebar:hover,.sidebar.open{width:var(--sidebar-w)}
+.brand-name,.sidebar-dc,.nav-section-label,.user-info,.btn-logout,.nav-item-label,.nav-sub{opacity:0;transition:opacity .15s ease;white-space:nowrap;overflow:hidden}
+.sidebar:hover .brand-name,.sidebar:hover .sidebar-dc,.sidebar:hover .nav-section-label,.sidebar:hover .user-info,.sidebar:hover .btn-logout,.sidebar:hover .nav-item-label,.sidebar:hover .nav-sub,.sidebar.open .brand-name,.sidebar.open .sidebar-dc,.sidebar.open .nav-section-label,.sidebar.open .user-info,.sidebar.open .btn-logout,.sidebar.open .nav-item-label,.sidebar.open .nav-sub{opacity:1}
+.sidebar-brand{display:flex;align-items:center;gap:.75rem;padding:1.25rem 0;padding-left:calc((var(--sidebar-collapsed) - 38px) / 2);border-bottom:1px solid rgba(255,255,255,.07);overflow:hidden;min-width:var(--sidebar-w)}
+.sidebar-dc{padding:.75rem 0 .75rem calc((var(--sidebar-collapsed) - 22px) / 2);border-bottom:1px solid rgba(255,255,255,.07);min-width:var(--sidebar-w);overflow:hidden;white-space:nowrap}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;padding-left:calc((var(--sidebar-collapsed) - 22px) / 2);font-size:.95rem;color:rgba(255,255,255,.6);text-decoration:none;cursor:pointer;transition:.2s;border-left:3px solid transparent;min-width:var(--sidebar-w);white-space:nowrap}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}.nav-item.active{background:rgba(0,168,171,.12);color:var(--white);border-left-color:var(--teal);font-weight:500}
+.sidebar-footer{padding:.75rem 0;padding-left:calc((var(--sidebar-collapsed) - 36px) / 2);border-top:1px solid rgba(255,255,255,.07);min-width:var(--sidebar-w);overflow:hidden}
+.sidebar-user{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;white-space:nowrap}
+.sidebar-overlay{display:none;position:fixed;inset:0;z-index:199}
+.sidebar-overlay.open{display:block}
+.main{margin-left:var(--sidebar-collapsed)}
+</style></head><body>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="sidebar" id="sidebar"><div class="sidebar-brand"><img src="logo.png" class="brand-img"><div class="brand-name">Aqua<span>Desk</span></div></div><div class="sidebar-dc"><div class="dc-label">Dive Center</div><div class="dc-name" id="dcName">Loading...</div><div class="dc-role" id="userRole">—</div></div><nav class="sidebar-nav"><div class="nav-section-label">Operations</div><a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span><span class="nav-item-label">Dashboard</span></a><a class="nav-item active" href="divers.html"><span class="nav-icon">🤿</span><span class="nav-item-label">Diver</span></a><a class="nav-item nav-sub active" href="#" onclick="setMode('group');return false;"><span class="nav-item-label">Group Management</span></a><a class="nav-item nav-sub" href="#" onclick="setMode('individual');return false;"><span class="nav-item-label">Individual Management</span></a><a class="nav-item nav-sub" href="#" onclick="setMode('equipment');return false;"><span class="nav-item-label">Equipment Management</span></a><a class="nav-item" href="diver-form.html"><span class="nav-icon">📋</span><span class="nav-item-label">Diver Form</span></a><a class="nav-item" href="scheduling.html"><span class="nav-icon">🚤</span><span class="nav-item-label">Scheduling</span></a><a class="nav-item" href="boat-manifest.html"><span class="nav-icon">🚢</span><span class="nav-item-label">Boat Manifest</span></a><a class="nav-item" href="reports.html"><span class="nav-icon">📈</span><span class="nav-item-label">Reports</span></a><a class="nav-item owner-only" href="settings.html"><span class="nav-icon">⚙️</span><span class="nav-item-label">Settings</span></a></nav><div class="sidebar-footer"><div class="sidebar-user"><div class="user-avatar" id="userAvatar">?</div><div class="user-info"><div class="user-name" id="userName">Loading...</div><div class="user-email" id="userEmail">—</div></div></div><button class="btn-logout" onclick="handleLogout()">↩ Sign Out</button></div></aside>
+
+<main class="main">
+  <div class="topbar"><div><div class="page-title" id="pageTitle">Group Management</div><div class="page-subtitle" id="pageSubtitle">Select group divers who are ready for scheduling.</div></div><div id="topAction"></div></div>
+  <div class="content">
+    <div class="mode-tabs"><button class="mode-tab active" id="tabGroup" onclick="setMode('group')">Group Management</button><button class="mode-tab" id="tabIndividual" onclick="setMode('individual')">Individual Management</button><button class="mode-tab" id="tabEquipment" onclick="setMode('equipment')">Equipment Management</button></div>
+    <div class="toolbar" id="toolbarRow"><div class="search-wrap"><span class="search-icon">🔍</span><input class="input search-input" id="searchInput" placeholder="Search name, group, accommodation..." oninput="renderAll()"></div><button class="btn btn-ghost" onclick="clearSelections()">Clear</button><button class="btn btn-soft" onclick="selectAllVisible()">Select All</button></div>
+    <div id="feedbackNotice"></div>
+    <div id="mainContent"></div>
+  </div>
+</main>
+
+<!-- Create Group Modal -->
+<div class="modal-overlay" id="groupModal"><div class="modal"><div class="modal-head"><div class="modal-title">Create Group Link</div><div class="modal-sub">Create a folder for a booked group. Copy the link and send it to the group leader.</div></div><div class="modal-body"><div class="form-group"><label class="form-label">Group Name</label><input class="input" id="groupName" placeholder="e.g. Korean Group May 28"></div><div class="row"><div class="form-group"><label class="form-label">Arrival Date</label><input class="input" type="date" id="groupArrival"></div><div class="form-group"><label class="form-label">Departure Date</label><input class="input" type="date" id="groupDeparture"></div></div><div class="row"><div class="form-group"><label class="form-label">Expected Divers</label><input class="input" type="number" id="expectedCount" min="0" placeholder="Optional"></div><div class="form-group"><label class="form-label">Leader Name</label><input class="input" id="leaderName" placeholder="Optional"></div></div><div class="form-group"><label class="form-label">Notes</label><textarea class="input" id="groupNotes" rows="3" placeholder="Optional notes"></textarea></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('groupModal')">Cancel</button><button class="btn btn-teal" onclick="createGroup()">Create & Copy Link</button></div></div></div>
+
+<!-- Experience Tagging Modal -->
+<div class="modal-overlay" id="experienceModal"><div class="modal modal-lg"><div class="modal-head"><div class="modal-title">Tag Experience Type</div><div class="modal-sub">Set each diver's experience type before adding them to Scheduling.</div></div><div class="modal-body"><div class="exp-bulk-bar"><span class="exp-bulk-label">Set all:</span><button class="btn btn-soft btn-sm" onclick="bulkSetExperience('fun_diving')">🤿 Fun Diving</button><button class="btn btn-navy btn-sm" onclick="bulkSetExperience('dive_course')">🎓 Course</button></div><div id="expDiverList"></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('experienceModal')">Cancel</button><button class="btn btn-teal" onclick="confirmAddToSchedule()">Add to Schedule</button></div></div></div>
+
+<!-- Group Bulk Review Modal -->
+<div class="modal-overlay" id="reviewModal"><div class="modal modal-lg"><div class="modal-head"><div class="modal-title" id="reviewModalTitle">Review &amp; Apply Charges</div><div class="modal-sub" id="reviewModalSub">Review activities for this group.</div></div><div class="modal-body"><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin-bottom:.75rem"><div class="form-group"><label class="form-label">From</label><input class="input" type="date" id="reviewFromDate" onchange="renderReviewBody()"></div><div class="form-group"><label class="form-label">To</label><input class="input" type="date" id="reviewToDate" onchange="renderReviewBody()"></div></div><div id="reviewBody"></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('reviewModal')">Close</button><button class="btn btn-teal" id="confirmBillsBtn" onclick="confirmGroupBills()">Apply Charges</button></div></div></div>
+
+<div class="modal-overlay" id="confirmModal"><div class="modal"><div class="modal-head"><div class="modal-title">Confirm Action</div></div><div class="modal-body"><p id="confirmMessage" style="color:var(--gray-700);line-height:1.6;font-size:.95rem"></p></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button><button class="btn btn-red" id="confirmActionBtn">Confirm</button></div></div></div>
+
+<div class="modal-overlay" id="rateSelectModal"><div class="modal"><div class="modal-head"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:1rem"><div class="modal-title">Which rate are we charging?</div><div class="modal-sub" id="rateModalStep" style="margin-top:0;white-space:nowrap"></div></div><div class="modal-sub" id="rateModalDiver"></div></div><div class="modal-body"><div id="rateModalDates" class="rate-modal-dates"></div><div id="rateModalOptions"></div><div id="rateModalError" style="display:none;font-size:.8rem;color:var(--red);margin-top:.5rem">Pick a rate or enter a custom price first.</div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="rateModalCancel()">Cancel</button><button class="btn btn-ghost" id="rateModalBack" style="display:none" onclick="rateModalBack()">← Back</button><button class="btn btn-teal" id="rateModalNext" onclick="rateModalNext()">Apply</button></div></div></div>
+
+<!-- Delete Group Blocked Modal -->
+<div class="modal-overlay" id="deleteGroupBlockedModal"><div class="modal"><div class="modal-head" style="background:var(--red)"><div class="modal-title">Cannot Delete Group</div><div class="modal-sub">This group has active records that must be resolved first.</div></div><div class="modal-body"><p id="deleteGroupBlockedMsg" style="color:var(--gray-700);line-height:1.6;font-size:.95rem"></p></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('deleteGroupBlockedModal')">OK</button></div></div></div>
+
+<!-- Delete Group Confirm Modal -->
+<div class="modal-overlay" id="deleteGroupConfirmModal"><div class="modal"><div class="modal-head" style="background:var(--red)"><div class="modal-title" id="deleteGroupConfirmTitle">Delete Group?</div><div class="modal-sub">This cannot be undone.</div></div><div class="modal-body"><p id="deleteGroupConfirmMsg" style="color:var(--gray-700);line-height:1.6;font-size:.95rem"></p></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('deleteGroupConfirmModal')">Cancel</button><button class="btn btn-red" id="deleteGroupConfirmBtn">Delete</button></div></div></div>
+
+<!-- Create Group from Selection Modal -->
+<div class="modal-overlay" id="groupFromSelectionModal"><div class="modal"><div class="modal-head"><div class="modal-title">Create Group</div><div class="modal-sub">Name this group. The selected divers will be added as members.</div></div><div class="modal-body"><div class="form-group"><label class="form-label">Group Name</label><input class="input" id="groupFromSelectionName" placeholder="e.g. Walk-in Group June 12"></div><div id="groupFromSelectionNote" style="display:none" class="inline-note warn"><div class="inline-note-title">Minimum 2 divers required</div></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('groupFromSelectionModal')">Cancel</button><button class="btn btn-teal" onclick="confirmGroupFromSelection()">Confirm</button></div></div></div>
+
+<!-- Floating grouping action bar -->
+<div id="groupingActionBar">
+  <span class="bar-label" id="groupingBarLabel">0 divers selected</span>
+  <button class="btn btn-teal btn-sm" onclick="openGroupFromSelectionModal()">Create Group</button>
+  <button class="btn btn-ghost btn-sm" style="border-color:rgba(255,255,255,.4);color:var(--white);background:rgba(255,255,255,.1)" onclick="clearGroupingSelection()">Clear</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://xaabndtaevwgicibzcqm.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_v8tKBjplk3D61PupAqUHkg_6vzWF3iV';
+const client=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+
+let currentUser=null,userData=null,diveCenterId=null,mode='group';
+let equipMgmtDate=tomorrowStr();
+let divers=[],groups=[],visits=[],activities=[],payments=[],scheduleDivers=[],courseRates=[];
+let diveSiteList=[],allOtherCharges=[],rateTiers=[],packageList=[],equipmentRates=[];
+let selectedGroups=new Set(),selectedDivers=new Set(),autoSelectedIndividuals=new Set(),manualClosedSelections=new Set(),pendingScheduleIds=[];
+let groupingSelection=new Set(); // independent grouping flow for individual mode
+// per-diver experience type map for the tagging modal
+let pendingExperienceMap={},pendingCourseMap={};
+// for bulk review
+let reviewGroupId=null;
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function tomorrowStr(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
+function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
+function fmt(d){return d?new Date(d+'T00:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'—';}
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.classList.remove('show'),2800);}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function openGroupModal(){document.getElementById('groupModal').classList.add('show');}
+
+async function init(){
+  if(!client){showToast('AquaDesk is still loading. Please refresh the page.','error');return;}
+  const{data:{session}}=await client.auth.getSession();
+  if(!session){location.href='login.html';return;}
+  currentUser=session.user;
+  const{data}=await client.from('users').select('*,dive_centers(*)').eq('id',currentUser.id).single();
+  if(!data)return;
+  userData=data;diveCenterId=data.dive_center_id;
+  document.getElementById('dcName').textContent=data.dive_centers?.name||'My Dive Center';
+  document.getElementById('userRole').textContent=data.role==='owner'?'👑 Owner':'🗂️ Secretary';
+  document.getElementById('userName').textContent=data.full_name||'User';
+  document.getElementById('userEmail').textContent=currentUser.email;
+  document.getElementById('userAvatar').textContent=(data.full_name||'U')[0].toUpperCase();
+  await loadData();
+  const params=new URLSearchParams(location.search);
+  const qDate=params.get('date');
+  if(qDate) equipMgmtDate=qDate;
+  setMode(params.get('mode')==='equipment'?'equipment':mode);
+  // Role-based sidebar visibility
+  if(data.role==='owner'){
+    document.querySelectorAll('.owner-only').forEach(el=>el.style.display='flex');
+  }
+}
+
+async function loadData(){
+  const [d,g,v,a,p,sd,cr,ds,oc,rt,pk,er]=await Promise.all([
+    client.from('divers').select('*').eq('dive_center_id',diveCenterId).order('created_at',{ascending:false}),
+    client.from('groups').select('*').eq('dive_center_id',diveCenterId).order('created_at',{ascending:false}),
+    client.from('visits').select('*').eq('dive_center_id',diveCenterId),
+    client.from('activities').select('*').eq('dive_center_id',diveCenterId),
+    client.from('payments').select('*').eq('dive_center_id',diveCenterId),
+    client.from('schedule_divers').select('*').eq('dive_center_id',diveCenterId),
+    client.from('course_rates').select('*').eq('dive_center_id',diveCenterId).eq('is_active',true).order('course_name'),
+    client.from('dive_sites').select('id,site_name,fuel_estimate,shark_fee').eq('dive_center_id',diveCenterId).eq('is_active',true),
+    client.from('other_charges').select('*').eq('dive_center_id',diveCenterId),
+    client.from('rate_tiers').select('*').eq('dive_center_id',diveCenterId),
+    client.from('packages').select('*').eq('dive_center_id',diveCenterId),
+    client.from('equipment_rental_rates').select('*').eq('dive_center_id',diveCenterId).eq('is_active',true)
+  ]);
+  divers=d.data||[];
+  groups=g.data||[];
+  visits=v.data||[];
+  activities=a.data||[];
+  payments=p.data||[];
+  scheduleDivers=sd.data||[];
+  courseRates=cr.data||[];
+  diveSiteList=ds.data||[];
+  allOtherCharges=oc.data||[];
+  rateTiers=rt.data||[];
+  packageList=(pk.data||[]).filter(x=>x.is_active!==false);
+  equipmentRates=er.data||[];
+  if(cr.error) showToast('Could not load courses from Settings.','error');
+  if(ds.error||oc.error||rt.error||pk.error||er.error) showToast('Could not load all pricing settings.','error');
+  // Rebuild ready pool from live Supabase data so any browser/device gets the correct state.
+  // A diver is "ready" (already in scheduling) if they have an active open visit AND are in schedule_divers.
+  const scheduledDiverIds=new Set((sd.data||[]).map(x=>x.diver_id));
+  const freshReady=(v.data||[])
+    .filter(x=>x.is_active&&x.visit_status!=='closed'&&x.visit_status!=='voided'&&x.is_paid!==true)
+    .map(x=>x.diver_id)
+    .filter(id=>scheduledDiverIds.has(id));
+  setReady(freshReady);
+}
+
+// ─── Visibility Rule ───────────────────────────────────────────────────────────
+// Diver appears starting 1 day before arrival date.
+// Stays visible until departure date has passed AND bill is fully closed.
+// Bill closed = visit is_paid=true OR visit_status='closed'.
+// If no closed bill → stays visible after departure.
+
+function paymentAmount(p){
+  const totalPaid=Number(p.total_paid);
+  if(Number.isFinite(totalPaid)&&totalPaid>0) return totalPaid;
+  const amount=Number(p.amount);
+  if(Number.isFinite(amount)&&amount>0) return amount;
+  return Number(p.cash_amount||0)+Number(p.card_amount||0)+Number(p.online_amount||0);
+}
+
+function hasClosedBillRecord(diverId){
+  const diverVisits=visits.filter(x=>x.diver_id===diverId&&x.visit_status!=='voided');
+  if(diverVisits.some(x=>x.is_paid===true||x.is_active===false||String(x.visit_status||'').toLowerCase()==='closed')) return true;
+  if(payments.some(x=>x.diver_id===diverId&&x.is_paid===true)) return true;
+  const total=activityTotal(diverActivities(diverId));
+  const paid=payments.filter(x=>x.diver_id===diverId).reduce((sum,p)=>sum+paymentAmount(p),0);
+  return total>0&&paid>=total;
+}
+
+function billIsFullyClosed(diverId){
+  const open=visits.find(x=>x.diver_id===diverId&&x.is_active&&x.visit_status!=='closed'&&x.visit_status!=='voided'&&x.is_paid!==true);
+  if(open) return false;
+  return hasClosedBillRecord(diverId);
+}
+
+function isVisible(d){
+  const today=todayStr();
+  const yesterday=yesterdayStr();
+  // show starting 1 day before arrival
+  const appearsFrom=d.arrival_date? (d.arrival_date<=today? d.arrival_date : null) : null;
+  // "1 day before" means arrival_date > yesterday is still ok if arrival_date <= today+1
+  const arrivalMinusOne=d.arrival_date? shiftDate(d.arrival_date,-1) : null;
+  if(arrivalMinusOne && today < arrivalMinusOne) return false; // too early
+  if(!d.arrival_date) return hasOpenVisit(d.id); // no date → only if open visit
+  // if departure not passed → always visible
+  if(!d.departure_date || d.departure_date>=today) return true;
+  // departure has passed: visible only if bill is NOT fully closed
+  return !billIsFullyClosed(d.id);
+}
+
+function shiftDate(dateStr, days){
+  const d=new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().split('T')[0];
+}
+
+function hasOpenVisit(id){
+  return visits.some(v=>v.diver_id===id&&v.is_active&&v.visit_status!=='closed'&&v.visit_status!=='voided');
+}
+
+function isIndividualCandidate(d){
+  return !d.group_id && isVisible(d);
+}
+
+function canAutoSelectDiver(d){
+  // Open/unpaid divers are preselected. Bill Closed divers are not preselected,
+  // but can still be manually checked if the secretary wants to start a new visit.
+  return !!d && isVisible(d) && !isAlreadyReady(d.id) && !hasClosedBillRecord(d.id);
+}
+
+function isManualClosedSelection(id){
+  return manualClosedSelections.has(id);
+}
+
+function pruneClosedAutoSelections(){
+  // Bill Closed divers must never remain selected because of stale/default state.
+  // Also remove stale ready-pool entries so their checkboxes stay enabled for manual reuse.
+  const ready=getReady();
+  const cleanReady=ready.filter(id=>!billIsFullyClosed(id));
+  if(cleanReady.length!==ready.length) setReady(cleanReady);
+
+  selectedDivers.forEach(id=>{
+    const d=divers.find(x=>x.id===id);
+    const billClosed=!!d&&billIsFullyClosed(id);
+    if(!d || !isVisible(d) || (!billClosed&&isAlreadyReady(id))){
+      selectedDivers.delete(id);
+      manualClosedSelections.delete(id);
+      return;
+    }
+    // If a Bill Closed diver is in selectedDivers only because of stale/default state,
+    // remove it. Keep it only when the secretary manually checked it.
+    if(billClosed && !isManualClosedSelection(id)){
+      selectedDivers.delete(id);
+    }
+  });
+  manualClosedSelections.forEach(id=>{
+    const d=divers.find(x=>x.id===id);
+    if(!d || !selectedDivers.has(id) || !hasClosedBillRecord(id)) manualClosedSelections.delete(id);
+  });
+}
+
+function canSendSelectedDiver(d){
+  if(!d || !isVisible(d) || !selectedDivers.has(d.id)) return false;
+  const billClosed=hasClosedBillRecord(d.id);
+  if(!billClosed&&isAlreadyReady(d.id)) return false;
+  // Bill Closed divers must be a deliberate manual selection, never an automatic/stale one.
+  if(billClosed) return isManualClosedSelection(d.id);
+  return true;
+}
+
+function groupMembers(id){return divers.filter(d=>d.group_id===id);}
+function groupById(id){return groups.find(g=>g.id===id)||null;}
+
+function groupIsVisible(g){
+  // Group folder visible if any member is visible, or group has no members but arrival is today/tomorrow/future
+  const members=groupMembers(g.id);
+  if(members.length) return members.some(isVisible);
+  const today=todayStr();
+  if(!g.arrival_date) return true;
+  return shiftDate(g.arrival_date,-1)<=today && (!g.departure_date || g.departure_date>=today);
+}
+
+function matches(obj){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  if(!q) return true;
+  return JSON.stringify(obj).toLowerCase().includes(q);
+}
+
+// ─── Visit / billing helpers ───────────────────────────────────────────────────
+function activeVisitFor(diverId){
+  return visits.find(v=>v.diver_id===diverId&&v.is_active&&v.visit_status!=='closed'&&v.visit_status!=='voided');
+}
+function money(n){return '₱'+(Number(n)||0).toLocaleString('en-PH',{maximumFractionDigits:0});}
+function diverActivities(diverId){return activities.filter(a=>a.diver_id===diverId);}
+function billForDay(diverId,date){
+  return diverActivities(diverId).filter(a=>a.date===date).reduce((s,a)=>s+rowTotal(a),0);
+}
+function rowTotal(a){
+  return Number(a.total)||Number(a.dive_rate||0)+Number(a.fuel_surcharge||0)+Number(a.marine_tax||0)+Number(a.shark_fee||0)+Number(a.nitrox_fee||0)+Number(a.fifteen_l_fee||a.fee_15l||0)+Number(a.equipment_rental||0)+Number(a.addons||0)-Number(a.discount||0);
+}
+function totalBill(diverId){return diverActivities(diverId).reduce((s,a)=>s+rowTotal(a),0);}
+function activeActivities(diverId){
+  const v=activeVisitFor(diverId);
+  return diverActivities(diverId).filter(a=>v?(!a.visit_id||a.visit_id===v.id):true);
+}
+function activityTotal(list){return list.reduce((s,a)=>s+rowTotal(a),0);}
+function paidForDiver(diverId){
+  const v=activeVisitFor(diverId);
+  return payments.filter(p=>p.diver_id===diverId&&(v?(!p.visit_id||p.visit_id===v.id):true)).reduce((s,p)=>s+paymentAmount(p),0);
+}
+function runningBill(diverId){
+  const total=activityTotal(activeActivities(diverId));
+  const paid=paidForDiver(diverId);
+  return {total,paid,balance:Math.max(0,total-paid)};
+}
+function totalDives(diverId){
+  return diverActivities(diverId).filter(a=>(a.status||'').toLowerCase()!=='cancelled').length;
+}
+function dayBreakdown(diverId){
+  const dates=[...new Set(diverActivities(diverId).map(a=>a.date).filter(Boolean))].sort();
+  return dates.slice(0,3).map((dt,i)=>`Day ${i+1}: ${money(billForDay(diverId,dt))}`).join(' · ')||'No activities yet';
+}
+function openFormNewTab(id){
+  const w=window.open('diver-form.html?diver='+encodeURIComponent(id),'_blank');
+  try{if(w){w.blur();window.focus();}}catch(e){}
+}
+function groupSummary(g){
+  const m=groupMembers(g.id);
+  const dives=m.reduce((s,d)=>s+totalDives(d.id),0);
+  const bill=m.reduce((s,d)=>s+totalBill(d.id),0);
+  return {dives,bill};
+}
+
+// ─── Mode / Render ─────────────────────────────────────────────────────────────
+function setMode(m){
+  mode=m;
+  // Clear the other mode's selections so they don't bleed into the active mode
+  if(m==='group'){selectedDivers.clear();manualClosedSelections.clear();autoSelectedIndividuals.clear();groupingSelection.clear();updateGroupingBar();}
+  else if(m==='individual'){selectedGroups.clear();manualClosedSelections.clear();}
+  else{selectedGroups.clear();selectedDivers.clear();manualClosedSelections.clear();autoSelectedIndividuals.clear();groupingSelection.clear();}
+  document.getElementById('tabGroup').classList.toggle('active',m==='group');
+  document.getElementById('tabIndividual').classList.toggle('active',m==='individual');
+  document.getElementById('tabEquipment').classList.toggle('active',m==='equipment');
+  document.querySelectorAll('.nav-sub').forEach((x,i)=>x.classList.toggle('active',(i===0&&m==='group')||(i===1&&m==='individual')||(i===2&&m==='equipment')));
+  renderAll();
+}
+
+function renderAll(){
+  pruneClosedAutoSelections();
+  document.getElementById('pageTitle').textContent=mode==='group'?'Group Management':mode==='individual'?'Individual Management':'Equipment Management';
+  document.getElementById('pageSubtitle').textContent=mode==='group'?'Select group folders, choose who is diving, then add them to Scheduling.':mode==='individual'?'Select individual divers who are diving, then add them to Scheduling.':'Prep equipment for divers arriving on the selected date.';
+  document.getElementById('topAction').innerHTML=mode==='group'?'<button class="btn btn-teal" onclick="openGroupModal()">+ Create Group Link</button>':mode==='individual'?'<button class="btn btn-teal" onclick="copyText(registrationLink())">Copy Registration Link</button>':'';
+  document.getElementById('toolbarRow').style.display=mode==='equipment'?'none':'flex';
+  if(mode==='group') renderGroupMode();
+  else if(mode==='individual') renderIndividualMode();
+  else renderEquipmentMode();
+}
+
+// ─── Medical flag acknowledgment (Supabase DB) ────────────────────────────────
+// medical_acknowledged is stored on the divers table so any browser/device sees the correct state.
+async function addMedicalAck(diverId){
+  const{error}=await client.from('divers').update({medical_acknowledged:true}).eq('id',diverId);
+  if(error){showToast('Could not save acknowledgment.','error');return;}
+  // Update local array so re-render reflects immediately without a full reload
+  const d=divers.find(x=>x.id===diverId);
+  if(d) d.medical_acknowledged=true;
+  renderAll();
+}
+
+// ─── Diver flags ───────────────────────────────────────────────────────────────
+function diverFlagBadges(d){
+  let html='';
+  if(d.medical_flag){
+    // Use medical_acknowledged from DB — persists across browsers and devices
+    if(d.medical_acknowledged){
+      html+='<span class="badge badge-gray" style="cursor:default">⚕ Medical Note</span>';
+    } else {
+      html+=`<span class="badge badge-red" style="cursor:pointer" title="Click to acknowledge" onclick="event.stopPropagation();event.preventDefault();addMedicalAck('${d.id}')">🚨 Medical Flag — tap to acknowledge</span>`;
+    }
+  }
+  if(d.is_minor) html+='<span class="badge badge-orange">👶 Minor</span>';
+  return html?`<div class="diver-flags">${html}</div>`:'';
+}
+
+// ─── Group Mode ────────────────────────────────────────────────────────────────
+function renderGroupMode(){
+  let visible=groups.filter(groupIsVisible).filter(matches);
+  let html='<div class="grid-2"><div class="card"><div class="card-header"><div><div class="card-title">Group Folders</div><div class="card-sub">Select group folders to show their divers below.</div></div></div><div class="card-body"><div class="card-list">';
+  if(!visible.length) html+='<div class="empty">No current group folders. Create a group link for booked groups.</div>';
+  visible.forEach(g=>{
+    const m=groupMembers(g.id);
+    const cur=m.filter(isVisible);
+    const checked=selectedGroups.has(g.id);
+    const regCount=m.length;
+    const expCount=g.expected_count||0;
+    const regBadge=expCount>0&&regCount<expCount
+      ?`<span class="badge badge-orange">⚠️ ${regCount}/${expCount} registered</span>`
+      :expCount>0&&regCount>expCount
+        ?`<span class="badge badge-orange">⚠️ ${regCount}/${expCount} — over expected</span>`
+        :`<span class="badge badge-teal">${regCount} registered${expCount?'/'+expCount:''}</span>`;
+    html+=`<div class="group-card ${checked?'checked':''}" onclick="toggleGroup('${g.id}')">
+      <div style="display:flex;align-items:flex-start;gap:.75rem">
+        <input class="checkbox" type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();toggleGroup('${g.id}')">
+        <div style="flex:1">
+          <div class="item-name">${esc(g.group_name||'Unnamed Group')}</div>
+          <div class="item-meta">${g.arrival_date?'Arrival '+fmt(g.arrival_date):'No arrival date'}${g.departure_date?' · Departure '+fmt(g.departure_date):''}</div>
+          <div class="diver-flags" style="margin-top:.35rem">${regBadge}</div>
+          <div class="pill-actions" style="margin-top:.65rem">
+            <button class="btn btn-soft btn-sm" onclick="event.stopPropagation();copyText(registrationLink('${g.id}'))">Copy Link</button>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openBulkReview('${g.id}')">Review &amp; Apply Charges</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="event.stopPropagation();deleteGroup('${g.id}')">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html+='</div></div></div>';
+  html+='<div class="card"><div class="card-header"><div><div class="card-title">Selected Divers</div><div class="card-sub">Everyone is selected by default. Deselect anyone not diving.</div></div><button class="btn btn-navy" onclick="addSelectedToSchedule(\'group\')">Add to Schedule</button></div><div class="card-body">'+renderSelectedGroupMembers()+'</div></div></div>';
+  document.getElementById('mainContent').innerHTML=html;
+}
+
+function renderSelectedGroupMembers(){
+  if(!selectedGroups.size) return '<div class="empty">Select a group folder on the left to review its divers.</div>';
+  let html='';
+  [...selectedGroups].forEach(gid=>{
+    const g=groupById(gid);
+    if(!g) return;
+    const mem=groupMembers(gid).filter(isVisible);
+    const gs=groupSummary(g);
+    html+=`<div class="group-review">
+      <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;margin-bottom:.8rem">
+        <div><div class="item-name">${esc(g.group_name||'Unnamed Group')}</div>
+        <div class="item-meta">Leader: ${esc(g.leader_name||'—')} · Dives: ${gs.dives} · Bill: ${money(gs.bill)}</div></div>
+        <div class="pill-actions">
+          <button class="btn btn-soft btn-sm" onclick="event.stopPropagation();selectGroupMembers('${gid}',true)">Select All</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();selectGroupMembers('${gid}',false)">Clear</button>
+        </div>
+      </div>
+      <div class="member-list">`;
+    if(!mem.length) html+='<div class="empty">No visible members in this group.</div>';
+    mem.forEach(d=>html+=diverMiniCard(d,true,true));
+    html+='</div></div>';
+  });
+  return html;
+}
+
+// ─── Diver Mini Card ───────────────────────────────────────────────────────────
+function diverMiniCard(d,showBilling=false,showRemove=false,showGroupBtn=false){
+  const rb=runningBill(d.id);
+  const billingRows=showBilling
+    ?`<div class="diver-bill-row"><span>Activity Summary:</span><strong>${esc(dayBreakdown(d.id))}</strong></div>
+      <div class="diver-bill-row"><span>Total Dives:</span><strong>${totalDives(d.id)}</strong></div>
+      <div class="diver-bill-row"><span>Total Bill:</span><strong>${money(totalBill(d.id))}</strong></div>`
+    :`<div class="diver-bill-row"><span>Running Bill:</span><strong>${money(rb.total)}</strong></div>
+      <div class="diver-bill-row"><span>Balance:</span><strong>${money(rb.balance)}</strong></div>`;
+  // Check Bill Closed independently of stale ready state. Closed-bill divers must stay selectable.
+  const billClosed=billIsFullyClosed(d.id);
+  if(billClosed){
+    const current=getReady();
+    if(current.includes(d.id)){setReady(current.filter(x=>x!==d.id));}
+  }
+  const ready=!billClosed&&isAlreadyReady(d.id);
+  // Get paid_at from payments if available, else fall back to visits.created_at
+  let closedDate=null;
+  if(billClosed){
+    const pmt=payments.find(p=>p.diver_id===d.id&&p.paid_at);
+    if(pmt) closedDate=pmt.paid_at.split('T')[0];
+  }
+  const readyBadge=ready?'<span class="badge badge-orange">Already in Scheduling</span>':'';
+  const closedBadge=billClosed?`<span class="badge badge-gray">✓ Bill Closed${closedDate?' on '+fmt(closedDate):''}</span>`:'';
+  const statusBadges=(readyBadge||closedBadge)?`<div class="diver-statuses">${readyBadge}${closedBadge}</div>`:'';
+  const flags=diverFlagBadges(d);
+  const isChecked=!ready&&selectedDivers.has(d.id);
+  const isDisabled=ready;
+  const removeBtn=showRemove
+    ?`<button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="event.preventDefault();event.stopPropagation();removeFromGroup('${d.id}')">Remove</button>`
+    :'';
+  // + Group button: only for individual mode, only if diver has no group already
+  const inGroupingSelection=groupingSelection.has(d.id);
+  const groupBtn=showGroupBtn&&!d.group_id
+    ?`<button type="button" class="btn btn-ghost btn-sm" style="${inGroupingSelection?'background:var(--teal-light);border-color:var(--teal);color:var(--teal-mid);font-weight:700':''}" onclick="event.preventDefault();event.stopPropagation();toggleGroupingSelection('${d.id}')">${inGroupingSelection?'✓ Selected':'+ Group'}</button>`
+    :'';
+  const isGroupingHighlight=showGroupBtn&&inGroupingSelection;
+  return `<label class="diver-card${isGroupingHighlight?' grouping-selected':''}">
+    <div class="diver-card-head">
+      <input class="checkbox" type="checkbox" ${isChecked?'checked':''} ${isDisabled?'disabled':''} onchange="toggleDiver('${d.id}')">
+      <div class="diver-card-title-wrap">
+        <div class="diver-card-name">${esc((d.first_name||'')+' '+(d.last_name||''))}</div>
+      </div>
+    </div>
+    <div class="diver-card-main">
+      <div class="diver-card-detail"><strong>${esc(d.certification_level||'No cert')}</strong></div>
+      <div class="diver-card-detail">Arrival: ${fmt(d.arrival_date)}</div>
+      <div class="diver-bill-stack">${billingRows}</div>
+      ${statusBadges}
+      ${flags}
+    </div>
+    <div class="diver-card-actions">
+      <button type="button" class="btn btn-soft btn-sm diver-open-btn" onclick="event.preventDefault();event.stopPropagation();openFormNewTab('${d.id}')">Open Form ↗</button>
+      ${removeBtn}
+      ${groupBtn}
+    </div>
+  </label>`;
+}
+
+// ─── Individual Mode ───────────────────────────────────────────────────────────
+function renderIndividualMode(){
+  let list=divers.filter(isIndividualCandidate).filter(matches);
+  list.forEach(d=>{
+    if(!autoSelectedIndividuals.has(d.id)){
+      if(canAutoSelectDiver(d)) selectedDivers.add(d.id);
+      autoSelectedIndividuals.add(d.id);
+    }
+  });
+  let html='<div class="card"><div class="card-header"><div><div class="card-title">Individual Divers</div><div class="card-sub">Visible from 1 day before arrival until departure passed and bill is closed.</div></div><button class="btn btn-navy" onclick="addSelectedToSchedule(\'individual\')">Add to Schedule</button></div><div class="card-body"><div class="member-list">';
+  if(!list.length) html+='<div class="empty">No individual divers visible right now.</div>';
+  list.forEach(d=>html+=diverMiniCard(d,false,false,true));
+  html+='</div></div></div>';
+  document.getElementById('mainContent').innerHTML=html;
+  updateGroupingBar();
+}
+
+// ─── Equipment Management ───────────────────────────────────────────────────
+const EQUIP_MGMT_COLUMNS=[
+  {label:'BCD',key:'bcd'},{label:'Regulator',key:'regulator'},{label:'Mask',key:'mask'},
+  {label:'Snorkel',key:'snorkel'},{label:'Weights',key:'weights'},{label:'Wetsuit',key:'wetsuit'},
+  {label:'Fins',key:'fins'},{label:'Boots',key:'boots'},{label:'Dive Computer',key:'computer'},
+  {label:'Torch',key:'torch'}
+];
+
+function equipCellValue(d,key){
+  if(!d.needs_equipment||!d.equipment_requested) return '';
+  let eq;
+  try{ eq=JSON.parse(d.equipment_requested); }catch(e){ return ''; }
+  if(eq.type!=='partial'||!eq.items) return '';
+  if(key==='computer') return eq.items.computer?'✓':'';
+  if(key==='weights'){
+    if(!eq.items.weights) return '';
+    return eq.items.weights_kg?esc(String(eq.items.weights_kg))+' kg':'✓';
+  }
+  const val=eq.items[key];
+  if(!val) return '';
+  return val===true?'✓':esc(String(val));
+}
+
+function renderEquipmentMode(){
+  const arriving=divers.filter(d=>d.arrival_date===equipMgmtDate);
+  const byGroup={};
+  const individuals=[];
+  arriving.forEach(d=>{
+    if(d.group_id){(byGroup[d.group_id]=byGroup[d.group_id]||[]).push(d);}
+    else{individuals.push(d);}
+  });
+  let html='<div class="card"><div class="card-body">'+
+    '<div style="display:flex;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">'+
+    '<div class="form-group" style="margin-bottom:0;"><label class="form-label">Arrival Date</label>'+
+    `<input class="input" type="date" id="equipMgmtDateInput" value="${equipMgmtDate}" onchange="onEquipMgmtDateChange()"></div>`+
+    '<button class="btn btn-ghost" onclick="printEquipmentPrep()">🖨️ Print</button></div>';
+  if(!arriving.length){
+    html+='<div class="empty">No divers arriving on this date.</div>';
+  }else{
+    Object.keys(byGroup).forEach(gid=>{
+      const g=groupById(gid);
+      html+=`<div class="equip-group-section"><div class="item-name" style="margin:1rem 0 .5rem;">${esc(g?.group_name||'Unnamed Group')}</div>`+
+        renderEquipTable(byGroup[gid])+'</div>';
+    });
+    if(individuals.length){
+      html+='<div class="equip-group-section"><div class="item-name" style="margin:1rem 0 .5rem;">Individual Divers</div>'+
+        renderEquipTable(individuals)+'</div>';
+    }
+  }
+  html+='</div></div>';
+  document.getElementById('mainContent').innerHTML=html;
+}
+
+function renderEquipTable(diverList){
+  let html='<div style="overflow-x:auto;"><table class="equip-mgmt-table"><thead><tr><th>Diver</th>';
+  EQUIP_MGMT_COLUMNS.forEach(c=>html+=`<th>${c.label}</th>`);
+  html+='<th>Remarks</th></tr></thead><tbody>';
+  diverList.forEach(d=>{
+    html+=`<tr><td>${esc((d.first_name||'')+' '+(d.last_name||''))}</td>`;
+    EQUIP_MGMT_COLUMNS.forEach(c=>{html+=`<td class="c">${equipCellValue(d,c.key)}</td>`;});
+    const remarks=d['equipment notes']||'';
+    html+=`<td><input class="equip-remarks-input" data-diver-id="${d.id}" value="${esc(remarks)}" onchange="saveEquipRemarks('${d.id}',this.value)" placeholder="—"></td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  return html;
+}
+
+function onEquipMgmtDateChange(){
+  const el=document.getElementById('equipMgmtDateInput');
+  if(!el) return;
+  equipMgmtDate=el.value;
+  renderEquipmentMode();
+}
+
+async function saveEquipRemarks(diverId,value){
+  const{error}=await client.from('divers').update({'equipment notes':value}).eq('id',diverId).eq('dive_center_id',diveCenterId);
+  if(error){showToast('Could not save remarks.','error');return;}
+  const d=divers.find(x=>x.id===diverId);
+  if(d) d['equipment notes']=value;
+  showToast('Remarks saved.','success');
+}
+
+function printDocHeaderHtml(){
+  const dc=userData?.dive_centers;
+  const name=esc(dc?.name||'Dive Center');
+  const logo=dc?.logo_url
+    ?`<img src="${esc(dc.logo_url)}" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;margin-right:12px;">`
+    :'';
+  return `<div style="display:flex;align-items:center;background:#1A3C5E;color:#fff;padding:18px 24px;border-radius:10px 10px 0 0;">${logo}<div style="font-size:20px;font-weight:700;">${name}</div></div>`;
+}
+
+function openPrintWindow(title,bodyHtml){
+  const w=window.open('','_blank');
+  if(!w){showToast('Pop-up blocked. Please allow pop-ups to print.','error');return;}
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(title)}</title></head>
+  <body style="font-family:Arial,sans-serif;color:#0f172a;max-width:186mm;margin:0 auto;padding:10mm;">
+    ${printDocHeaderHtml()}
+    ${bodyHtml}
+    <script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+function printEquipTableHtml(diverList){
+  let html='<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;"><thead><tr style="border-bottom:2px solid #1A3C5E;">'+
+    '<th style="text-align:left;padding:6px 4px;">Diver</th>';
+  EQUIP_MGMT_COLUMNS.forEach(c=>html+=`<th style="text-align:center;padding:6px 4px;">${c.label}</th>`);
+  html+='<th style="text-align:left;padding:6px 4px;">Remarks</th></tr></thead><tbody>';
+  diverList.forEach(d=>{
+    html+=`<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:6px 4px;">${esc((d.first_name||'')+' '+(d.last_name||''))}</td>`;
+    EQUIP_MGMT_COLUMNS.forEach(c=>{html+=`<td style="text-align:center;padding:6px 4px;">${equipCellValue(d,c.key)}</td>`;});
+    html+=`<td style="padding:6px 4px;">${esc(d['equipment notes']||'')}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  return html;
+}
+
+function printEquipmentPrep(){
+  const arriving=divers.filter(d=>d.arrival_date===equipMgmtDate);
+  if(!arriving.length){showToast('No divers arriving on this date.','error');return;}
+  const byGroup={};
+  const individuals=[];
+  arriving.forEach(d=>{
+    if(d.group_id){(byGroup[d.group_id]=byGroup[d.group_id]||[]).push(d);}
+    else{individuals.push(d);}
+  });
+  let body=`<div style="font-size:13px;color:#475569;margin-bottom:12px;">Arrival date: ${fmt(equipMgmtDate)}</div>`;
+  Object.keys(byGroup).forEach(gid=>{
+    const g=groupById(gid);
+    body+=`<div style="font-weight:700;color:#1A3C5E;margin-top:16px;">${esc(g?.group_name||'Unnamed Group')}</div>`+printEquipTableHtml(byGroup[gid]);
+  });
+  if(individuals.length){
+    body+='<div style="font-weight:700;color:#1A3C5E;margin-top:16px;">Individual Divers</div>'+printEquipTableHtml(individuals);
+  }
+  openPrintWindow('Equipment Prep — '+fmt(equipMgmtDate),body);
+}
+function toggleGroup(id){
+  if(selectedGroups.has(id)){
+    selectedGroups.delete(id);
+    groupMembers(id).forEach(d=>{selectedDivers.delete(d.id);manualClosedSelections.delete(d.id);});
+  } else {
+    selectedGroups.add(id);
+    groupMembers(id).filter(isVisible).forEach(d=>{if(canAutoSelectDiver(d)) selectedDivers.add(d.id);});
+  }
+  renderAll();
+}
+function toggleDiver(id){
+  const d=divers.find(x=>x.id===id);
+  const billClosed=!!d&&hasClosedBillRecord(id);
+  if(d&&billClosed){
+    const current=getReady();
+    if(current.includes(id)) setReady(current.filter(x=>x!==id));
+  }
+  if(!d || (!billClosed&&isAlreadyReady(id))){
+    selectedDivers.delete(id);
+    manualClosedSelections.delete(id);
+    renderAll();
+    return;
+  }
+  if(selectedDivers.has(id)){
+    selectedDivers.delete(id);
+    manualClosedSelections.delete(id);
+  } else {
+    selectedDivers.add(id);
+    if(billClosed) manualClosedSelections.add(id);
+    else manualClosedSelections.delete(id);
+  }
+  renderAll();
+}
+function selectGroupMembers(gid,on){
+  groupMembers(gid).filter(isVisible).forEach(d=>{
+    if(on){
+      if(canAutoSelectDiver(d)) selectedDivers.add(d.id);
+    } else {
+      selectedDivers.delete(d.id);
+      manualClosedSelections.delete(d.id);
+    }
+  });
+  renderAll();
+}
+function clearSelections(){selectedGroups.clear();selectedDivers.clear();manualClosedSelections.clear();renderAll();}
+function selectAllVisible(){
+  if(mode==='group') groups.filter(groupIsVisible).filter(matches).forEach(g=>{selectedGroups.add(g.id);groupMembers(g.id).filter(isVisible).forEach(d=>{if(canAutoSelectDiver(d)) selectedDivers.add(d.id);});});
+  else divers.filter(isIndividualCandidate).filter(matches).forEach(d=>{if(canAutoSelectDiver(d)) selectedDivers.add(d.id);});
+  renderAll();
+}
+
+// ─── Experience Tagging Modal ──────────────────────────────────────────────────
+function addSelectedToSchedule(scope){
+  // Resolve the IDs to process based on which mode triggered the call
+  let ids=[];
+  if(scope==='group'){
+    // Only process divers from the currently selected group folders
+    const groupMemberIds=new Set();
+    [...selectedGroups].forEach(gid=>{
+      groupMembers(gid).filter(isVisible).forEach(d=>{
+        if(canSendSelectedDiver(d)) groupMemberIds.add(d.id);
+      });
+    });
+    ids=[...groupMemberIds];
+  } else {
+    // Only process individually-selected divers who are individual candidates
+    ids=[...selectedDivers].filter(id=>{
+      const d=divers.find(x=>x.id===id);
+      return d&&isIndividualCandidate(d)&&canSendSelectedDiver(d);
+    });
+  }
+  if(!ids.length){showToast('Select at least one diver first.','error');return;}
+  pendingScheduleIds=ids;
+  // initialise all to fun_diving
+  pendingExperienceMap={};
+  pendingCourseMap={};
+  ids.forEach(id=>pendingExperienceMap[id]='fun_diving');
+  renderExpDiverList();
+  document.getElementById('experienceModal').classList.add('show');
+}
+
+function renderExpDiverList(){
+  const list=pendingScheduleIds;
+  let html='';
+  list.forEach(id=>{
+    const d=divers.find(x=>x.id===id);
+    if(!d||!canSendSelectedDiver(d)) return;
+    const name=esc((d.first_name||'')+' '+(d.last_name||''));
+    const meta=esc(d.certification_level||'No cert');
+    const expType=pendingExperienceMap[id]||'fun_diving';
+    const selectedCourse=pendingCourseMap[id]||'';
+    const flags=diverFlagBadgesInline(d);
+    const courseOptions=courseRates.map(c=>`<option value="${esc(c.id)}" ${selectedCourse===c.id?'selected':''}>${esc(c.course_name||'Untitled Course')}</option>`).join('');
+    const courseSelect=courseRates.length
+      ? `<select class="exp-course-select" ${expType==='dive_course'?'':'disabled'} onchange="setDiverCourse('${id}',this.value)"><option value="">Select course</option>${courseOptions}</select>`
+      : `<span class="exp-course-empty">No active courses found in Settings</span>`;
+    html+=`<div class="exp-diver-row">
+      <div>
+        <div class="exp-diver-name">${name} ${flags}</div>
+        <div class="exp-diver-meta">${meta}</div>
+      </div>
+      <div class="exp-toggle">
+        <button class="exp-btn fun ${expType==='fun_diving'?'active':''}" onclick="setDiverExp('${id}','fun_diving')">🤿 Fun Diving</button>
+        <button class="exp-btn course ${expType==='dive_course'?'active':''}" onclick="setDiverExp('${id}','dive_course')">🎓 Course</button>
+        ${courseSelect}
+      </div>
+    </div>`;
+  });
+  document.getElementById('expDiverList').innerHTML=html||'<div class="empty">No divers to tag.</div>';
+}
+
+function diverFlagBadgesInline(d){
+  let s='';
+  if(d.medical_flag) s+='<span class="badge badge-red" style="font-size:.65rem">🚨</span>';
+  if(d.is_minor) s+='<span class="badge badge-orange" style="font-size:.65rem">👶</span>';
+  return s;
+}
+
+function setDiverExp(id,type){
+  pendingExperienceMap[id]=type;
+  if(type==='fun_diving') pendingCourseMap[id]=null;
+  if(type==='dive_course'&&!pendingCourseMap[id]&&courseRates.length) pendingCourseMap[id]=courseRates[0].id;
+  renderExpDiverList();
+}
+
+function setDiverCourse(id,courseId){
+  pendingExperienceMap[id]='dive_course';
+  pendingCourseMap[id]=courseId||null;
+  renderExpDiverList();
+}
+
+function bulkSetExperience(type){
+  pendingScheduleIds.forEach(id=>{
+    pendingExperienceMap[id]=type;
+    pendingCourseMap[id]=type==='dive_course'&&courseRates.length?courseRates[0].id:null;
+  });
+  renderExpDiverList();
+}
+
+async function confirmAddToSchedule(){
+  const ids=[...pendingScheduleIds].filter(id=>{
+    const d=divers.find(x=>x.id===id);
+    return canSendSelectedDiver(d);
+  });
+  if(!ids.length){closeModal('experienceModal');pendingScheduleIds=[];pendingExperienceMap={};pendingCourseMap={};showToast('No open unpaid divers selected.','error');return;}
+  try{
+    const missingCourse=ids.some(id=>(pendingExperienceMap[id]||'fun_diving')==='dive_course'&&!pendingCourseMap[id]);
+    if(missingCourse){showToast('Select a course for each course diver.','error');return;}
+    const ready=new Set(getReady());
+    const duplicates=ids.filter(id=>ready.has(id));
+    const fresh=ids.filter(id=>!ready.has(id));
+
+    for(const id of fresh){
+      const expType=pendingExperienceMap[id]||'fun_diving';
+      const courseRateId=expType==='dive_course'?(pendingCourseMap[id]||null):null;
+      // 1. ensure open visit with correct experience_type
+      await ensureOpenVisit(id,expType,courseRateId);
+      // 2. insert/upsert into schedule_divers
+      const existing=scheduleDivers.find(sd=>sd.diver_id===id);
+      if(existing){
+        await client.from('schedule_divers').update({experience_type:expType}).eq('id',existing.id);
+      } else {
+        const {data:sdRow}=await client.from('schedule_divers').insert({
+          dive_center_id:diveCenterId,
+          diver_id:id,
+          experience_type:expType,
+          is_diving_tomorrow:true
+        }).select().single();
+        if(sdRow) scheduleDivers.push(sdRow);
+      }
+    }
+
+    setReady(getReady().concat(fresh));
+    closeModal('experienceModal');
+    pendingScheduleIds=[];
+    pendingExperienceMap={};
+    pendingCourseMap={};
+
+    if(fresh.length&&duplicates.length){
+      showInlineNotice('Added to Scheduling',fresh.length+' diver'+(fresh.length===1?'':'s')+' added.<br><br>Already added:<br>- '+duplicates.map(diverNameById).map(esc).join('<br>- '));
+    } else if(duplicates.length&&!fresh.length){
+      showInlineNotice('Already added','These divers are already in Scheduling:<br>- '+duplicates.map(diverNameById).map(esc).join('<br>- '),'warn');
+    } else {
+      showToast(fresh.length+' diver'+(fresh.length===1?'':'s')+' added to Scheduling.','success');
+    }
+    await loadData();
+    selectedDivers.clear();
+    manualClosedSelections.clear();
+    autoSelectedIndividuals.clear();
+    renderAll();
+  } catch(err){
+    console.error(err);
+    showToast('Could not add selected divers to Scheduling.','error');
+  }
+}
+
+// ─── Visit helpers ─────────────────────────────────────────────────────────────
+async function ensureOpenVisit(diverId,experienceType,courseRateId=null){
+  let v=visits.find(x=>x.diver_id===diverId&&x.is_active&&x.visit_status!=='closed'&&x.visit_status!=='voided');
+  if(v){
+    const nextCourseRateId=experienceType==='dive_course'?courseRateId:null;
+    if((experienceType&&v.experience_type!==experienceType)||(v.course_rate_id||null)!==nextCourseRateId){
+      const{data,error}=await client.from('visits').update({experience_type:experienceType,course_rate_id:nextCourseRateId}).eq('id',v.id).select().single();
+      if(error) throw error;
+      Object.assign(v,data||{experience_type:experienceType,course_rate_id:nextCourseRateId});
+    }
+    return v;
+  }
+  const nextCourseRateId=experienceType==='dive_course'?courseRateId:null;
+  const{data,error}=await client.from('visits').insert({
+    dive_center_id:diveCenterId,
+    diver_id:diverId,
+    visit_start:todayStr(),
+    is_active:true,
+    is_paid:false,
+    visit_status:'open',
+    experience_type:experienceType||'fun_diving',
+    course_rate_id:nextCourseRateId
+  }).select().single();
+  if(error) throw error;
+  visits.push(data);
+  return data;
+}
+
+// ─── Ready pool (localStorage) ─────────────────────────────────────────────────
+function readyKey(){return 'aquadesk_ready_'+diveCenterId;}
+function getReady(){try{return JSON.parse(localStorage.getItem(readyKey())||'[]')}catch(e){return[];}}
+function setReady(arr){localStorage.setItem(readyKey(),JSON.stringify([...new Set(arr)]));}
+function isAlreadyReady(id){return !billIsFullyClosed(id)&&getReady().includes(id);}
+function diverNameById(id){const d=divers.find(x=>x.id===id);return d?((d.first_name||'')+' '+(d.last_name||'')).trim():'Diver';}
+
+// ─── Group Bulk Review / Apply Charges ─────────────────────────────────────────
+function reviewRange(){
+  let from=document.getElementById('reviewFromDate')?.value||todayStr();
+  let to=document.getElementById('reviewToDate')?.value||from;
+  if(to<from){const tmp=from;from=to;to=tmp;}
+  return{from,to};
+}
+function inReviewRange(act,range){
+  const dt=act?.date||'';
+  return dt&&dt>=range.from&&dt<=range.to;
+}
+function isCancelledActivity(act){
+  return String(act?.status||'').trim().toLowerCase()==='cancelled';
+}
+function isPackagePricingMode(){
+  return String(userData?.dive_centers?.pricing_mode||'tier_based').trim().toLowerCase().includes('package');
+}
+function calcRowValue(act){
+  return Math.max(0,
+    (parseFloat(act.dive_rate)||0)+
+    (parseFloat(act.fuel_surcharge)||0)+
+    (parseFloat(act.marine_tax)||0)+
+    (parseFloat(act.shark_fee)||0)+
+    (parseFloat(act.nitrox_fee)||0)+
+    (parseFloat(act.fifteen_l_fee||act.fee_15l)||0)+
+    (parseFloat(act.equipment_rental)||0)+
+    (parseFloat(act.addons)||0)
+  );
+}
+function calcEquipmentRental(diver){
+  if(!diver||!diver.needs_equipment||!diver.equipment_requested)return{total:0,breakdown:null};
+  if(!equipmentRates||equipmentRates.length===0)return{total:0,breakdown:null};
+  try{
+    const eq=JSON.parse(diver.equipment_requested);
+    if(eq.type==='full_set'){
+      const fullSetRate=equipmentRates.find(r=>r.item_name==='Full Set');
+      const rate=fullSetRate?parseFloat(fullSetRate.rate)||0:0;
+      return{total:rate,breakdown:'Full Set: '+money(rate)};
+    }
+    if(eq.type==='partial'&&eq.items){
+      let total=0,lines=[];
+      Object.entries(eq.items).forEach(([item,val])=>{
+        if(!val||item==='computer')return;
+        const match=equipmentRates.find(r=>(r.item_name||'').toLowerCase()===item.toLowerCase());
+        if(match){
+          const rate=parseFloat(match.rate)||0;
+          total+=rate;
+          lines.push(item+': '+money(rate));
+        }
+      });
+      return{total,breakdown:lines.join(' | ')};
+    }
+  }catch(e){}
+  return{total:0,breakdown:null};
+}
+function getEquipmentRateByName(name){
+  if(!name||!equipmentRates||equipmentRates.length===0)return null;
+  const match=equipmentRates.find(r=>r.is_active!==false&&(r.item_name||'').toLowerCase()===name.toLowerCase());
+  if(!match)return null;
+  return{rate:parseFloat(match.rate)||0,charge_type:match.charge_type||'per_dive'};
+}
+function ocBySubType(sub){return allOtherCharges.find(c=>c.sub_type&&c.sub_type.toLowerCase()===sub.toLowerCase())||null;}
+function ocByChargeType(type){return allOtherCharges.find(c=>c.charge_type&&c.charge_type.toLowerCase()===type.toLowerCase())||null;}
+function ocByName(name){return allOtherCharges.find(c=>(c.charge_name||'').trim().toLowerCase()===name.toLowerCase())||null;}
+function getFuelChargeForLevel(level){
+  if(!level||level.toLowerCase()==='low')return{amount:0,charge_type:'per_day'};
+  const ch=ocBySubType(level.toLowerCase());
+  return ch?{amount:parseFloat(ch.amount)||0,charge_type:(ch.charge_type||'per_dive')}:{amount:0,charge_type:'per_dive'};
+}
+function getSharkFeeAmount(){const ch=ocByName('Shark Fee')||ocByChargeType('shark_fee');return ch?parseFloat(ch.amount)||0:0;}
+function getSharkFeeChargeType(){const ch=ocByName('Shark Fee')||ocByChargeType('shark_fee');return ch?(ch.charge_type||'per_dive'):'per_dive';}
+function getMarineTaxAmount(){const ch=ocByName('Marine Tax')||ocByChargeType('marine_tax');return ch?parseFloat(ch.amount)||0:0;}
+function getMarineTaxChargeType(){const ch=ocByName('Marine Tax')||ocByChargeType('marine_tax');return ch?(ch.charge_type||'per_dive'):'per_dive';}
+function normalizeRateType(value){return String(value||'').trim().toLowerCase();}
+function normalizeRateTypeKey(value){return normalizeRateType(value).replace(/[\s_\-]+/g,'');}
+function isNitroxTierType(value){const key=normalizeRateTypeKey(value);return key.includes('nitrox')||key==='eanx';}
+function is15LTierType(value){const key=normalizeRateTypeKey(value);return key==='15l'||key==='15liter'||key==='15litre'||key.includes('15ltank')||key.includes('fifteen');}
+function isDiveTierType(value){
+  const key=normalizeRateTypeKey(value);
+  if(!key)return true;
+  if(isNitroxTierType(value)||is15LTierType(value))return false;
+  return key==='dive'||key==='dives'||key==='diverate'||key==='base'||key==='baserate'||key==='basediverate'||key==='normal'||key==='standard'||key==='regular'||key==='fundive'||key==='fundiving'||key==='fun';
+}
+function parseTierFrom(value){const n=Number(value);return Number.isFinite(n)&&n>0?n:1;}
+function parseTierTo(value){if(value===null||value===undefined||value==='')return 99999;const n=Number(value);return Number.isFinite(n)&&n>0?n:99999;}
+function parseRateAmount(value){const n=Number(value);return Number.isFinite(n)&&n>0?n:null;}
+function buildDiveRateTiers(){
+  let usableRows=(rateTiers||[]).filter(t=>isDiveTierType(t.rate_type));
+  if(usableRows.length===0)usableRows=(rateTiers||[]).filter(t=>!isNitroxTierType(t.rate_type)&&!is15LTierType(t.rate_type));
+  return usableRows.map(t=>({from:parseTierFrom(t.tier_from),to:parseTierTo(t.tier_to),rate:parseRateAmount(t.base_rate)})).filter(t=>Number.isFinite(t.from)&&Number.isFinite(t.to)&&Number.isFinite(t.rate)).sort((a,b)=>b.from-a.from);
+}
+function getTierDiveRate(diveCount){
+  const tier=buildDiveRateTiers().find(t=>(Number(diveCount)||0)>=t.from&&(Number(diveCount)||0)<=t.to);
+  return tier?tier.rate:null;
+}
+function getNitroxChargeForCount(count){
+  const tier=(rateTiers||[]).filter(t=>isNitroxTierType(t.rate_type)).find(t=>count>=parseTierFrom(t.tier_from)&&count<=parseTierTo(t.tier_to));
+  if(tier)return{amount:parseFloat(tier.base_rate)||0,charge_type:'per_dive'};
+  const ch=allOtherCharges.find(c=>(c.charge_type||'').toLowerCase()==='nitrox');
+  return ch?{amount:parseFloat(ch.amount)||0,charge_type:ch.charge_type||'per_dive'}:null;
+}
+function get15LChargeForCount(count){
+  const tier=(rateTiers||[]).filter(t=>is15LTierType(t.rate_type)).find(t=>count>=parseTierFrom(t.tier_from)&&count<=parseTierTo(t.tier_to));
+  if(tier)return{amount:parseFloat(tier.base_rate)||0,charge_type:'per_dive'};
+  const ch=allOtherCharges.find(c=>is15LTierType(c.charge_type));
+  return ch?{amount:parseFloat(ch.amount)||0,charge_type:ch.charge_type||'per_dive'}:null;
+}
+function packageSiteTokens(value){
+  if(Array.isArray(value))return value.flatMap(packageSiteTokens);
+  if(value&&typeof value==='object')return Object.values(value).flatMap(packageSiteTokens);
+  let raw=String(value||'').trim();
+  if(!raw)return[];
+  if((raw.startsWith('[')&&raw.endsWith(']'))||(raw.startsWith('{')&&raw.endsWith('}'))){
+    try{return packageSiteTokens(JSON.parse(raw));}catch(e){}
+  }
+  return raw.split(/[,|+;\n]+|\s+\/\s+/g).map(s=>s.trim().toLowerCase()).filter(Boolean);
+}
+function normalizePackageSites(value){return packageSiteTokens(value).sort().join('|');}
+function packageSitesFromRows(rows){return (rows||[]).flatMap(r=>packageSiteTokens(r.dive_site)).sort().join('|');}
+function findPackageBySiteKey(siteKey){return siteKey?(packageList||[]).find(p=>normalizePackageSites(p.dive_site)===siteKey)||null:null;}
+function getPackageDiveRateForActivity(act){const pkg=findPackageBySiteKey(normalizePackageSites(act?.dive_site));const price=Number(pkg?.price);return Number.isFinite(price)?price:null;}
+function getPackageDiveRateForRows(rows){const pkg=findPackageBySiteKey(packageSitesFromRows(rows));const price=Number(pkg?.price);return Number.isFinite(price)?price:null;}
+function getPackageGroupKey(act){return act?.schedule_id?('schedule:'+act.schedule_id):('date:'+(act?.date||'none'));}
+
+// ── RATE SELECTIONS (visit_rate_selections) ── mirrors diver-form.html ──────
+function findPackagesBySiteKey(siteKey){return siteKey?(packageList||[]).filter(p=>normalizePackageSites(p.dive_site)===siteKey):[];}
+function collectPackageMatchesForRows(rows){
+  const siteKey=packageSitesFromRows(rows);
+  let matches=findPackagesBySiteKey(siteKey);
+  if(matches.length===0){
+    const seen=new Set();
+    (rows||[]).forEach(r=>{
+      findPackagesBySiteKey(normalizePackageSites(r.dive_site)).forEach(p=>{if(!seen.has(p.id)){seen.add(p.id);matches.push(p);}});
+    });
+  }
+  return{siteKey,matches};
+}
+function rateFromSelection(sel){
+  if(!sel)return null;
+  if(sel.package_id){
+    const pkg=(packageList||[]).find(p=>p.id===sel.package_id);
+    const price=Number(pkg?.price);
+    return Number.isFinite(price)?price:null;
+  }
+  const custom=Number(sel.custom_price);
+  return Number.isFinite(custom)?custom:null;
+}
+async function fetchVisitRateSelections(visitId){
+  const{data,error}=await client.from('visit_rate_selections').select('*').eq('visit_id',visitId);
+  if(error){console.error('Unable to load rate selections:',error);return[];}
+  return data||[];
+}
+async function saveVisitRateSelection(visitId,answer){
+  const{error}=await client.from('visit_rate_selections').upsert({
+    dive_center_id:diveCenterId,visit_id:visitId,site_key:answer.siteKey,
+    package_id:answer.package_id||null,
+    custom_price:(answer.custom_price===null||answer.custom_price===undefined)?null:answer.custom_price
+  },{onConflict:'visit_id,site_key'});
+  if(error)throw error;
+}
+// Returns Map(groupKey→rate) or null if the secretary cancelled the modal.
+async function resolvePackageGroupRatesForVisit(visit,diver,packageGroups){
+  const map=new Map();
+  const pendingByKey=new Map();
+  const selections=await fetchVisitRateSelections(visit.id);
+  for(const[gKey,rows]of packageGroups){
+    const{siteKey,matches}=collectPackageMatchesForRows(rows);
+    if(!siteKey)continue;
+    const sel=selections.find(s=>s.site_key===siteKey)||null;
+    if(sel){
+      const rate=rateFromSelection(sel);
+      if(rate!==null){map.set(gKey,rate);continue;}
+    }
+    if(matches.length===1){
+      const price=Number(matches[0].price);
+      if(Number.isFinite(price)){map.set(gKey,price);continue;}
+    }
+    if(!pendingByKey.has(siteKey))pendingByKey.set(siteKey,{siteKey,rows:[],groupKeys:[],matches});
+    const p=pendingByKey.get(siteKey);
+    p.rows.push(...rows);p.groupKeys.push(gKey);
+  }
+  if(pendingByKey.size===0)return map;
+  const answers=await openRateSelectModal([...pendingByKey.values()],diver);
+  if(!answers)return null;
+  for(const a of answers){
+    await saveVisitRateSelection(visit.id,a);
+    const p=pendingByKey.get(a.siteKey);
+    if(p)p.groupKeys.forEach(gk=>map.set(gk,a.rate));
+  }
+  return map;
+}
+
+// ── RATE SELECT MODAL (promise-based stepper) ───────────────────────────────
+let _rateModal=null;
+function openRateSelectModal(items,diver){
+  return new Promise(resolve=>{
+    _rateModal={items,idx:0,answers:new Array(items.length).fill(null),resolve,diver};
+    renderRateModalStep();
+    document.getElementById('rateSelectModal').classList.add('show');
+  });
+}
+function rateModalDateLines(rows){
+  const byDate=new Map();
+  (rows||[]).filter(r=>!isCancelledActivity(r)).forEach(r=>{
+    const d=r.date||'No date';
+    if(!byDate.has(d))byDate.set(d,[]);
+    byDate.get(d).push(r.dive_site||'—');
+  });
+  return[...byDate.entries()].sort((a,b)=>a[0]>b[0]?1:-1).map(([d,sites])=>{
+    let label=d;
+    if(d!=='No date'){
+      const dt=new Date(d+'T00:00:00');
+      if(!isNaN(dt))label=dt.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    }
+    return`<div class="rate-modal-dateline"><strong>${esc(label)}</strong> — ${esc(sites.join(', '))}</div>`;
+  }).join('');
+}
+function renderRateModalStep(){
+  const st=_rateModal;
+  if(!st)return;
+  const item=st.items[st.idx];
+  const total=st.items.length;
+  const d=st.diver||{};
+  const diverName=((d.first_name||'')+' '+(d.last_name||'')).trim()||'Diver';
+  const cert=d.certification_level||'No certification';
+  document.getElementById('rateModalStep').textContent=total>1?`${st.idx+1} of ${total}`:'';
+  document.getElementById('rateModalDiver').innerHTML=`${esc(diverName)} · <span style="opacity:0.8">${esc(cert)}</span>`;
+  document.getElementById('rateModalDates').innerHTML=rateModalDateLines(item.rows);
+  const options=(item.matches.length?item.matches:(packageList||[]));
+  const prev=st.answers[st.idx];
+  const optHtml=options.map(p=>{
+    const checked=prev?(prev.package_id===p.id?'checked':''):'';
+    return`<label class="rate-modal-option">
+      <input type="radio" name="rateModalChoice" value="${esc(p.id)}" ${checked} onchange="document.getElementById('rateModalCustom').value=''">
+      <span class="rate-modal-option-name">${esc(p.package_name||'Package')}</span>
+      <span class="rate-modal-option-price">${money(p.price)}</span>
+    </label>`;
+  }).join('');
+  const customVal=(prev&&prev.package_id===null&&prev.custom_price!==null)?prev.custom_price:'';
+  document.getElementById('rateModalOptions').innerHTML=
+    (options.length?optHtml:'<div class="rate-modal-empty">No packages configured — enter a custom price below.</div>')+
+    `<div class="rate-modal-custom">
+      <label class="form-label">Custom price</label>
+      <input class="input" type="number" min="0" step="0.01" id="rateModalCustom" placeholder="0.00" value="${customVal}"
+        oninput="if(this.value!==''){document.querySelectorAll('input[name=rateModalChoice]').forEach(r=>r.checked=false);}">
+    </div>`;
+  document.getElementById('rateModalError').style.display='none';
+  document.getElementById('rateModalBack').style.display=st.idx>0?'inline-flex':'none';
+  document.getElementById('rateModalNext').textContent=(st.idx<total-1)?'Next →':'Apply';
+}
+function rateModalCaptureStep(){
+  const st=_rateModal;
+  const item=st.items[st.idx];
+  const checked=document.querySelector('input[name=rateModalChoice]:checked');
+  const customRaw=document.getElementById('rateModalCustom').value;
+  if(checked){
+    const pkg=(packageList||[]).find(p=>p.id===checked.value);
+    if(!pkg)return null;
+    st.answers[st.idx]={siteKey:item.siteKey,package_id:pkg.id,custom_price:null,rate:Number(pkg.price)||0};
+    return st.answers[st.idx];
+  }
+  if(customRaw!==''){
+    const val=Number(customRaw);
+    if(!Number.isFinite(val)||val<0)return null;
+    st.answers[st.idx]={siteKey:item.siteKey,package_id:null,custom_price:val,rate:val};
+    return st.answers[st.idx];
+  }
+  return null;
+}
+function rateModalNext(){
+  const st=_rateModal;
+  if(!st)return;
+  const answer=rateModalCaptureStep();
+  if(!answer){document.getElementById('rateModalError').style.display='block';return;}
+  if(st.idx<st.items.length-1){st.idx++;renderRateModalStep();return;}
+  const resolve=st.resolve,answers=st.answers.slice();
+  _rateModal=null;
+  document.getElementById('rateSelectModal').classList.remove('show');
+  resolve(answers);
+}
+function rateModalBack(){
+  const st=_rateModal;
+  if(!st||st.idx===0)return;
+  rateModalCaptureStep();
+  st.idx--;
+  renderRateModalStep();
+}
+function rateModalCancel(){
+  const st=_rateModal;
+  _rateModal=null;
+  document.getElementById('rateSelectModal').classList.remove('show');
+  if(st)st.resolve(null);
+}
+function firstBillableRow(rows){return (rows||[]).find(a=>!isCancelledActivity(a))||null;}
+function getActivityRowFlags(act){
+  if(!act||!act.notes)return{nitrox:false,is15l:false,nitroxCount:0,is15lCount:0};
+  try{
+    const parsed=JSON.parse(act.notes);
+    if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return{nitrox:false,is15l:false,nitroxCount:0,is15lCount:0};
+    const nitroxCount=(typeof parsed.nitrox_tank_count==='number'&&!isNaN(parsed.nitrox_tank_count))?parsed.nitrox_tank_count:0;
+    const is15lCount=(typeof parsed.tank_15l_count==='number'&&!isNaN(parsed.tank_15l_count))?parsed.tank_15l_count:0;
+    return{nitrox:!!parsed.nitrox_requested,is15l:!!parsed.tank_15l_requested,nitroxCount,is15lCount};
+  }catch(e){return{nitrox:false,is15l:false,nitroxCount:0,is15lCount:0};}
+}
+async function saveGroupPricedActivity(act){
+  act.total=calcRowValue(act);
+  const payload={
+    date:act.date,
+    dive_site:act.dive_site,
+    staff_name:act.staff_name,
+    dive_rate:parseFloat(act.dive_rate)||0,
+    fuel_surcharge:parseFloat(act.fuel_surcharge)||0,
+    marine_tax:parseFloat(act.marine_tax)||0,
+    shark_fee:parseFloat(act.shark_fee)||0,
+    nitrox_fee:parseFloat(act.nitrox_fee)||0,
+    fifteen_l_fee:parseFloat(act.fifteen_l_fee)||0,
+    equipment_rental:parseFloat(act.equipment_rental)||0,
+    equipment_breakdown:act.equipment_breakdown||null,
+    addons:parseFloat(act.addons)||0,
+    addon_breakdown:act.addon_breakdown||null,
+    status:act.status,
+    total:act.total
+  };
+  const{error}=await client.from('activities').update(payload).eq('id',act.id);
+  if(error)throw error;
+}
+async function applyChargesForGroupDiver(diver){
+  const visit=activeVisitFor(diver.id);
+  if(!visit||visit.is_paid===true||String(visit.visit_status||'').toLowerCase()==='closed')return{updated:0,missing:0,skipped:true};
+  const sorted=activities.filter(a=>a.diver_id===diver.id&&(a.visit_id?String(a.visit_id)===String(visit.id):true)).sort((a,b)=>{
+    if((a.date||'')>(b.date||''))return 1;
+    if((a.date||'')<(b.date||''))return -1;
+    return 0;
+  });
+  if(!sorted.length)return{updated:0,missing:0,skipped:false};
+  const tierCount=sorted.filter(a=>!isCancelledActivity(a)).length;
+  const tierDiveRate=getTierDiveRate(tierCount);
+  const isCourseVisit=((visit.experience_type||'')==='dive_course');
+  const isPackageMode=isPackagePricingMode();
+  const marineTaxType=getMarineTaxChargeType();
+  const sharkFeeType=getSharkFeeChargeType();
+  const nitroxInfo=getNitroxChargeForCount(tierCount);
+  const l15Info=get15LChargeForCount(tierCount);
+  const packageGroups=new Map();
+  if(isPackageMode){
+    sorted.filter(a=>!isCancelledActivity(a)).forEach(act=>{
+      const key=getPackageGroupKey(act);
+      if(!packageGroups.has(key))packageGroups.set(key,[]);
+      packageGroups.get(key).push(act);
+    });
+  }
+  // Resolve one rate per trip group: saved selection → single match → ask.
+  let groupRateMap=null;
+  if(isPackageMode&&!isCourseVisit&&packageGroups.size){
+    groupRateMap=await resolvePackageGroupRatesForVisit(visit,diver,packageGroups);
+    if(groupRateMap===null)return{updated:0,missing:0,skipped:true,cancelled:true};
+  }
+  const seenDates=new Set();
+  let updated=0,missing=0;
+  for(const act of sorted){
+    if(isCancelledActivity(act))continue;
+    if(isCourseVisit){
+      const course=courseRates.find(c=>c.id===visit.course_rate_id)||courseRates.find(c=>c.course_name===act.dive_site);
+      if(course)act.dive_rate=parseFloat(course.price)||0;
+      act.fuel_surcharge=0;act.marine_tax=0;act.shark_fee=0;act.nitrox_fee=0;act.fifteen_l_fee=0;act.equipment_rental=0;act.equipment_breakdown=null;
+      if((parseFloat(act.dive_rate)||0)<=0)missing++;
+      await saveGroupPricedActivity(act);updated++;
+      continue;
+    }
+    if(isPackageMode){
+      const gKey=getPackageGroupKey(act);
+      const groupRows=packageGroups.get(gKey)||[act];
+      const firstRow=firstBillableRow(groupRows);
+      const packageRate=(groupRateMap&&groupRateMap.has(gKey))?groupRateMap.get(gKey):null;
+      if(packageRate!==null)act.dive_rate=(firstRow&&act.id===firstRow.id)?packageRate:0;
+      else if((parseFloat(act.dive_rate)||0)<=0)missing++;
+      act.fuel_surcharge=0;act.marine_tax=0;act.shark_fee=0;
+      const pkgFlags=getActivityRowFlags(act);
+      const nitroxRate=getEquipmentRateByName('Nitrox');
+      act.nitrox_fee=(nitroxRate&&pkgFlags.nitroxCount>0)?(nitroxRate.charge_type==='per_day'?nitroxRate.rate:nitroxRate.rate*pkgFlags.nitroxCount):0;
+      const l15Rate=getEquipmentRateByName('15L');
+      act.fifteen_l_fee=(l15Rate&&pkgFlags.is15lCount>0)?(l15Rate.charge_type==='per_day'?l15Rate.rate:l15Rate.rate*pkgFlags.is15lCount):0;
+      act.equipment_rental=0;act.equipment_breakdown=null;
+      await saveGroupPricedActivity(act);updated++;
+      continue;
+    }
+    const isFirstOfDate=!seenDates.has(act.date||'__none__');
+    if(act.date)seenDates.add(act.date);
+    const site=diveSiteList.find(s=>(s.site_name||'').toLowerCase()===(act.dive_site||'').toLowerCase());
+    if(tierDiveRate!==null)act.dive_rate=tierDiveRate;
+    else if((parseFloat(act.dive_rate)||0)<=0)missing++;
+    const fuelInfo=getFuelChargeForLevel(site?site.fuel_estimate||'Low':'Low');
+    act.fuel_surcharge=(fuelInfo.charge_type==='per_day')?(isFirstOfDate?fuelInfo.amount:0):fuelInfo.amount;
+    act.marine_tax=(marineTaxType==='per_day')?(isFirstOfDate?getMarineTaxAmount():0):getMarineTaxAmount();
+    if(site&&site.shark_fee){
+      const sfAmt=getSharkFeeAmount();
+      act.shark_fee=(sharkFeeType==='per_day')?(isFirstOfDate?sfAmt:0):sfAmt;
+    }else act.shark_fee=0;
+    const rowFlags=getActivityRowFlags(act);
+    act.nitrox_fee=(rowFlags.nitrox&&nitroxInfo)?parseFloat(nitroxInfo.amount)||0:0;
+    act.fifteen_l_fee=(rowFlags.is15l&&l15Info)?parseFloat(l15Info.amount)||0:0;
+    if(isFirstOfDate){
+      const eq=calcEquipmentRental(diver);
+      act.equipment_rental=eq.total;
+      act.equipment_breakdown=eq.breakdown?{breakdown:eq.breakdown}:null;
+    }else{
+      act.equipment_rental=0;
+      act.equipment_breakdown=null;
+    }
+    await saveGroupPricedActivity(act);updated++;
+  }
+  return{updated,missing,skipped:false};
+}
+function openBulkReview(groupId){
+  reviewGroupId=groupId;
+  const g=groupById(groupId);
+  document.getElementById('reviewModalTitle').textContent='Review & Apply Charges - '+esc(g?.group_name||'Group');
+  document.getElementById('reviewModalSub').textContent='Review member activities, then apply charges for the group in one click.';
+  document.getElementById('reviewFromDate').value=todayStr();
+  document.getElementById('reviewToDate').value=todayStr();
+  renderReviewBody();
+  document.getElementById('reviewModal').classList.add('show');
+}
+function renderReviewBody(){
+  if(!reviewGroupId)return;
+  const range=reviewRange();
+  const members=groupMembers(reviewGroupId).filter(isVisible);
+  if(!members.length){
+    document.getElementById('reviewBody').innerHTML='<div class="empty">No visible members in this group.</div>';
+    document.getElementById('confirmBillsBtn').disabled=true;
+    return;
+  }
+  const memberData=members.map(d=>{
+    const visit=activeVisitFor(d.id);
+    const dayActs=activities.filter(a=>a.diver_id===d.id&&inReviewRange(a,range)&&!isCancelledActivity(a)&&(visit?(!a.visit_id||a.visit_id===visit.id):true));
+    const dayTotal=dayActs.reduce((s,a)=>s+rowTotal(a),0);
+    return{d,visit,dayActs,dayTotal};
+  });
+  const noDivesCount=memberData.filter(x=>!x.dayActs.length).length;
+  const withActivities=memberData.length-noDivesCount;
+  const groupRunning=members.reduce((acc,d)=>{
+    const rb=runningBill(d.id);
+    acc.total+=rb.total;acc.paid+=rb.paid;acc.balance+=rb.balance;
+    return acc;
+  },{total:0,paid:0,balance:0});
+  const rangeLabel=range.from===range.to?fmt(range.from):`${fmt(range.from)} to ${fmt(range.to)}`;
+  let summaryHtml=`<div class="review-summary-bar">
+    <strong>${members.length} members</strong> · 
+    ${withActivities} with activities · 
+    ${noDivesCount} with no activities for ${rangeLabel}<br>
+    <strong>Group running bill:</strong> ${money(groupRunning.total)} · Paid: ${money(groupRunning.paid)} · Balance: ${money(groupRunning.balance)}
+  </div>`;
+  let rowsHtml='';
+  memberData.forEach(({d,visit,dayActs,dayTotal})=>{
+    const hasActs=dayActs.length>0;
+    const actDetail=hasActs?dayActs.map(a=>`${esc(a.dive_site||'-')} · ${money(rowTotal(a))}`).join('<br>'):'No activities recorded for this date range';
+    const flagHtml=diverFlagBadgesInline(d);
+    const rb=runningBill(d.id);
+    const exp=visit?.experience_type==='dive_course'?'Course':'Fun diving';
+    const statusFlag=!hasActs?'<span class="review-flag exception">No activities - course or manual billing</span>':'<span class="review-flag ok">Ready for Apply Charges</span>';
+    rowsHtml+=`<div class="review-diver-row">
+      <div style="flex:1">
+        <div class="review-diver-name">${esc((d.first_name||'')+' '+(d.last_name||''))} ${flagHtml}</div>
+        <div class="review-diver-detail">${esc(exp)} · ${actDetail}</div>
+        <div class="review-diver-detail"><strong>Range total: ${money(dayTotal)}</strong> &nbsp;·&nbsp; Running Bill: ${money(rb.total)} · Balance: ${money(rb.balance)}</div>
+        ${statusFlag}
+      </div>
+      <button class="btn btn-soft btn-sm" onclick="openFormNewTab('${d.id}')">Open Form</button>
+    </div>`;
+  });
+  document.getElementById('confirmBillsBtn').disabled=withActivities===0;
+  document.getElementById('reviewBody').innerHTML=summaryHtml+rowsHtml;
+}
+async function confirmGroupBills(){
+  const range=reviewRange();
+  const members=groupMembers(reviewGroupId).filter(isVisible);
+  const eligible=members.filter(d=>{
+    const visit=activeVisitFor(d.id);
+    return activities.some(a=>a.diver_id===d.id&&inReviewRange(a,range)&&!isCancelledActivity(a)&&(visit?(!a.visit_id||a.visit_id===visit.id):true));
+  });
+  if(!eligible.length){showToast('No activities to apply charges to.','error');return;}
+  const btn=document.getElementById('confirmBillsBtn');
+  if(btn)btn.disabled=true;
+  try{
+    let diversUpdated=0,rowsUpdated=0,missing=0,cancelled=0;
+    for(const d of eligible){
+      const result=await applyChargesForGroupDiver(d);
+      if(result.updated>0)diversUpdated++;
+      rowsUpdated+=result.updated;
+      missing+=result.missing;
+      if(result.cancelled)cancelled++;
+    }
+    await loadData();
+    renderReviewBody();
+    renderAll();
+    if(missing>0){
+      const msg=isPackagePricingMode()
+        ?'Some package prices were not found. Check Settings > Pricing & Rates > Packages.'
+        :'Some dive rate tiers were not found. Check Settings > Pricing & Rates > Base Rate Tiers.';
+      showToast(msg,'error');
+      return;
+    }
+    if(cancelled>0){
+      showToast(`Charges applied for ${diversUpdated} diver${diversUpdated!==1?'s':''}. ${cancelled} skipped — no rate was chosen.`,'error');
+      return;
+    }
+    showToast(`Charges applied for ${diversUpdated} diver${diversUpdated!==1?'s':''}.`,'success');
+  }catch(err){
+    console.error(err);
+    showToast(err?.message||'Could not apply charges.','error');
+  }finally{
+    if(btn)btn.disabled=false;
+  }
+}
+
+// ─── Group create ──────────────────────────────────────────────────────────────
+async function createGroup(){
+  const name=document.getElementById('groupName').value.trim();
+  if(!name){showToast('Add a group name first.','error');return;}
+  const payload={
+    dive_center_id:diveCenterId,
+    group_name:name,
+    leader_name:document.getElementById('leaderName').value.trim()||null,
+    expected_count:parseInt(document.getElementById('expectedCount').value)||null,
+    arrival_date:document.getElementById('groupArrival').value||null,
+    departure_date:document.getElementById('groupDeparture').value||null,
+    notes:document.getElementById('groupNotes').value.trim()||null
+  };
+  const{data,error}=await client.from('groups').insert(payload).select().single();
+  if(error){console.error(error);showToast('Could not create group.','error');return;}
+  closeModal('groupModal');
+  ['groupName','leaderName','expectedCount','groupArrival','groupDeparture','groupNotes'].forEach(id=>document.getElementById(id).value='');
+  await loadData();
+  renderAll();
+  copyText(registrationLink(data.id));
+}
+
+// ─── Registration link ─────────────────────────────────────────────────────────
+function registrationLink(groupId=null){
+  const base=location.origin+location.pathname.replace(/[^/]*$/,'register.html')+'?dc='+encodeURIComponent(diveCenterId);
+  return groupId?base+'&group_id='+encodeURIComponent(groupId):base;
+}
+async function copyText(txt){await navigator.clipboard.writeText(txt);showToast('Link copied.','success');}
+
+// ─── Notices / Toast ───────────────────────────────────────────────────────────
+function showInlineNotice(title,body,type=''){
+  const n=document.getElementById('feedbackNotice');
+  if(!n) return;
+  n.innerHTML=`<div class="inline-note ${type==='warn'?'warn':''}"><div class="inline-note-title">${esc(title)}</div><div>${body}</div></div>`;
+  setTimeout(()=>{if(n) n.innerHTML='';},10000);
+}
+function showComingSoon(name){showInlineNotice(name+' is not available yet','This section will be added in a future build.','warn');}
+
+async function handleLogout(){if(client) await client.auth.signOut();location.href='login.html';}
+
+// ─── Generic confirm modal ─────────────────────────────────────────────────────
+function showConfirm(message, onConfirm){
+  document.getElementById('confirmMessage').textContent=message;
+  const btn=document.getElementById('confirmActionBtn');
+  const fresh=btn.cloneNode(true);
+  btn.parentNode.replaceChild(fresh,btn);
+  fresh.addEventListener('click',()=>{closeModal('confirmModal');onConfirm();});
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+// ─── Remove diver from group → deletes diver record entirely ──────────────────
+async function removeFromGroup(diverId){
+  const d=divers.find(x=>x.id===diverId);
+  const name=d?((d.first_name||'')+' '+(d.last_name||'')).trim():'this diver';
+  showConfirm(
+    `Are you sure you want to remove ${name} from this group? This action cannot be undone. If this was a mistake, the diver will need to re-register using the correct group link.`,
+    async ()=>{
+      const{error}=await client.from('divers').delete().eq('id',diverId);
+      if(error){console.error(error);showToast('Could not remove diver.','error');return;}
+      divers=divers.filter(x=>x.id!==diverId);
+      selectedDivers.delete(diverId);
+      manualClosedSelections.delete(diverId);
+      showToast(name+' removed.','success');
+      renderAll();
+    }
+  );
+}
+
+// ─── Delete Group ──────────────────────────────────────────────────────────────
+async function deleteGroup(groupId){
+  const g=groups.find(x=>x.id===groupId);
+  const gName=g?esc(g.group_name||'Unnamed Group'):'this group';
+  // Collect member diver IDs
+  const memberIds=divers.filter(d=>d.group_id===groupId).map(d=>d.id);
+
+  // Check 1: any schedule_divers rows for members
+  const hasSchedule=memberIds.length&&scheduleDivers.some(sd=>memberIds.includes(sd.diver_id));
+  // Check 2: any open visits for members
+  const hasOpenVisits=memberIds.length&&visits.some(v=>memberIds.includes(v.diver_id)&&v.visit_status!=='closed'&&v.is_paid!==true);
+  // Check 3: any activities rows for members
+  const hasActivities=memberIds.length&&activities.some(a=>memberIds.includes(a.diver_id));
+
+  if(hasSchedule||hasOpenVisits||hasActivities){
+    let reasons=[];
+    if(hasSchedule) reasons.push('active scheduling records');
+    if(hasOpenVisits) reasons.push('open bills');
+    if(hasActivities) reasons.push('existing activity records');
+    document.getElementById('deleteGroupBlockedMsg').textContent=
+      'This group cannot be deleted because it has '+reasons.join(', ')+'. Please resolve these before deleting.';
+    document.getElementById('deleteGroupBlockedModal').classList.add('show');
+    return;
+  }
+
+  // Safe to delete — show confirmation
+  document.getElementById('deleteGroupConfirmTitle').textContent='Delete '+gName+'?';
+  document.getElementById('deleteGroupConfirmMsg').textContent='This will permanently delete the group "'+gName+'" and cannot be undone.';
+  const btn=document.getElementById('deleteGroupConfirmBtn');
+  const fresh=btn.cloneNode(true);
+  btn.parentNode.replaceChild(fresh,btn);
+  fresh.addEventListener('click',async()=>{
+    closeModal('deleteGroupConfirmModal');
+    const{error}=await client.from('groups').delete().eq('id',groupId);
+    if(error){console.error(error);showToast('Could not delete group.','error');return;}
+    groups=groups.filter(x=>x.id!==groupId);
+    selectedGroups.delete(groupId);
+    showToast(gName+' deleted.','success');
+    renderAll();
+  });
+  document.getElementById('deleteGroupConfirmModal').classList.add('show');
+}
+
+// ─── Grouping Selection (Individual Mode) ──────────────────────────────────────
+function toggleGroupingSelection(diverId){
+  if(groupingSelection.has(diverId)){
+    groupingSelection.delete(diverId);
+  } else {
+    groupingSelection.add(diverId);
+  }
+  updateGroupingBar();
+  // Re-render to update card highlight without full renderAll to avoid losing state
+  renderAll();
+}
+
+function updateGroupingBar(){
+  const bar=document.getElementById('groupingActionBar');
+  const label=document.getElementById('groupingBarLabel');
+  if(!bar) return;
+  const count=groupingSelection.size;
+  if(count>=1){
+    bar.classList.add('show');
+    label.textContent=count+' diver'+(count===1?'':' s')+' selected';
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+function clearGroupingSelection(){
+  groupingSelection.clear();
+  updateGroupingBar();
+  renderAll();
+}
+
+function openGroupFromSelectionModal(){
+  if(groupingSelection.size<2){
+    showToast('Select at least 2 divers to create a group.','error');
+    return;
+  }
+  document.getElementById('groupFromSelectionName').value='';
+  document.getElementById('groupFromSelectionNote').style.display='none';
+  document.getElementById('groupFromSelectionModal').classList.add('show');
+}
+
+async function confirmGroupFromSelection(){
+  const name=document.getElementById('groupFromSelectionName').value.trim();
+  if(!name){showToast('Add a group name first.','error');return;}
+  if(groupingSelection.size<2){
+    document.getElementById('groupFromSelectionNote').style.display='';
+    return;
+  }
+  const ids=[...groupingSelection];
+  // Insert new group
+  const{data:newGroup,error:gErr}=await client.from('groups').insert({
+    dive_center_id:diveCenterId,
+    group_name:name,
+    is_active:true
+  }).select().single();
+  if(gErr){console.error(gErr);showToast('Could not create group.','error');return;}
+
+  // Update each diver's group_id in the divers table
+  const{error:dErr}=await client.from('divers').update({group_id:newGroup.id}).in('id',ids);
+  if(dErr){console.error(dErr);showToast('Group created but could not assign divers.','error');
+    await loadData();groupingSelection.clear();updateGroupingBar();renderAll();closeModal('groupFromSelectionModal');return;}
+
+  closeModal('groupFromSelectionModal');
+  groupingSelection.clear();
+  updateGroupingBar();
+  await loadData();
+  renderAll();
+  showToast('Group "'+esc(name)+'" created with '+ids.length+' divers.','success');
+}
+
+// ─── Exports ───────────────────────────────────────────────────────────────────
+window.setMode=setMode;window.renderAll=renderAll;window.openGroupModal=openGroupModal;window.closeModal=closeModal;window.copyText=copyText;window.clearSelections=clearSelections;window.selectAllVisible=selectAllVisible;window.createGroup=createGroup;window.addSelectedToSchedule=addSelectedToSchedule;window.confirmAddToSchedule=confirmAddToSchedule;window.handleLogout=handleLogout;window.showComingSoon=showComingSoon;window.openFormNewTab=openFormNewTab;window.toggleGroup=toggleGroup;window.toggleDiver=toggleDiver;window.selectGroupMembers=selectGroupMembers;window.bulkSetExperience=bulkSetExperience;window.setDiverExp=setDiverExp;window.setDiverCourse=setDiverCourse;window.openBulkReview=openBulkReview;window.renderReviewBody=renderReviewBody;window.confirmGroupBills=confirmGroupBills;window.removeFromGroup=removeFromGroup;window.showConfirm=showConfirm;window.deleteGroup=deleteGroup;window.toggleGroupingSelection=toggleGroupingSelection;window.clearGroupingSelection=clearGroupingSelection;window.openGroupFromSelectionModal=openGroupFromSelectionModal;window.confirmGroupFromSelection=confirmGroupFromSelection;window.onEquipMgmtDateChange=onEquipMgmtDateChange;window.saveEquipRemarks=saveEquipRemarks;window.printEquipmentPrep=printEquipmentPrep;
+
+const _sidebar=document.getElementById('sidebar');
+const _overlay=document.getElementById('sidebarOverlay');
+_sidebar.addEventListener('click',function(e){if(window.innerWidth<=900&&!_sidebar.classList.contains('open')){e.preventDefault();_sidebar.classList.add('open');_overlay.classList.add('open');document.body.style.overflow='hidden';}});
+_overlay.addEventListener('click',function(){_sidebar.classList.remove('open');_overlay.classList.remove('open');document.body.style.overflow='';});
+
+init();
+</script></body></html>
