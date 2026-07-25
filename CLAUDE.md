@@ -21,7 +21,7 @@ sections for schema, page map, design direction, and migration plan.
 - `D:\Rebuild\aquadesk-app\` — the actual Next.js rebuild. This is its own
   separate git repo (`git -C aquadesk-app ...`) — two independent repos
   in this tree, don't mix up which one a `git` command should target.
-- `D:\Rebuild\database\` — tracked SQL migration files (001–010 so far),
+- `D:\Rebuild\database\` — tracked SQL migration files (001–011 so far),
   the source of truth for schema/RLS/functions. Git-tracked as of
   2026-07-25 (previously wasn't — see resolved "Known gap" note).
 
@@ -50,37 +50,30 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
-## Current state (as of 2026-07-25, continued session — Staff + Crew)
+## Current state (as of 2026-07-25, continued session — Scheduling, rebuild complete)
 
-**Reports (all 8 tabs), Divers + Diver Detail (all 12 stages), and now
-Staff (roster CRUD + certifications) plus the public Crew schedule view
-are all fully built, verified, and committed.** The `D:\Rebuild` root is
-now also a git repo (see the folder-layout note above) with its own
-initial commit tracking `database/*.sql` and the old app's reference
-files — `aquadesk-app/` stays a separate repo, excluded via
+**Every page in the originally-agreed build order is now built, verified,
+and committed: Settings → Boat Manifest → Reports → Divers → Staff →
+Scheduling.** This closes out the multi-session rebuild arc. The
+`D:\Rebuild` root is its own git repo (see the folder-layout note above)
+with its own commit history tracking `database/*.sql` and the old app's
+reference files — `aquadesk-app/` stays a separate repo, excluded via
 `.gitignore` in the root repo. Check `git status` in **both** repos
 before assuming either is clean, since this file is a snapshot at
 write-time, not live state.
 
-**Migration 010** (`database/010_staff_roster_fields.sql`): emergency
-contact fields on `staff` (same shape as divers' migration 008), a new
-`staff_certifications` table, a split `staff_select` RLS policy (owner
-sees the whole roster, a secretary sees only their own linked row —
-previously any tenant user could see everyone), and two new RPCs:
-`generate_daily_staff_token` (any authenticated tenant user, not
-owner-gated) and `get_crew_schedule` (anon-callable, token + same-day
-check). See the Staff write-up below for the full design reasoning.
+**Migration 011** (`database/011_groups_fields.sql`): adds
+`departure_date`/`notes` to `groups` — the old app's registration-link
+group form collects both, the original schema had neither. See the
+Scheduling write-up below for the full design reasoning and how it
+absorbed the deferred `divers.html` group/push-to-schedule workflow.
 
 ### Not yet built
 
-**Scheduling only** — everything else in the originally-agreed build
-order (Settings → Boat Manifest → Reports → Divers → Staff) is done.
-Scheduling is also where the old app's `divers.html` group-creation/
-equipment-prep/"push to schedule" workflow lands (deferred from the
-Divers build), and where `schedules`/`schedule_divers` will finally get
-a real writer — until then, the just-built Crew schedule view has
-nothing to display without directly-seeded test rows (expected, not a
-bug — called out in the Staff write-up below).
+**Nothing** — this was the last page. Known, documented, non-blocking
+gaps remain (see "Known gaps" below and the inline call-outs in each
+page's write-up) but no page is missing a build. Future work from here
+is refinement/gap-closing, not new pages, unless the user opens new scope.
 
 ### What's built and verified (in a real browser, not just compiled)
 
@@ -644,17 +637,166 @@ test login mysteriously 500s instead of just failing normally, diff
 every column against a real user row before assuming the password hash
 is wrong.
 
-### Not yet built
+**Scheduling** — built end-to-end 2026-07-25, the last page in the
+rebuild's agreed order and the one deliberately saved for hardest/last.
+Absorbs the old app's `divers.html` group-creation/push-to-schedule
+workflow, deferred there during the Divers build. Four scope decisions
+confirmed with the user before designing this (see the approved plan):
+skip the old app's separate staff/diver "clips" prep phase entirely
+(assign directly per trip instead — `diver_staff_defaults` still
+pre-fills a diver's usual staff as a one-off suggestion, not a whole
+prepped-team carry-over); Boat Return writes zero-priced `activities`
+rows only, no pricing logic in Scheduling at all (pricing happens later
+via Diver Detail's existing Auto-Price flow); both group-creation flows
+are in scope (pre-arrival registration-link groups and ad-hoc grouping);
+migration 011 adds `groups.departure_date`/`notes`. The blueprint itself
+barely specs this page ("Trip/schedule builder, boat & staff
+assignment," Full/Full permissions) — almost everything concrete came
+from reading `scheduling.html` (3,600 lines) and `divers.html`'s
+group/push workflow in full this session, not from the blueprint.
 
-Scheduling — the last remaining page. See "Current state" above for
-what it still owes (the `divers.html` group-creation workflow, the real
-`schedules`/`schedule_divers` writer the Crew view is waiting on, and
-the "another boat joined us" Dashboard alert signal).
+Good news going in: **every scheduling table already existed in the
+Stage 1a schema with full RLS** — `schedules`, `schedule_sites`,
+`schedule_divers`, `groups`, `diver_staff_defaults`, `fuel_logs`,
+`boats.capacity` were all real and simply unused by any writer yet. This
+was genuinely greenfield application code, not a schema-risk build.
+
+- **The rebuild does NOT replicate the old app's JSON-blob-in-
+  `schedules.notes` pattern** — trip structure lives in the real,
+  already-existing columns/joins (`schedule_sites` for multi-site,
+  `schedule_divers` columns for per-diver staff/experience_type/is_15l/
+  nitrox_requested); `schedules.notes` is free-text notes only, matching
+  this project's standing "no JSON-blob structural state" rule.
+- **`schedules.cancelled` is implemented for real** this time (a real
+  column, unlike the old app's dead flag that had no Cancel button
+  anywhere) — Cancel sets `cancelled=true`, keeps the row/assignment
+  history, gated only on `!closed` (no zero-activities requirement,
+  unlike Delete). Delete stays gated on `!closed AND zero activities
+  rows`, same guard as the old app. Verified both: cancel persisted
+  correctly and disappeared from `/crew` (which already filters
+  `cancelled=false`) while staying visible in Scheduling's own day view;
+  delete correctly blocked by a seeded `activities` row with the right
+  error message, then succeeded once the blocker was removed, with
+  `schedule_sites`/`manifests` confirmed cascade-deleted via direct SQL.
+- **Trip builder** (`schedules.data.ts`/`actions.ts`, `TripBuilderPanel`):
+  date picker (defaults to `todayManila()`), boat mode (Own Boat / Join
+  Ride / Rental — the latter two both just set `is_joiner=true` with a
+  free-text name, an accepted cosmetic gap since re-opening a Rental
+  trip shows it as Join Ride; confirmed with the user this doesn't need
+  a schema change since neither currently drives different behavior),
+  multi-site selection, departure time, notes. `schedule_sites` is
+  deleted-and-reinserted fresh on every save (no independent identity to
+  preserve, same reasoning as `schedule_divers`) — verified a multi-site
+  edit doesn't orphan old rows. The `schedules_create_manifest` trigger
+  (already existed from Stage 1a) fires correctly on every new trip —
+  confirmed a matching `manifests` row exists after insert, without
+  Scheduling ever inserting into `manifests` itself.
+- **Diver assignment — the core loop** (`DiverAssignmentPanel`,
+  `ExperienceTypeModal`): search divers by name or bulk-pick a whole
+  group, tag `experience_type`(+course) only for divers who don't
+  already have a qualifying open `visits` row (reuses the exact insert
+  shape from `divers/[id]/actions.ts`'s `createVisit`, written fresh
+  here per this codebase's established no-cross-page-action-imports
+  convention), assign staff/15L/nitrox per diver, `schedule_divers`
+  deleted-and-reinserted fresh on every save. `diver_staff_defaults`
+  upserts or clears per an explicit per-diver "remember this pairing"
+  toggle. Verified: a diver with an existing open visit auto-adds using
+  that visit's real experience type (no modal); a diver with none
+  triggers the tag modal; a second save doesn't duplicate/orphan
+  `schedule_divers`; `diver_staff_defaults` upserts/clears correctly.
+- **Non-blocking warnings** (`WarningsBanner`) — capacity (skipped if
+  `boats.capacity` is null), 1:4 staff:diver ratio (green/orange/red),
+  same-day double-booking (diver/staff/boat — necessarily date-level
+  only, since `schedules` has no trip-duration column for true
+  time-range overlap detection), mixed cert-level/nitrox within one
+  staff group. Verified all four render at the right thresholds and
+  never block Save — confirmed by seeding 5 divers onto a
+  capacity-4 boat under one staff member (correctly showed "5/4" and the
+  capacity warning) and cross-referencing a diver/boat already booked on
+  a second same-day trip (correctly flagged on both).
+- **Confirm recap** (`ConfirmPanel`) — read-only tank tally + per-staff
+  diver groupings, plus a link out to `/staff` for crew-code generation
+  (no separate token-generation trigger built here — Staff's existing
+  "Generate Today's Crew Code" button already covers it, confirmed
+  working end-to-end against a real Scheduling-created trip).
+- **Boat Returned** (`markBoatReturned`) — gated on `!closed && !cancelled
+  && departure time has passed` (Manila-anchored comparison, same
+  day-boundary convention as everywhere else in this app). Per diver
+  with a resolvable open visit, inserts one zero-priced `activities` row
+  per dive site (`status:"completed"`, pre-filling `dive_site`/
+  `staff_name`/`schedule_id` — all already-known at this point, unlike
+  Diver Detail's blank-slate manual-entry flow) — confirmed these rows
+  are visible and Auto-Priceable from Diver Detail afterward. If a
+  diver's open visit can't be resolved (e.g. closed out via Diver Detail
+  between assignment and return), that diver is skipped and named in a
+  warning rather than silently dropped or auto-creating a visit outside
+  the established explicit-creation pattern. For non-joiner trips with
+  liters entered: one `fuel_logs` row (matching Settings > Equipment's
+  existing summing semantics) plus a real decrement of
+  `dive_centers.fuel_gasoline_level`/`fuel_diesel_level` — verified the
+  level went from 100→80 after a 20-liter return, and confirmed
+  join-ride trips never write `fuel_logs` even when liters are entered.
+  Sets `schedules.closed=true` (a real column, not a JSON flag).
+- **Groups** (`GroupsPanel`) — both flows built. Registration-link
+  groups (`group_name`, `leader_name`, `arrival_date`, `departure_date`,
+  `expected_count`, `notes` — the last two via migration 011) generate a
+  real `/register?dc=<id>&group=<groupId>` link; verified the link opens
+  the actual registration wizard pre-associated with the group ("0/6
+  registered"). Ad-hoc grouping (name + 2+ existing divers) bulk-sets
+  `divers.group_id`; verified via direct SQL. Deletion re-checks
+  blockers **server-side** (schedule_divers rows / open unpaid visit /
+  activities rows, named per diver) — never trusts a client-only
+  pre-check — verified a group with two divers holding open unpaid
+  visits was correctly blocked with both names and reasons listed, then
+  succeeded once a clean group (0 members) was deleted instead.
+- **Cross-page regression pass, and one real bug found doing it**:
+  Dashboard's "Boats Today" widget, Boat Manifest's trip
+  dropdown/District/Port editing, and `/crew`'s full render (multi-site,
+  staff groupings, tank tally) were all confirmed working against real
+  Scheduling-created data — but `boat-manifest/data.ts`'s
+  `loadTripsForDate` and two of `dashboard/data.ts`'s `schedules`
+  queries **had no `cancelled` filter at all**, because `cancelled` was
+  a dead, never-written column before this session. Once Scheduling
+  made it real, a cancelled trip was still showing up in Boat Manifest's
+  trip picker and Dashboard's "Boats Today"/join-ride-alert queries.
+  Fixed in place (`.eq("cancelled", false)` added to all three queries)
+  and re-verified — the cancelled test trip disappeared from both pages
+  immediately, the two real trips still showed correctly. `/crew`'s
+  `get_crew_schedule` RPC already filtered `cancelled=false` from when
+  it was built during the Staff session, so it needed no fix.
+- **Dead-code audit finding**: `getStaffOptions`/`getCourseRateOptions`
+  (thin `actions.ts` wrappers around the `data.ts` loaders, written
+  anticipating a client-side refetch need) were never actually called —
+  `staffOptions`/`courseRates` end up loaded once server-side in
+  `page.tsx` and passed down as static props instead, since neither
+  changes mid-session often enough to need live refetching. Found by the
+  usage-count pass (retrospective #25's lesson), removed along with
+  their now-unused `loadStaffOptions`/`loadCourseRateOptions` imports.
+
+**Testing-technique note, not a bug**: cleaning up the test dive center
+hit `schedules_created_by_fkey` (a plain FK, no cascade, from
+`schedules.created_by` to `users.id`) when deleting `dive_centers` in
+one transaction — even after explicitly nulling `created_by` earlier in
+the *same* transaction, the delete still failed against that FK.
+Running the `update ... set created_by = null` as its own committed
+statement first, then deleting `dive_centers` separately, worked cleanly.
+Root cause not fully pinned down (possibly how Postgres orders
+multi-table cascades triggered by one parent delete), but confirmed as a
+cleanup-script-ordering quirk, not a schema or application bug — no
+production code path ever deletes a `dive_centers` row this way. Worth
+remembering for any future test cleanup: if a delete inside a dive
+center hits an unexpected FK from a column that references `users`
+directly (not just `dive_center_id` cascades), null it out in its own
+prior transaction, not the same one as the final delete.
 
 ### Known gaps (tracked in `aquadesk-app/KNOWN_GAPS.md`, none blocking)
 
-1. Dashboard's "another boat joined us today" alert — no signal captured
-   anywhere for that direction until Scheduling defines how it's entered.
+1. Dashboard's "another boat joined us today" alert — still no signal
+   captured anywhere for that direction; Scheduling's `schedules` table
+   has `is_joiner`/`joiner_boat_name` for "we joined them," confirmed
+   during this build, but nothing for the reverse direction. Would need
+   a real design call (a new column/flow) to close, not something to
+   invent unilaterally.
 2. Settings has no page to edit a dive center's name/phone/address/logo
    after creation — needs a real design call (which tab? logo needs its
    own Storage bucket) not made unilaterally.
@@ -664,31 +806,29 @@ the "another boat joined us" Dashboard alert signal).
 
 ### Suggested next step
 
-**Scheduling is the only remaining page.** That closes out the build
-order agreed at the start of this multi-session arc: Settings (done) →
-Boat Manifest (done) → Reports (done) → Divers (done) → Staff (done,
-this session, placed after confirming with the user it should come
-before Scheduling) → Scheduling (last, deliberately saved for hardest).
-Scheduling also owes: the old app's `divers.html` group-creation/
-equipment-prep/"push to schedule" workflow (deferred from the Divers
-build), a real writer for `schedules`/`schedule_divers` (the just-built
-Crew view is waiting on this), and the "another boat joined us today"
-Dashboard alert signal (documented gap since Dashboard was built).
+**The rebuild's originally-agreed page-by-page build order is complete**:
+Settings → Boat Manifest → Reports → Divers → Staff → Scheduling, all
+built, verified in a real browser, and committed. There is no next page
+implied by prior planning — whatever comes next is either a refinement
+of what's already built, closing one of the documented known gaps below,
+or new scope the user brings, not something to assume unilaterally.
 
-Known, documented gaps worth revisiting if Scheduling or a future
-session touches these areas again: package-mode nitrox/15L add-on
-pricing (Divers, no dedicated mechanism, stays manual entry),
-`equipment_rental` never auto-computed from a diver's saved equipment
-selection (Divers, also manual entry), Diver Detail only ever shows the
-diver's single most recent visit (no full multi-visit history
-browser), and the Crew schedule view's join-ride info is limited to
-`schedules.is_joiner`/`joiner_boat_name` (the "we joined them" direction
-only) — none of these were blocking for their respective builds, all
-called out inline in the write-ups above.
+Known, documented gaps worth revisiting whenever a future session
+touches these areas: package-mode nitrox/15L add-on pricing (Divers, no
+dedicated mechanism, stays manual entry), `equipment_rental` never
+auto-computed from a diver's saved equipment selection (Divers, also
+manual entry), Diver Detail only ever shows the diver's single most
+recent visit (no full multi-visit history browser), the Crew schedule
+view's join-ride info is limited to `schedules.is_joiner`/
+`joiner_boat_name` (the "we joined them" direction only — "another boat
+joined us" still has no signal anywhere), and Join-Ride/Rental boats
+have no persisted distinction from each other (Scheduling, accepted
+cosmetic gap) — none of these were blocking for their respective
+builds, all called out inline in the write-ups above.
 
-Implementation rules that governed both Reports and Divers this
-session, worth carrying forward into Scheduling if it ends up with a
-similar shared-state-plus-tabs (or similar always-mounted) structure:
+Implementation rules that governed Reports, Divers, Staff, and
+Scheduling across this multi-session arc, worth carrying forward into
+any future page/feature with similar shape:
 1. Any tab/panel with its own local add/edit/status-transition state
    that a parent could conditionally unmount needs to either never be
    unmounted (the always-mounted-with-`hidden`-class pattern every
@@ -706,14 +846,19 @@ similar shared-state-plus-tabs (or similar always-mounted) structure:
    `Promise.all` and apply every resulting `setState` back-to-back —
    never let a key-changing `setState` sit in the same function as a
    slower `await` for data that same key change will cause to be read.
-3. **New this session**: before inserting into any RLS-protected table
-   directly from a Server Action, check whether that table actually has
-   a client insert policy at all — some tables (like `audit_logs`) are
-   deliberately insert-only-via-trigger-or-RPC, and a rejected insert
-   fails silently unless the returned `error` is actually checked. Grep
-   the table's RLS policies in `001_schema_and_rls.sql` (and later
-   migrations) before writing the insert, not after it silently does
-   nothing.
+3. Before inserting into any RLS-protected table directly from a Server
+   Action, check whether that table actually has a client insert policy
+   at all — some tables (like `audit_logs`) are deliberately
+   insert-only-via-trigger-or-RPC, and a rejected insert fails silently
+   unless the returned `error` is actually checked. Grep the table's RLS
+   policies in `001_schema_and_rls.sql` (and later migrations) before
+   writing the insert, not after it silently does nothing.
+4. **New this session**: turning on a previously-dead/never-written
+   column (like `schedules.cancelled`, inert since Stage 1a) can break
+   *other* pages that read the same table without expecting that column
+   to ever be non-default — always grep every existing consumer of a
+   table before shipping the first real writer for a column that used
+   to be a no-op, not just the page you're actively building.
 
 **Standing constraint for every remaining page** (see memory:
 future-live-data-migration): this is multi-tenant and every dive
@@ -1682,6 +1827,37 @@ asked twice in one session.
 this pass (the GoTrue raw-insert null-vs-empty-string gotcha) was a
 testing-environment issue, not a defect in the shipped feature — see
 retrospective #26 above.
+
+## Dead-code audit (2026-07-25 session, continued — Scheduling, rebuild complete)
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run fresh at the
+  end.
+- Usage-count pass (`grep -rl "\bsymbol\b" src/app | wc -l`) across
+  every exported function/type/constant added under
+  `src/app/(app)/scheduling/`. Found two real dead exports:
+  `getStaffOptions` and `getCourseRateOptions` (thin `actions.ts`
+  wrappers around `data.ts` loaders, written anticipating a client-side
+  refetch need that never materialized — `staffOptions`/`courseRates`
+  are loaded once server-side in `page.tsx` and passed down as static
+  props instead). Removed both, along with their now-unused
+  `loadStaffOptions`/`loadCourseRateOptions` imports in `actions.ts`
+  (the loaders themselves stay real and used — `page.tsx` calls them
+  directly). Re-ran `tsc`/lint clean after the removal.
+- Grepped for `TODO`/`FIXME`/`XXX` under `scheduling/` — none found.
+- Cross-page regression pass (Dashboard, Boat Manifest, `/crew`) found
+  one real bug, already detailed above and fixed in place: three
+  `schedules` queries outside `scheduling/` had no `cancelled` filter,
+  since that column was dead before this session. Fixed in
+  `boat-manifest/data.ts` and `dashboard/data.ts` (two spots).
+- Database confirmed empty of test data at session end — only the real
+  `aquadeskonline@gmail.com` platform admin remains in `auth.users`,
+  `dive_centers` count is 0.
+
+**One real, if minor, dead-code item found and fixed** beyond the
+cross-page bug (two unused exported functions). Nothing else needed
+fixing. This closes out the rebuild's originally-agreed build order —
+Settings, Boat Manifest, Reports, Divers, Staff, and Scheduling are all
+now built, verified, and committed.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
