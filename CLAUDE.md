@@ -75,6 +75,23 @@ session's audit that were deliberately *not* built (cosmetic/staff-
 reconciliation/preview-modal items). Both repos committed as of session
 end — check `git status` before assuming that's still true.
 
+**Session continued the same day, twice more** (search "Session
+2026-07-26, continued" for each): first, Resend was wired up for real
+invoice email delivery (a test/isolated Resend account, separate from
+the live app's connected one — sandbox-limited to the account's own
+inbox until a domain is verified, tracked in `KNOWN_GAPS.md`). Then,
+after the user actually started using the rebuild and compared it
+directly against the live app, three real structural mismatches were
+found and fixed: **Staff moved from a top-level nav item into
+Settings** (matching the live app exactly — roster CRUD is a Settings
+tab there, not standalone), **a real "Divers" page was built**
+(Group/Individual/Equipment Management, matching `divers.html` — the
+rebuild's `/divers` had actually been "Diver Form"'s list view all
+along, mislabeled), and **Scheduling's crew-code generation and diver
+discovery were fixed** to match the live app's real mechanics. This
+was a large, staged rebuild — see the full write-up further down for
+the design decisions and verification detail.
+
 ## Current state (as of 2026-07-25, continued session — Scheduling, rebuild complete)
 
 **Every page in the originally-agreed build order is now built, verified,
@@ -1028,47 +1045,68 @@ Access (unlinked-secretary banner/create-login shortcut), and no
 
 ### Known gaps (tracked in `aquadesk-app/KNOWN_GAPS.md`, none blocking)
 
-Both of the two gaps previously listed here (Dashboard's "another boat
-joined us" alert, and Settings having no dive-center-profile tab) were
-closed in the 2026-07-26 session — see that session's write-up above.
-Remaining:
+The two gaps originally listed here (Dashboard's "another boat joined
+us" alert, and Settings having no dive-center-profile tab) were closed
+early in the 2026-07-26 session. The nav/Staff/Divers/Scheduling
+rebuild later the same day closed the Staff-placement and missing-
+Divers-page structural mismatches, but also added two new **smaller**
+gaps of its own (deliberately scoped out to keep that rebuild a
+reasonable size — see that session's write-up above). Remaining, all
+tracked in full in `aquadesk-app/KNOWN_GAPS.md`:
 
 1. Boat Manifest has no offline support, unlike the blueprint's stated
    requirement — the live app doesn't have it either (no reference to
    match), and building it for real is a whole-app architecture decision.
-2. A handful of smaller live-app-parity gaps found during the
+2. Divers > Group Management has no bulk "Review & Apply Charges"
+   billing flow (the live app's `divers.html` bulk-pricing-review
+   feature) — per-diver pricing via Diver Detail's Auto-Price still
+   works individually for every group member in the meantime.
+3. Settings > Staff has no reverse-direction "unlinked secretary" banner
+   on the Staff Access side (Staff's own form can link an existing
+   secretary login when editing a staff row, but Staff Access doesn't
+   flag the other direction).
+4. A handful of smaller live-app-parity gaps found during the earlier
    2026-07-26 audit (cert-card image compression, registration field
    validations, country-dial-code list size, a dead reminder-note RPC
    parameter, no mid-visit experience-type change in Diver Detail, no
-   Waiver/Medical preview modal, no staff-record reconciliation in
-   Staff Access, no "remember me"/password-strength meter) — see
-   `aquadesk-app/KNOWN_GAPS.md` for full entries on each.
+   Waiver/Medical preview modal, no "remember me"/password-strength
+   meter) — see `aquadesk-app/KNOWN_GAPS.md` for full entries on each.
 
 ### Suggested next step
 
 **The rebuild's originally-agreed page-by-page build order is complete**,
-and as of the 2026-07-26 session so are both post-launch gaps that were
-being tracked (Settings Profile tab, reverse Join-Ride Dashboard alert),
-plus a full login-security build (password reset, account lockout,
-suspended-account blocking) and an office console upgrade that grew out
-of that session's live-app audit. There is no next page or feature
-implied by prior planning — whatever comes next is either a refinement
-of what's already built, closing one of the documented known gaps below,
-or new scope the user brings, not something to assume unilaterally.
+and as of the 2026-07-26 session so is a large follow-up arc closing
+every gap found once the user actually started using the app and
+compared it to the live app directly: Settings Profile tab, the reverse
+Join-Ride Dashboard alert, a full login-security build (password reset,
+account lockout, suspended-account blocking), an office console
+upgrade, real Resend-backed invoice email delivery (sandbox-limited
+until a domain is verified), and a full nav/Staff/Divers/Scheduling
+rebuild to match the live app's real page layout and behavior (Staff
+moved into Settings, a real "Divers" triage-tool page was built,
+Scheduling's diver discovery and crew-code generation were fixed).
+**The rebuilt pages have not yet been reviewed by the user** — no chat
+message has confirmed the nav/Staff/Divers/Scheduling changes actually
+match expectations; that's the natural next checkpoint, not a new
+feature to build unprompted. Beyond that, whatever comes next is either
+a refinement of what's already built, closing one of the documented
+known gaps below, or new scope the user brings.
 
 Known, documented gaps worth revisiting whenever a future session
 touches these areas: package-mode nitrox/15L add-on pricing (Divers, no
 dedicated mechanism, stays manual entry), `equipment_rental` never
 auto-computed from a diver's saved equipment selection (Divers, also
 manual entry), Diver Detail only ever shows the diver's single most
-recent visit (no full multi-visit history browser), and Join-Ride/Rental
+recent visit (no full multi-visit history browser), Join-Ride/Rental
 boats have no persisted distinction from each other (Scheduling,
-accepted cosmetic gap) — none of these were blocking for their
-respective builds, all called out inline in the write-ups above. Plus
-the smaller 2026-07-26-session findings tracked in
+accepted cosmetic gap), no bulk group-billing review (Divers > Group
+Management, new 2026-07-26 gap), and no unlinked-secretary banner on
+Staff Access (new 2026-07-26 gap) — none of these were blocking for
+their respective builds, all called out inline in the write-ups above.
+Plus the smaller earlier-2026-07-26-session findings tracked in
 `aquadesk-app/KNOWN_GAPS.md` (cert-card compression, registration
-validations, Waiver/Medical preview, Staff Access reconciliation, Diver
-Detail mid-visit experience-type change, login cosmetics).
+validations, Waiver/Medical preview, Diver Detail mid-visit experience-
+type change, login cosmetics).
 
 Implementation rules that governed Reports, Divers, Staff, and
 Scheduling across this multi-session arc, worth carrying forward into
@@ -1852,6 +1890,76 @@ The point isn't the fix (already applied) — it's recognizing the
     confirming, since the dead consumer is a completely different
     feature (Dashboard, not Registration).**
 
+33. **(Testing technique, not a code defect) An always-mounted tab
+    (the established `hidden`-class pattern used to prevent state loss
+    on tab switch, see retrospective #18) only fixes losing state on
+    remount — it does nothing to keep that tab's data fresh when a
+    *different*, sibling tab is the one that changes the underlying
+    data.** Group Management's `groups` list fetched once at mount and
+    never again; creating a group from the Individual Management tab
+    (a sibling, also always-mounted) left Group Management showing "No
+    groups yet" until a full page reload, since nothing ever told it to
+    refetch on becoming visible again. This is the mirror image of
+    retrospective #18: #18 was about a component unmounting and losing
+    its own locally-patched state; this is about a component that
+    correctly *never* unmounts, so it also never gets a second initial
+    fetch. Caught by creating a group in one tab, switching to the
+    sibling tab, and finding it not there — a straightforward functional
+    test, not a code-review catch. Fixed by adding an `active` prop
+    (derived from the parent's current mode/tab state) to both tabs and
+    refetching inside a `useEffect` keyed on that prop becoming true.
+    **Lesson: "keep it always-mounted" solves exactly one problem (state
+    loss on remount) and introduces a new one (staleness from sibling-
+    tab actions) — any always-mounted tab whose data can be invalidated
+    by something happening in a *different* tab needs an explicit
+    active-triggered refetch, not just a mount-time fetch. Don't treat
+    "always-mounted" as a complete fix; it's half of one.**
+
+34. **A tab/nav "is this active?" check based on `pathname.startsWith
+    (tab.href)` — a pattern already used in multiple places in this
+    codebase — silently breaks the moment a new tab's URL happens to be
+    a prefix of an existing one's.** Adding a `/settings/staff` tab
+    alongside the pre-existing `/settings/staff-access` tab meant
+    `"/settings/staff-access".startsWith("/settings/staff")` evaluates
+    `true`, so visiting Staff Access would show *both* tabs highlighted
+    as active. Caught proactively, before shipping, by checking the
+    actual computed class names via `javascript_tool` right after
+    wiring up the new tab — not by visual inspection, which can be easy
+    to miss at a glance when both tabs are adjacent and the highlight
+    color is subtle. Fixed by changing the check to
+    `pathname === tab.href || pathname.startsWith(`${tab.href}/`)`
+    everywhere a tab bar does this kind of matching. **Lesson: any
+    naive `startsWith`-based active-route check is a latent bug waiting
+    for the day two routes in the same nav/tab group happen to share a
+    prefix — when adding a new nav item or tab, check whether its URL
+    is a prefix of (or has as a prefix) any sibling's URL, and use an
+    exact-match-or-trailing-slash check instead of bare `startsWith`
+    from the start, not just after it collides.**
+
+35. **(Testing technique, not a code defect) Confirms and extends
+    retrospective #19's console/log-buffering finding to a new specific
+    symptom: a stale "module export doesn't exist" error can keep
+    reappearing in dev-server logs/console across multiple page loads
+    even after the referenced file is confirmed correct on disk and
+    `tsc --noEmit` passes clean** — this recurred during the nav/Staff/
+    Divers/Scheduling rebuild (`Export loadReadyPool doesn't exist in
+    target module`) under a new wrinkle: the dev server being edited was
+    the *same shared server* the user's own separate browser session
+    was actively using (confirmed by the user's own real actions —
+    `createTrip`, `getAllGroups` — appearing interleaved in
+    `preview_logs`). A scary module-not-found error in that shared
+    server's logs doesn't necessarily mean the current code state is
+    broken; it can be Turbopack's own stale/buffered output from a
+    moment the module genuinely didn't exist yet (mid-edit) that never
+    got cleared. Confirmed non-issue both times by checking actual
+    rendered output (`get_page_text`) rather than trusting the log.
+    **Lesson: when a `tsc`-clean file still throws a module-not-found
+    error in dev-server logs or browser console, especially on a dev
+    server shared with another active user/tab, verify against real
+    rendered page output before concluding something regressed — this
+    is now a confirmed recurring pattern in this environment, not a
+    one-off.**
+
 ## Dead-code audit (2026-07-23 session)
 
 - `npm run lint` — clean, no unused-var/import warnings.
@@ -2362,6 +2470,184 @@ a hard limit until a domain is verified, tracked in
 prove the pipeline works. Revisit once the `dev.aquadesk.online`
 subdomain is verified.
 
+## Session 2026-07-26, continued again — Nav/Staff/Divers/Scheduling rebuilt to mirror the live app
+
+The user started actually using the rebuild for the first time this
+session and compared it directly against the live app, which they
+consider the functional reference — the whole point of the new tech
+stack is scalability/security/efficiency/tidiness, not different
+behavior or page layout. Direct feedback surfaced real structural
+mismatches, confirmed by reading the live app's actual code (not
+memory or the blueprint) rather than guessed at:
+
+1. **"Staff" wasn't supposed to be a top-level nav item.** Confirmed:
+   `settings.html` has a real Staff tab; token generation lives in
+   `scheduling.html`'s `generateToken()`, `staff.html` only ever reads
+   the token. The rebuild had a full top-level `/staff` page doing both
+   roster CRUD and token generation — neither belonged there.
+2. **"Divers" in the nav was the wrong page.** The live app has two
+   separate nav items — "Divers" (`divers.html`: a triage tool with
+   Group/Individual/Equipment Management tabs, diver cards, group
+   creation, and the "push to schedule" flow) and "Diver Form"
+   (`diver-form.html`: the profile/billing workspace — confirmed to be
+   exactly what `divers/[id]/page.tsx` already correctly was). The
+   rebuild's `/divers` was actually "Diver Form"'s list view,
+   mislabeled — the real "Divers" triage tool had never been built;
+   its group/push-to-schedule pieces were absorbed into Scheduling
+   instead during an earlier session, a deliberate scope call the user
+   now wanted reversed to match the live app's real page layout.
+3. **Scheduling couldn't discover divers well**, following directly
+   from #2 — a name-search box with no browsable pool, unlike the live
+   app's card-grid of already-"readied" divers.
+
+Used `EnterPlanMode` given the size (comparable to the original
+Scheduling or Divers builds) — two Explore agents researched the live
+app's `scheduling.html` (every `schedule_divers` write, the sidebar/
+hamburger CSS+JS) and the rebuild's current code (Sidebar, Staff, the
+Scheduling group/diver-assignment components, the old Divers list) in
+parallel before any plan was written.
+
+**Key research finding that shaped the whole design**: `schedule_divers`
+rows with a null `schedule_id` (written by `divers.html`'s "push to
+schedule") are **confirmed dead data in the live app itself** — grepped
+every `schedule_divers` reference in `scheduling.html`; it never
+queries, updates, or reads them. The real "readiness" signal
+`scheduling.html` actually uses is an open+unpaid `visits` row with
+`experience_type` tagged, reconciled from Supabase on every load — the
+`localStorage` ready-list and the null-`schedule_id` rows are both
+orphaned in practice. The rebuild replicates the live app's real
+*functional* behavior (tag via `visits`), not its literal dead write
+path — consistent with this project's standing rule to match intent,
+not verbatim bugs. This single finding meant the "can't add divers to
+scheduling" complaint was fixable without reintroducing the live app's
+own two-phase clips/ready-pool table plumbing at all.
+
+**Scope decisions**, confirmed via `AskUserQuestion` where genuinely
+ambiguous (only one came up: whether to keep a rebuild-only addition —
+secretary self-view of their own staff profile — now that Staff moves
+under Settings' owner-only gate; user chose to drop it and match the
+live app exactly):
+
+- **Route rename**: the new "Divers" triage tool took over the
+  `/divers` route; the existing list+detail feature moved to
+  `/diver-form` + `/diver-form/[id]` (a mechanical `git mv`-equivalent
+  — `git mv` itself failed with a Windows file-lock permission error
+  against the live shared dev server, `Move-Item` in PowerShell worked
+  where Bash's `mv`/`git mv` didn't). Every internal link
+  (`/divers/${id}` in Dashboard's `DiversTable.tsx`, the old list's own
+  "Open Form" links, all ~16 `revalidatePath` calls in the detail
+  page's actions.ts) was greped and fixed — verified via `tsc` (broken
+  imports would fail) plus a live browser click-through afterward.
+- **Push-to-schedule**: select divers (Group or Individual mode) → "Add
+  to Schedule" → Experience Tagging modal (fresh copy of the same UI
+  pattern Scheduling's own tagging modal already used) → for each
+  diver, ensure/update an open `visits` row with `experience_type`/
+  `course_rate_id` set. No `schedule_divers` write happens at this
+  stage — only when a diver is actually assigned to a specific trip in
+  Scheduling, exactly as before.
+- **Scheduling's `DiverAssignmentPanel`** kept its existing name search
+  (a genuine rebuild improvement, not something the user complained
+  about) and **gained** a browsable card-grid pool alongside it — every
+  diver with an open+unpaid `visits` row for today, not yet assigned to
+  this trip (`loadReadyPool` in `scheduling/data.ts`, reusing the
+  already-existing `buildDiverPickResults` helper) — matching the live
+  app's actual card-click interaction model.
+- **Crew-code generation** moved from Staff to Scheduling's
+  `ConfirmPanel.tsx` (fresh `getCrewTokenToday`/`generateCrewToken`
+  actions in `scheduling/actions.ts`, same `generate_daily_staff_token`
+  RPC — matching `scheduling.html`'s `generateToken()`, not
+  `staff.html`, which only ever reads the token).
+- **Staff roster CRUD** moved into `settings/staff/` (new Settings tab,
+  owner-only via the layout's existing guard — matching the live
+  app's `settings.html` Staff tab exactly). `/staff` and its secretary
+  self-view were removed entirely; `/crew` (public token view) untouched.
+- **Group management** (`GroupsPanel.tsx`, both flows + deletion
+  blockers) relocated wholesale from Scheduling to the new Divers page
+  — confirmed via full-file read this was the *only* group-management
+  implementation anywhere in the rebuild, a relocation not a
+  duplication.
+
+**Build order** (10 stages, `tsc`/lint clean after every one, browser-
+verified against one persistent seeded test dive center reused across
+all stages — same discipline as the original Scheduling/Divers builds):
+nav+Sidebar rebuild → route rename → new `/divers` skeleton (3 tabs,
+matching `divers.html`'s `setMode()` pattern) → Group Management →
+Individual Management (diver cards: name, cert level, arrival, a
+day-by-day bill-stack for group members vs. running-bill+balance for
+individual view, medical/minor flag badges, "Remove" = full diver
+delete matching the live app's own confirmation copy, "+Group" ad-hoc
+selection) → push-to-schedule → Equipment Management (per-arrival-date
+checklist, needed a new `divers.equipment_notes` column — migration
+015, since the live app's equivalent field literally has a space in its
+name and nothing in this schema matched it) → Scheduling cleanup →
+Staff→Settings → full regression pass.
+
+**Real bugs found and fixed during this build's own verification**:
+
+1. **A tab kept correctly mounted (per the established Reports-tab
+   lesson) can go stale in the *opposite* direction** — Group
+   Management's `groups` list only fetched once at mount; creating a
+   group from Individual Management (a sibling always-mounted tab)
+   left Group Management showing "No groups yet" until the page was
+   fully reloaded, since nothing told it to refetch on becoming visible
+   again. This is the mirror-image of retrospective #18 (which was
+   about losing state on remount) — here the component never
+   *unmounted*, so it never got a fresh initial fetch either. Fixed by
+   adding an `active` prop (`mode === "group"`) to both Group and
+   Individual Management, refetching in a `useEffect` keyed on it.
+   **New lesson for this codebase's "keep tabs always-mounted" pattern**:
+   always-mounted also means "never re-fetches on its own" unless
+   something explicitly tells it to — any tab whose data can be
+   invalidated by a *sibling* tab's actions needs an explicit
+   active-triggered refetch, not just once-at-mount.
+2. **`pathname.startsWith(tab.href)` — the exact active-tab-highlighting
+   pattern already used everywhere in this app — breaks the moment two
+   tabs' URLs share a prefix.** Adding `/settings/staff` alongside the
+   already-existing `/settings/staff-access` meant
+   `"/settings/staff-access".startsWith("/settings/staff")` is `true`,
+   so both tabs would show active on the Staff Access page. Caught by
+   checking computed class names via `javascript_tool` after adding the
+   new tab, not by visual inspection. Fixed by changing the check to
+   `pathname === tab.href || pathname.startsWith(`${tab.href}/`)`
+   everywhere this pattern is used for tab bars (the main Sidebar's nav
+   items don't currently collide this way, but the same fix should be
+   applied there too if a future nav item's URL ever becomes a prefix
+   of another's).
+
+**Testing-technique note, not a code defect**: the Next.js dev server
+being edited was the **same shared server the user's own browser was
+live-testing against** (confirmed by seeing the user's own real actions
+— `createTrip`, `getAllGroups` calls — appear in `preview_logs` output).
+A module-export error (`Export loadReadyPool doesn't exist in target
+module`) appeared repeatedly in logs/console across multiple page loads
+even after the file was confirmed correct on disk and `tsc` passed
+clean — this was **stale/buffered log output**, the same category as
+retrospective #19's console-buffering finding, confirmed by checking
+actual rendered page content (`get_page_text`) rather than trusting the
+error log, which showed the page working correctly the whole time.
+**Lesson: when editing a dev server another party (the user, or a
+different browser tab) is actively using, a scary-looking module-not-
+found error in logs/console doesn't necessarily mean the current state
+is broken — verify against real rendered output before concluding
+something regressed, especially if `tsc --noEmit` already passed clean
+on the exact file in question.**
+
+Verified end-to-end in a real browser against one seeded test dive
+center (owner + 2 divers + 1 boat/site + 1 ad-hoc group), reused across
+all 10 stages: nav items correct (no Staff, Divers/Diver Form
+separate), sidebar hover-collapse + hamburger toggle work, ad-hoc group
+creation correctly sets `divers.group_id`, push-to-schedule correctly
+writes/updates `visits` (verified via direct query), the same two
+divers correctly appear in Scheduling's new ready-pool grid *and* the
+pre-existing name search (proving the `visits`-based signal design
+decision was sound), crew-code generation works from Scheduling and the
+generated code correctly loads `/crew`, Dashboard's Active Divers count
+and "Open Form" links both correctly reflect the new state and route,
+Settings > Staff correctly creates a roster member end-to-end. Database
+confirmed back to just the real platform admin and the user's own real
+"Demo Dive Center" (never touched) at session end — the test dive
+center and its owner account fully deleted.
+
 ## Dead-code audit (2026-07-26 session — Profile tab, reverse Join-Ride alert, login security, office console)
 
 - `npx tsc --noEmit` and `npm run lint` — both clean, run after every
@@ -2399,6 +2685,59 @@ subdomain is verified.
 
 **Nothing else found that needed fixing.** Both repos' `git status`
 checked at session end.
+
+## Dead-code audit (2026-07-26 session, continued — Nav/Staff/Divers/Scheduling rebuild)
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run after every
+  stage and again at the end (per retrospective #25's lesson, applied
+  from the start rather than bolted on afterward).
+- Grepped for `/staff` (the removed top-level route) and `divers/[id]`
+  (the pre-rename path) across all of `src/` — zero remaining
+  references to either; the route rename and the Staff relocation were
+  both complete replacements, not left alongside the old path.
+- Usage-count pass (`grep -rl "\bsymbol\b" src/app | wc -l`) across
+  every exported function/type/constant added under the new
+  `src/app/(app)/divers/` (the triage tool, not to be confused with the
+  renamed `diver-form/`), `settings/staff/`, and the touched
+  `scheduling/` files. Found two real dead exports, both removed:
+  - `getStaffOptions`/`getCourseRateOptions`-style leftover risk was
+    already closed by the earlier same-day Scheduling audit — re-
+    confirmed zero reappearance.
+  - `checkGroupDeletionBlockers`'s Scheduling-side re-export
+    (`scheduling/actions.ts` briefly kept a thin re-export forwarding
+    to the relocated `divers/actions.ts` version, written defensively
+    during the mid-migration stage in case another Scheduling file
+    still imported it) — grepped after the relocation was complete and
+    found nothing else in `scheduling/` still importing it. Removed the
+    re-export.
+- Confirmed `GroupsPanel.tsx`'s relocation from `scheduling/components/`
+  to `divers/components/GroupManagementTab.tsx` was a genuine move, not
+  a duplication — the old file path no longer exists
+  (`Get-ChildItem`/`Glob` confirmed), and its logic (registration-link
+  groups, ad-hoc groups, server-rechecked deletion blockers) lives in
+  exactly one place now.
+- Confirmed the small-helper duplication pattern already established
+  across this codebase (`peso`, `fmtDate`, `todayManila`,
+  `CERT_LEVEL_LABELS`) continues correctly into the new Divers page's
+  own files — each redefined per-file rather than cross-imported,
+  matching precedent, not something to centralize.
+- The two real bugs found this pass (Group Management's stale-sibling-
+  tab data, and the `SettingsTabs` prefix collision) were both caught
+  by functional/computed-value testing, not by grep — see retrospective
+  items 33-34 for the full account of each.
+- Test dive center (owner + 2 divers + 1 boat/site + 1 ad-hoc group)
+  and its `auth.users` rows deleted after verification, confirmed via
+  direct query the user's own real "Demo Dive Center" was never
+  touched at any point. Database confirmed back to just the real
+  `aquadeskonline@gmail.com` platform admin account plus the user's own
+  real dive center at session end.
+
+**Two real dead-code items found and fixed** (a leftover re-export from
+the mid-migration stage, confirmed fully cleaned up) beyond the two
+functional bugs already covered in the session write-up and
+retrospective items 33-34. Nothing else found. Both `git status` checks
+pending the user's explicit go-ahead to commit, per this project's
+standing "never commit unless asked" rule.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
