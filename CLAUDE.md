@@ -2305,6 +2305,63 @@ own.
 from today's two features checks out clean under both the symbol-grep
 and usage-count methods.
 
+## Session 2026-07-26, continued — Invoice email sending wired to Resend
+
+Closed the last standing TODO from the Divers build: `sendInvoice`
+(`divers/[id]/actions.ts`) previously only marked an invoice as sent in
+the data model, with a comment explaining delivery was deferred until
+the user set up a real email provider. Now it actually sends.
+
+**Deliberately a separate, test/isolated Resend account** — not the
+live app's already-connected one. The user was explicit about this and
+asked what to do about `aquadesk.online` (the real domain the live
+app's Resend account may already have configured) without risking it.
+Recommendation given and accepted: don't verify the root domain in this
+second account at all — SPF is a single-record-per-domain concern, and
+a second account adding its own SPF entry to the same root domain risks
+breaking the live account's mail authentication. Plan is a subdomain
+(e.g. `dev.aquadesk.online`) later, verified independently with its own
+DNS records that can't collide with whatever the live account already
+has. For now, sending uses Resend's shared `onboarding@resend.dev`
+address — zero domain setup, zero risk to the live domain, good enough
+to prove the pipeline works end-to-end.
+
+- `RESEND_API_KEY`/`RESEND_FROM_EMAIL` added to `aquadesk-app/.env.local`
+  (gitignored, confirmed before this note was written — never committed).
+- New `src/lib/email/resend.ts` (thin client factory, mirrors
+  `lib/supabase/admin.ts`'s shape) and
+  `divers/[id]/invoiceEmailHtml.ts` (builds the email body from the same
+  `invoice_snapshot` shape `InvoicePanel.tsx` already renders for print
+  — genuinely inline-styled HTML, not shared Tailwind classes, since
+  email clients never load the compiled stylesheet at all).
+- `sendInvoice` now fetches the diver's email + snapshot + dive center
+  name, calls Resend, and **only** marks `email_delivery_status = 'sent'`
+  on a real successful send — a failed send sets `'failed'` and surfaces
+  the actual Resend error message in the UI (the existing `error` state
+  `InvoicePanel.tsx` already had), never silently marks something sent
+  that wasn't.
+- Verified end-to-end with a seeded invoice (hand-built snapshot matching
+  the real shape, not a live checkout — the checkout/pricing computation
+  itself was already proven in the Divers session, only the email-sending
+  path is new code worth re-testing): a send to an address other than the
+  Resend account's own signup email failed with Resend's real API error
+  (confirming the sandbox-recipient limit below is real, not assumed),
+  correctly surfaced in the UI with `email_delivery_status` set to
+  `'failed'`. Retried after pointing the test diver's email at the
+  Resend account's own signup address — sent successfully,
+  `email_sent_at`/`email_delivery_status = 'sent'` confirmed via direct
+  query, and the UI's Send Invoice button correctly flipped to a
+  disabled "Sent" state.
+
+**Real, non-code finding**: Resend's shared `onboarding@resend.dev`
+sender can only deliver to the Resend **account's own signup email** —
+not to arbitrary recipients, contrary to the initial assumption that a
+shared test sender would work for any recipient during testing. This is
+a hard limit until a domain is verified, tracked in
+`aquadesk-app/KNOWN_GAPS.md` — invoices can't reach real divers yet, only
+prove the pipeline works. Revisit once the `dev.aquadesk.online`
+subdomain is verified.
+
 ## Dead-code audit (2026-07-26 session — Profile tab, reverse Join-Ride alert, login security, office console)
 
 - `npx tsc --noEmit` and `npm run lint` — both clean, run after every
