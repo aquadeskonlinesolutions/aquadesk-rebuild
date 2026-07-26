@@ -92,6 +92,25 @@ discovery were fixed** to match the live app's real mechanics. This
 was a large, staged rebuild — see the full write-up further down for
 the design decisions and verification detail.
 
+**Session continued a fourth time the same day** (search "Session
+2026-07-26, continued yet again" for the full account): the user asked
+for three specific areas to be treated as the exact behavioral spec —
+Divers > Group Management's active-window logic (fixed: groups/divers
+now correctly hide/show based on arrival-1/departure/open-bill, matching
+`divers.html`'s real `isVisible()` rule), a full rebuild of Scheduling to
+mirror `scheduling.html`'s three-phase Prepare/Build/Complete workflow
+with clean (non-duplicated) code — migration 016 added
+`schedule_divers.source_clip_id`, real `schedule_team_clips`/
+`schedule_team_clip_divers`/`schedule_day_diver_exclusions` tables
+(already in the schema, unused until now) now back real clip/exclusion/
+carryover logic — and a Settings tab audit (confirmed all 12 live-app
+tabs' functionality present, just consolidated; one real mismatch fixed:
+dive insurance moved from a rebuild-only "Integrations" tab into Profile,
+matching the live app). Two real bugs found and fixed during this
+build's own verification (a saved trip warning about double-booking
+against itself; `markBoatReturned` missing a duplicate-activity guard
+entirely) — see the full write-up for both.
+
 ## Current state (as of 2026-07-25, continued session — Scheduling, rebuild complete)
 
 **Every page in the originally-agreed build order is now built, verified,
@@ -2738,6 +2757,215 @@ functional bugs already covered in the session write-up and
 retrospective items 33-34. Nothing else found. Both `git status` checks
 pending the user's explicit go-ahead to commit, per this project's
 standing "never commit unless asked" rule.
+
+## Session 2026-07-26, continued yet again — Group Management active window, full Scheduling phase rebuild, Settings audit
+
+The user came back with three explicit "treat the live app as the exact
+behavioral spec" requests, all in one message: fix Divers > Group
+Management's active-window logic, fully rebuild Scheduling to mirror
+`scheduling.html`'s three-phase workflow (Prepare/Build/Complete) with
+clean code (not the live app's own duplication — cited as *the* reason
+this rebuild exists), and audit Settings' 12 live-app tabs against the
+rebuild to confirm nothing was silently dropped. Researched with two
+Explore agents (full reads of `scheduling.html`, `divers.html`'s group
+code, `settings.html`) before planning, then `EnterPlanMode` given the
+size — the Scheduling piece alone is comparable to the original
+Scheduling/Divers builds.
+
+**Part A — Group + Individual Management active window.** The create-
+group field set already matched the live app exactly
+(Group Name/Arrival/Departure/Expected Count/Leader/Notes) — the real gap
+was that `loadGroups()` showed every group unconditionally. Implemented
+the live app's actual `isVisible()`/`groupIsVisible()` rule (not just the
+"arrival minus one day through departure" shorthand): a diver is invisible
+until `today >= arrival-1`, then visible through departure inclusive, **and
+visible indefinitely past departure if their bill isn't fully closed** — a
+detail the shorthand omits. A group with members is visible iff any member
+is; an empty group uses the date window directly. New
+`divers/visibility.ts` (`isDiverActive`/`isGroupActive`, pure, UTC-anchored
+date-string math to avoid the timezone-truncation bug class already
+documented in this file). `buildDiverCards` extended with `departureDate`
+(pulled from the same latest-registration lookup that already fed
+`arrivalDate`) and `billFullyClosed`. Individual Management's default/
+browse list and search both now scope to `!groupId && isDiverActive`,
+matching `isIndividualCandidate` — a judgment call, since the live app's
+exact search-vs-browse distinction wasn't independently confirmed, but the
+rebuild's search already scoped to ungrouped-only before this session, so
+extending it with the same active-window condition follows the existing
+precedent rather than introducing a new one. Verified in a real browser
+with four seeded divers spanning every boundary (not-yet-active,
+currently active, departed-with-open-bill, departed-and-paid) — exactly
+the two expected divers showed in Individual Management, and a seeded
+future-dated empty group was correctly hidden while a currently-active
+one showed.
+
+**Part B — Scheduling: full phase-based rebuild.** The old implementation
+(`DaySelector`/`TripListPanel`/`TripBuilderPanel`/`DiverAssignmentPanel`/
+`ConfirmPanel`) had no per-day phase concept at all — pick a date
+(defaulting to today), click a trip, edit it in one column. Replaced
+entirely with a blank-by-default date picker, a past-date read-only
+History view, and three real phases:
+
+- **Migration 016** (`database/016_schedule_divers_source_clip.sql`):
+  adds `schedule_divers.source_clip_id`, tracing a trip's placed team back
+  to the shared clip it came from — the relational equivalent of the live
+  app's in-memory `sourceClipId` tag, needed because this rebuild
+  (correctly) keeps trip structure in real columns/join tables rather than
+  reviving the live app's `schedules.notes` JSON-blob pattern that this
+  project has a standing rule against.
+- **Phase 1 (Prepare)**: loose divers (the already-correct `loadReadyPool`
+  signal — open+unpaid visit today — confirmed by research to be exactly
+  what the live app's `getReadyPool()` reduces to once you account for its
+  own dead `readyIds`-union code) minus anyone clipped or excluded for the
+  day. "Clips" are real rows in `schedule_team_clips`/
+  `schedule_team_clip_divers` — both tables already existed from the
+  original Stage 1a schema pass, unused by any writer until now, already
+  RLS'd via the generic operational-tables policy, so this was
+  application-code work, not schema-risk work. Carryover
+  (`carryOverLatestSharedClips` in `scheduling/data.ts`) replicates the
+  live app's real `carryOverLatestSharedClips()` mechanism exactly
+  (look back — bounded, like the live app's 80-row limit — for the most
+  recent prior date with carry-forward-eligible clips, copy that whole
+  date's clips forward as real new rows, dropping any diver no longer
+  schedulable) — not its dead `carryOverPreviousAssignments()`
+  alternative, confirmed dead by the research pass. Exclusion uses the
+  real `schedule_day_diver_exclusions` table, not the live app's dead
+  `ignoredReadyByDate` localStorage mechanism.
+- **Phase 2 (Build)**: trip cards (boat-mode tabs, multi-site "+ Add
+  Dive", guest-diver fields — all carried over from the old
+  `TripBuilderPanel`) gain a "+ Add Team" picker that assigns a whole clip
+  onto the boat at once — matching the live app's real mechanism; there's
+  no "assign one loose diver directly" control in either version, a loose
+  diver must become a clip first. Reused `WarningsBanner.tsx` unchanged
+  (capacity/double-booking/ratio/mixed-cert logic already matched the live
+  app from the original build). Collapsed the live app's duplicate
+  `saveTrip`/`silentSaveTrip` pair into one `saveTripTeams` action.
+- **Phase 3 (Complete/History)**: saved-trip summary cards, Boat Returned
+  (extended `markBoatReturned` with a real duplicate-activity check the
+  old version was missing entirely — see the bug below), crew token
+  display (reused unchanged from the Staff-relocation build), Copy
+  Preview and Download Image (a simplified canvas-PNG export, not
+  pixel-matched to the live app's exact layout — scoped as workflow
+  parity, not visual parity).
+- Deleted `TripBuilderPanel`/`DiverAssignmentPanel`/`ConfirmPanel`/
+  `DaySelector`/`TripListPanel`/`ExperienceTypeModal` outright rather than
+  leaving them alongside the replacement.
+
+**Two real bugs found during this build's own browser verification, both
+fixed before calling it done:**
+
+1. **A saved trip warned about being "double-booked" against itself.**
+   `SchedulingClient` fetches one shared whole-day `dayContext` for every
+   trip card (a single query, not one per card) — but the original
+   `DayAssignment` shape had no `scheduleId` field, so a `TripCard`
+   couldn't tell which rows were its own once it had just saved. Confirmed
+   live: saving a fresh trip immediately showed "2 divers are also
+   assigned to another trip today" pointing at itself. Fixed by adding
+   `scheduleId` to `DayAssignment` (`loadDayAssignmentsForWarnings`) and
+   filtering it out client-side per card (`dayContext.filter(d =>
+   d.scheduleId !== scheduleId)`) before handing it to `WarningsBanner`.
+2. **`markBoatReturned` had no duplicate-activity guard at all** — the
+   live app's real "Activities already added" check (protecting against
+   double-charging when a diver already has an `activities` row for the
+   date, e.g. entered manually via Diver Detail) was never ported in the
+   original Stage 8 build. Added it: query existing `activities` for the
+   date/candidate divers before inserting; if any exist, return the
+   conflict list instead of writing, and the UI offers Proceed Anyway /
+   Exclude Divers (matching the live app's choice, not its exact modal
+   copy). Verified end-to-end with a pre-seeded conflicting activity —
+   the check correctly flagged only the one diver, "Exclude Divers"
+   correctly skipped just that diver's new activity row while the other
+   diver's was written normally, and the schedule closed correctly either
+   way.
+
+**Dead-code audit found two more real items**, both from features
+speced but never fully wired to a UI:
+
+- `addDiversToClip` (an action for adding more loose divers to an
+  *existing* clip) — designed in the plan, but Phase 1's actual UI only
+  ever creates new clips, consolidating via the already-built "Move"
+  action instead. Zero call sites; deleted.
+- `includeDiverForDay` — the reverse of "Not diving today," written but
+  never given a UI, meaning excluding a diver for the day was a one-way
+  trip with no fix in the product. This one was a genuine gap, not just
+  leftover code, so it was wired up properly instead of deleted: extended
+  `PhaseOneData` with `excludedDivers`, added a "Not Diving Today" section
+  to `PhaseOnePanel` with an "Include" button. Verified round-trip in a
+  real browser: excluding a diver moved them out of Loose Divers into the
+  new section, clicking Include moved them back.
+
+**Part C — Settings tab audit.** Read `settings.html` in full and
+compared against every rebuild Settings tab's source. **All 12 of the
+user's named live-app tabs (Profile, Access, Passwords, Staff, Courses,
+Rates, Equipment, Inventory, Dive Sites, Fleet, Exchange Rates, Waiver)
+have their functionality present** — confirmed field-by-field in the
+higher-risk spots (`DEFAULT_EQUIPMENT_ITEMS`/`GEAR_ITEMS` in the rebuild
+match the live app's 11 rental-rate items and 6 stock items exactly) —
+just consolidated into 7 rebuild tabs instead of 12. **One real
+mismatch**: dive insurance/referral link lived in the live app's Profile
+tab, but the rebuild had built it as a separate "Integrations" tab with
+no live-app precedent. Fixed: moved `InsuranceSection` into
+`settings/profile/`, deleted the `settings/integrations/` route, removed
+its `SettingsTabs` entry — 7 rebuild tabs → 6, still covering all 12.
+
+**Verification**: `tsc --noEmit`/`npm run lint` clean throughout, not just
+at the end. Two rounds of real-browser verification against seeded test
+dive centers (a 4-diver boundary-spanning set for Part A/B, plus a
+second minimal one specifically to exercise the Include-button fix) —
+every flow above was exercised live, not just written and assumed
+correct, including the two bugs' before/after states. All test data
+(both dive centers, both auth users, `schedules.created_by` nulled in
+its own committed statement first per the established cleanup-ordering
+lesson) deleted afterward — database confirmed back to just the two
+real accounts (`aquadeskonline@gmail.com`, `demodivecenter@gmail.com`)
+and one real `dive_centers` row.
+
+## Dead-code audit (2026-07-26 session, continued yet again — Group Management, Scheduling rebuild, Settings audit)
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run after every part
+  and again at the end.
+- Usage-count pass (`grep -rl "\bsymbol\b" src/app | wc -l`) across every
+  exported function/type/constant added under `divers/visibility.ts` and
+  the reworked `scheduling/`. Found two real dead exports, both handled
+  (not just deleted where a real gap existed — see the session write-up
+  above for the full account):
+  - `addDiversToClip` — designed but never wired to a UI (Phase 1 only
+    creates new clips; consolidation goes through the already-built
+    "Move" action instead). Deleted.
+  - `includeDiverForDay` — a genuine missing feature, not leftover code:
+    "Not diving today" had no undo anywhere in the UI. Wired up properly
+    (new "Not Diving Today" section + Include button in `PhaseOnePanel`)
+    rather than deleted.
+  - Also checked `ClipMember`, `loadExcludedDiverIds`,
+    `filterActiveIndividualCards` (each showed at or near 1 file under the
+    blunt grep heuristic) — confirmed false positives, same pattern as
+    `StaffPageData` in an earlier session: each is genuinely consumed
+    within its own defining file, just never imported by name elsewhere.
+- Removed the now-fully-dead `searchDivers`/`getActiveGroups`/
+  `getGroupMembers`/`getReadyPoolDivers` action wrappers and their
+  `searchDiversForAssignment`/`loadActiveGroups`/
+  `loadGroupMembersForAssignment`/`GroupOption` data-layer counterparts —
+  all confined to `scheduling/actions.ts` + `scheduling/data.ts` with zero
+  UI consumers once `DiverAssignmentPanel` was deleted (name-collision
+  false positives `searchDivers`/`getGroupMembers` in `divers/`/
+  `diver-form/` ruled out by checking exact file lists, not just counts).
+  Also removed the now-unused `CourseRateOption`/`loadCourseRateOptions`
+  (Scheduling no longer tags experience type — that moved fully to the
+  Divers page's push-to-schedule action in the prior session).
+- The one real bug found *after* the initial "clean" pass (the
+  self-double-booking warning) was caught by functional browser testing,
+  not by grep — see the session write-up above for the fix
+  (`DayAssignment` gained a `scheduleId` field so each `TripCard` can
+  filter out its own rows from the shared whole-day context).
+- Database confirmed empty of test data at session end — only the real
+  `aquadeskonline@gmail.com` and `demodivecenter@gmail.com` accounts
+  remain in `auth.users`, `dive_centers` count is 1 (the user's own real
+  dive center).
+
+**Two real dead-code items found, one deleted and one turned into a real
+fix** (see above), plus four confirmed-dead action/data-layer pairs
+removed as a direct consequence of deleting `DiverAssignmentPanel`.
+Nothing else found.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
