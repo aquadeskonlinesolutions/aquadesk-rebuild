@@ -50,6 +50,31 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-07-26 session — Profile tab, reverse Join-Ride alert, login security, office console)
+
+**Both originally-requested gaps are closed, and the scope grew
+significantly beyond them** — see the full write-up below this section
+header (search "Session 2026-07-26" for the detailed account). Short
+version: Settings gained a Profile tab (name/email/phone/address/logo,
+migration 012's `dive-center-assets` storage bucket); Scheduling gained
+"guest divers" capture (migration 013's `schedules.guest_divers_count`/
+`guest_dive_center_name`/`guest_notes`) and Dashboard's Alert 3 ("another
+boat joined us") was restored to read it. A live-app audit surfaced a
+much bigger gap — **no password reset flow existed at all** — which the
+user asked to fully close along with account lockout and a full office
+console upgrade, not just patch. All of that shipped too: migration 014
+(login lockout columns + RPCs), `/reset-password`, suspended-dive-center
+login blocking, and office console search/stats/billing workflow/reset-
+link/unlock-login. Three small audit fixes also landed (Dashboard's
+over-counted Active Divers, a missing weights-kg field in registration/
+equipment, Boat Manifest reading stale accommodation data) plus one
+adjacent dead-code bug found and fixed along the way (Dashboard's
+equipment-shortage alert never fired — see the retrospective entry).
+`KNOWN_GAPS.md` has the newly-tracked smaller findings from this
+session's audit that were deliberately *not* built (cosmetic/staff-
+reconciliation/preview-modal items). Both repos committed as of session
+end — check `git status` before assuming that's still true.
+
 ## Current state (as of 2026-07-25, continued session — Scheduling, rebuild complete)
 
 **Every page in the originally-agreed build order is now built, verified,
@@ -797,26 +822,236 @@ center hits an unexpected FK from a column that references `users`
 directly (not just `dive_center_id` cascades), null it out in its own
 prior transaction, not the same one as the final delete.
 
+## Session 2026-07-26 — Profile tab, reverse Join-Ride alert, login security, office console
+
+Started from two explicitly-requested items (both already tracked in
+`KNOWN_GAPS.md`): a Settings tab to edit the dive center's profile, and
+restoring Dashboard's "another boat joined us" alert. The user also
+asked for a fresh cross-check of every live reference page against
+what's built. Three research agents ran that audit in parallel; two
+came back clean with small findings, a third (login/password/admin
+pages) stalled once and was retried. That retry surfaced something
+much bigger than expected — **no user-initiated password reset flow
+existed anywhere in the rebuild**, no account-lockout protection, and
+login didn't block a suspended dive center's users. Asked the user how
+far to take it via `AskUserQuestion`; the answer was to build all of
+it now, including a full office-console upgrade, not just patch the
+two original items. Used `EnterPlanMode` given the scope (three new
+migrations, a new route, new RPCs, an architecture decision).
+
+**Architecture decision**: the live app implements login-lockout
+tracking and platform-admin billing actions as separate Supabase Edge
+Functions using the service-role key. This rebuild has no Edge
+Functions deployed and didn't need to start — lockout tracking became
+a `SECURITY DEFINER` RPC (this codebase's existing pattern for
+anon-callable, narrow-gateway logic, precedented by `get_crew_schedule`),
+and the office-console billing actions became ordinary Server Actions
+using the already-existing service-role client
+(`src/lib/supabase/admin.ts`), matching how create/suspend already
+work. The live app's actual `login-guard` Edge Function source was
+found on disk (`supabase/functions/login-guard/index.ts`) — gave an
+exact, non-speculative spec to port (5 max attempts, 30-minute lockout,
+fail-open on errors, anti-enumeration for unknown emails) rather than
+guessing at the policy.
+
+- **Migration 012** (`database/012_dive_center_logo_storage.sql`): a
+  public `dive-center-assets` Storage bucket + policies scoped to
+  `authenticated` + the caller's own dive center via the existing
+  `current_dive_center_id()` helper — same three-policy shape
+  (INSERT/UPDATE/SELECT) as the cert-cards bucket, for the same
+  `upsert:true` reason.
+- **Migration 013** (`database/013_schedules_guest_divers.sql`): adds
+  `guest_divers_count`/`guest_dive_center_name`/`guest_notes` to
+  `schedules` — deliberately distinct names from the existing
+  `is_joiner`/`joiner_boat_name` pair, which mean the *opposite*
+  direction (we joined them, not them joining us).
+- **Migration 014** (`database/014_login_lockout.sql`): adds
+  `failed_login_attempts`/`locked_until` to `users`, plus
+  `login_guard_check`/`login_guard_fail`/`login_guard_reset` RPCs
+  ported directly from the live Edge Function's logic. Verified via a
+  real fixture (not just "the policy looks right"): 5 failures locks
+  for exactly 1800 seconds, a 6th call while locked stays locked
+  without incrementing further, an unknown email behaves identically
+  to a known-unlocked one, and reset correctly clears the counter —
+  all confirmed via direct RPC calls before ever touching the UI.
+
+**Settings > Profile tab** (`src/app/(app)/settings/profile/`): logo
+upload+preview, Name*/Email/Phone/Address, read-only Subscription
+Status (the existing `enforce_dive_center_update_scope` trigger already
+blocked owner writes to that field — no new restriction needed). Added
+as the first tab in `SettingsTabs.tsx`, matching the live app's own tab
+order. No schema migration needed for the fields themselves —
+`dive_centers` already had all of them from Stage 1a.
+
+**Scheduling guest-divers + Dashboard Alert 3**: three new optional
+fields in `TripBuilderPanel.tsx`, rendered **unconditionally** (not
+gated by boat mode) — matching the live app's `joinerHTML()`, which
+renders regardless of whether the trip is Own Boat/Join Ride/Rental,
+since another dive center's divers can ride along on any trip type.
+Dashboard's `loadAlerts()` restored the alert (previously just a
+comment explaining why it was skipped), modeled exactly on the
+existing "we joined another boat" alert's suppress-after-logging
+pattern against `join_ride_records`. Verified end-to-end: created a
+trip with guest info, confirmed the alert appeared, logged it via
+Reports > Join Ride (`direction = 'joined_our_boat'`), confirmed the
+alert disappeared — Reports' Join Ride tab already supported both
+directions, no changes needed there.
+
+**Password reset** (`requestPasswordReset` in `auth.ts`, new
+`/reset-password` route): uses Supabase Auth's own built-in
+`resetPasswordForEmail`/`updateUser` — **no separate email provider
+needed**, unlike the already-flagged Resend TODO for invoice emails
+(unrelated, not touched this session). `/reset-password` has to be a
+client component since the recovery token arrives in the URL hash
+fragment, which a server component never sees — parses the hash,
+tries `verifyOtp` then falls back to `setSession` (matching the live
+app's dual-attempt approach for different token formats), then reuses
+the *existing* `setPassword` Server Action from `account.ts` rather
+than duplicating password validation. Login gained a "Forgot
+password?" toggle revealing an email-only mini-form. Verified via a
+real browser flow: request → generic "if that email is registered…"
+message (anti-enumeration, matches the RPCs' own design) → confirmed
+separately that a `.invalid`-TLD address correctly errors (proving
+Supabase Auth itself rejects malformed domains, not a bug).
+
+**Suspended dive center blocks login**: `dal.ts`'s `resolveLandingPath`
+and `getCurrentUser` both recheck `dive_centers.subscription_status`
+now — `getCurrentUser`'s check is defense-in-depth for a session that
+was valid at login time but whose dive center gets suspended mid-
+session, same "recheck every load" precedent as the existing
+`password_changed` check. Verified end-to-end: suspended a test dive
+center, confirmed a fresh login attempt with the *correct* password
+still gets rejected with a clear message and signed out; reactivated,
+confirmed login works again immediately.
+
+**Office console upgrade** (`src/lib/actions/office.ts`,
+`src/app/office/`): address field on create (live app collected it,
+rebuild had dropped it), client-side search/filter, a stats row
+(Total/Active/Suspended/Created this month/Overdue — ported from
+`office.html`'s `renderStats()`), the status control extended from
+Activate/Suspend-only to the full Trial/Active/Suspended/Cancelled
+enum, a full billing workflow (Start Billing sets due date + amount +
+flips to active; Mark as Paid advances the cycle by one month —
+confirmed monthly, not guessed, by reading the actual Service
+Agreement docx: ₱4,000/month, 5-day grace period matching the already-
+ported `daysOverdue()` logic), "Reset Link" (reuses the password-reset
+flow above), and "Unlock Login" (calls `login_guard_reset`, shown only
+when a dive center's owner is currently locked).
+
+**Three real bugs found and fixed during this session's own browser
+verification** (not just written and assumed correct):
+
+1. **A PostgREST ambiguous-relationship error was failing silently.**
+   `dive_centers` has two FK paths to `users` (the reverse
+   `users.dive_center_id` relation, and
+   `dive_centers.waiver_content_updated_by → users.id`) — embedding
+   `users(...)` in a `dive_centers` select without disambiguating
+   returns a PGRST201 error that the destructured `{ data }` alone
+   never surfaces (same silent-failure shape as retrospective #17, a
+   different root cause). The office console showed "No dive centers
+   yet" despite a real seeded row existing. Found by testing the exact
+   query directly against the REST endpoint with curl, not by reading
+   the code again. Fixed with the explicit relationship hint
+   (`users:users!users_dive_center_id_fkey(...)`) and now also checks
+   the query's `error` explicitly (console.error’d, per the standing
+   "always check `.error`" lesson).
+2. **An uncontrolled `<select defaultValue=...>` went stale after a
+   different action updated the same field.** The status dropdown used
+   `defaultValue={dc.subscription_status}` — after "Start Billing"
+   changed the status server-side (and `revalidatePath` refetched),
+   the select kept showing the *old* value since `defaultValue` only
+   applies at first mount, not on prop change. The underlying data was
+   correct (confirmed via the stats row and billing column updating
+   correctly) — only the dropdown's own displayed selection was wrong.
+   Fixed by switching to a controlled `value={dc.subscription_status}`.
+3. **`markPaid`'s one-month advance silently lost a day whenever the
+   server's local timezone is ahead of UTC** (true for Asia/Manila,
+   UTC+8) — `new Date(dueDateStr).setMonth(+1)` correctly computes the
+   *local* next-month date, but `.toISOString().slice(0,10)` converts
+   to UTC before truncating, and local midnight is still the previous
+   UTC day when local is ahead of UTC. Aug 1 → Sep 1 local silently
+   became "2026-08-31" stored. Caught by manually reproducing the
+   exact computation in a scratch script and comparing against what
+   was actually persisted (not just eyeballing the UI, which itself
+   displayed the wrong value consistently and would have looked
+   "correct" on its own). Fixed with pure Y-M-D string arithmetic
+   (`addOneMonthToDateStr`) that never round-trips through a JS Date's
+   local-time fields — the same category of bug as every other
+   Manila-anchoring lesson in this file, just hit in a new spot
+   (platform-admin billing, not diver-facing "today" logic).
+
+**One adjacent, pre-existing dead-code bug found and fixed while
+verifying the weights-kg field** (not part of the original ask, fixed
+because directly proven broken while touching the exact same shape):
+Dashboard's tomorrow's-arrivals equipment-shortage counter
+(`dashboard/data.ts`) checked `eq.type === "partial"` before counting
+anything — but the real `equipment_requested` payload
+(`RegistrationWizard.tsx`/`EquipmentModal.tsx`) has never had a `type`
+field, only `{ items: [...], computer: boolean }`. This condition has
+silently never been true since the field existed, meaning the whole
+shortage-count block was dead code producing an always-empty result.
+Fixed to match the real array shape directly. The weights-kg field
+itself: `RegistrationWizard.tsx`'s equipment step and Diver Detail's
+`EquipmentModal.tsx` both gained a kg number input (0-20) for the
+"weights" item — previously silently uncaptured even though
+`dashboard/data.ts` already special-cased a `weights_kg` key that
+nothing ever populated.
+
+**Three small audit fixes bundled in**: Dashboard's "Active Divers"
+now requires `experience_type` to be set (previously over-counted,
+which also inflated "Pending Bills"); Boat Manifest's "Place of
+Residence" now reads current `divers.accommodation` directly instead
+of the immutable `diver_registrations` snapshot (a diver's
+accommodation can change after registration via Diver Detail; the
+live app shows the current value, the rebuild was showing the
+original).
+
+**Verification approach**: no real platform-admin or dive-center
+credentials were available this session, so a temporary test platform
+admin + test dive center/owner were created via the established raw-
+SQL `auth.users`/`auth.identities` fixture pattern (all 8 token columns
+`''`, `identity_data` with `email_verified`/`phone_verified` — see
+retrospective #26), exercised through the actual browser UI for every
+flow above, then fully deleted afterward (`schedules.created_by` nulled
+in its own committed statement first, per retrospective #28). Database
+confirmed back to just the real platform admin account at session end.
+
+**Not built this session** (found during the audit, deliberately
+deferred — see `aquadesk-app/KNOWN_GAPS.md` for the full entries): no
+client-side cert-card image compression, missing name-field/age/date
+validations in registration, a smaller country-dial-code list, a dead
+"stale last-dive reminder note" RPC parameter nothing populates, no
+mid-visit "change experience type" in Diver Detail, no Waiver/Medical
+preview modal in Settings, no staff-record reconciliation in Staff
+Access (unlinked-secretary banner/create-login shortcut), and no
+"remember me"/password-strength-meter on login (cosmetic).
+
 ### Known gaps (tracked in `aquadesk-app/KNOWN_GAPS.md`, none blocking)
 
-1. Dashboard's "another boat joined us today" alert — still no signal
-   captured anywhere for that direction; Scheduling's `schedules` table
-   has `is_joiner`/`joiner_boat_name` for "we joined them," confirmed
-   during this build, but nothing for the reverse direction. Would need
-   a real design call (a new column/flow) to close, not something to
-   invent unilaterally.
-2. Settings has no page to edit a dive center's name/phone/address/logo
-   after creation — needs a real design call (which tab? logo needs its
-   own Storage bucket) not made unilaterally.
-3. Boat Manifest has no offline support, unlike the blueprint's stated
+Both of the two gaps previously listed here (Dashboard's "another boat
+joined us" alert, and Settings having no dive-center-profile tab) were
+closed in the 2026-07-26 session — see that session's write-up above.
+Remaining:
+
+1. Boat Manifest has no offline support, unlike the blueprint's stated
    requirement — the live app doesn't have it either (no reference to
    match), and building it for real is a whole-app architecture decision.
+2. A handful of smaller live-app-parity gaps found during the
+   2026-07-26 audit (cert-card image compression, registration field
+   validations, country-dial-code list size, a dead reminder-note RPC
+   parameter, no mid-visit experience-type change in Diver Detail, no
+   Waiver/Medical preview modal, no staff-record reconciliation in
+   Staff Access, no "remember me"/password-strength meter) — see
+   `aquadesk-app/KNOWN_GAPS.md` for full entries on each.
 
 ### Suggested next step
 
-**The rebuild's originally-agreed page-by-page build order is complete**:
-Settings → Boat Manifest → Reports → Divers → Staff → Scheduling, all
-built, verified in a real browser, and committed. There is no next page
+**The rebuild's originally-agreed page-by-page build order is complete**,
+and as of the 2026-07-26 session so are both post-launch gaps that were
+being tracked (Settings Profile tab, reverse Join-Ride Dashboard alert),
+plus a full login-security build (password reset, account lockout,
+suspended-account blocking) and an office console upgrade that grew out
+of that session's live-app audit. There is no next page or feature
 implied by prior planning — whatever comes next is either a refinement
 of what's already built, closing one of the documented known gaps below,
 or new scope the user brings, not something to assume unilaterally.
@@ -826,13 +1061,14 @@ touches these areas: package-mode nitrox/15L add-on pricing (Divers, no
 dedicated mechanism, stays manual entry), `equipment_rental` never
 auto-computed from a diver's saved equipment selection (Divers, also
 manual entry), Diver Detail only ever shows the diver's single most
-recent visit (no full multi-visit history browser), the Crew schedule
-view's join-ride info is limited to `schedules.is_joiner`/
-`joiner_boat_name` (the "we joined them" direction only — "another boat
-joined us" still has no signal anywhere), and Join-Ride/Rental boats
-have no persisted distinction from each other (Scheduling, accepted
-cosmetic gap) — none of these were blocking for their respective
-builds, all called out inline in the write-ups above.
+recent visit (no full multi-visit history browser), and Join-Ride/Rental
+boats have no persisted distinction from each other (Scheduling,
+accepted cosmetic gap) — none of these were blocking for their
+respective builds, all called out inline in the write-ups above. Plus
+the smaller 2026-07-26-session findings tracked in
+`aquadesk-app/KNOWN_GAPS.md` (cert-card compression, registration
+validations, Waiver/Medical preview, Staff Access reconciliation, Diver
+Detail mid-visit experience-type change, login cosmetics).
 
 Implementation rules that governed Reports, Divers, Staff, and
 Scheduling across this multi-session arc, worth carrying forward into
@@ -1509,6 +1745,113 @@ The point isn't the fix (already applied) — it's recognizing the
     *committed* statement, not the same transaction as the final
     cascade-triggering delete.**
 
+### Session 2026-07-26 — Profile tab, reverse Join-Ride alert, login security, office console
+
+29. **A PostgREST embedded-relationship query can fail with a specific,
+    named error (`PGRST201`, "more than one relationship was found")
+    when a table has two FK paths to the one being embedded — and, like
+    every other Supabase query error in this codebase, the destructured
+    `{ data }` alone never surfaces it.** `dive_centers` has two paths to
+    `users`: the reverse `users.dive_center_id` relation (the one
+    actually wanted) and `dive_centers.waiver_content_updated_by →
+    users.id` (an unrelated audit-trail column). Embedding
+    `users(id, full_name, ...)` in a `dive_centers` select without
+    disambiguating produced this exact error — the office console
+    rendered "No dive centers yet." despite a real seeded row existing,
+    identical in symptom to retrospective #17's silent-failure shape but
+    a completely different root cause (ambiguous embed, not a bad column
+    name). Found by testing the exact query directly against the
+    PostgREST REST endpoint with curl and reading the JSON error body,
+    not by re-reading the TypeScript. Fixed with PostgREST's explicit
+    relationship-hint syntax (`users:users!users_dive_center_id_fkey(...)`)
+    and by finally checking `.error` on this query too. **Lesson: any
+    embedded/nested `.select()` on a table with more than one FK to the
+    embedded table needs an explicit relationship hint — don't assume
+    the "obvious" one will be inferred; test the exact query via curl
+    against the REST endpoint (or check Supabase's own query error, not
+    just the UI) if a query with an embed silently returns nothing.**
+
+30. **An uncontrolled `<select defaultValue={...}>` renders the value
+    from its *first* mount forever, even after the underlying prop
+    changes on a later render — a different mechanism from every other
+    "stale closure" bug in this file, but the same symptom (UI shows
+    old data even though the real data is already correct).** The
+    office console's status dropdown used `defaultValue={dc.
+    subscription_status}`; after "Start Billing" flipped the status
+    server-side and `revalidatePath` refetched the page, the stats row
+    and billing column both updated correctly, but the dropdown itself
+    kept showing the pre-update value, because `defaultValue` only
+    seeds an uncontrolled input at mount and React doesn't reset it on
+    a prop change without a `key` change forcing a remount. Caught
+    immediately by comparing the dropdown's displayed selection against
+    the stats row's own count in the same screenshot/text-dump, not by
+    trusting either alone. Fixed by switching to a controlled
+    `value={dc.subscription_status}` (there was no reason for this
+    particular field to be uncontrolled — the onChange handler already
+    fires the update immediately, no local multi-field draft state to
+    preserve). **Lesson: prefer a controlled input over
+    `defaultValue`/`key`-remount for any field whose true value can
+    change from an action *other than* the one attached to that exact
+    input — `defaultValue` is only safe when nothing else on the page
+    can invalidate it.**
+
+31. **Advancing a plain calendar-date string (no time/timezone
+    component at all) by round-tripping it through a JS `Date`'s local
+    fields and back out via `.toISOString()` silently loses a day
+    whenever the server's local timezone is ahead of UTC — true for
+    this app's own Asia/Manila anchor.** `markPaid`'s billing-cycle
+    advance did `new Date(dueDateStr).setMonth(getMonth()+1)` (correct:
+    computes the right local next-month date) then
+    `.toISOString().slice(0,10)` (wrong: converts to UTC *before*
+    truncating to a date, and local midnight in Manila is still the
+    previous calendar day in UTC) — Aug 1 → Sep 1 local silently
+    persisted as `2026-08-31`. This is the same root-cause family as
+    every Manila-anchoring lesson already in this file (naive UTC
+    conversion crossing a timezone boundary), just hit in a genuinely
+    new spot: platform-admin billing math, not diver-facing "today"
+    logic, so it wasn't code covered by any existing `manilaDateStr`-
+    style helper. Caught by reproducing the exact computation in an
+    isolated scratch script and diffing against what actually
+    persisted (`2026-08-31` vs. the expected `2026-09-01`) — the UI
+    alone would have looked internally consistent (it displays exactly
+    what's stored) and given no signal anything was wrong. **Lesson:
+    any date-only (no time component) value that needs calendar
+    arithmetic — add N months/days — should use pure Y-M-D string/
+    integer math, never a round-trip through a JS `Date` object's local
+    fields and back out via `.toISOString()`. This applies even outside
+    the already-covered "what is today in Manila" pattern — anywhere a
+    stored date gets advanced by a fixed calendar interval is the same
+    risk.**
+
+32. **A guard condition can reference a payload shape that was never
+    real, making an entire code block permanently dead without ever
+    throwing an error or looking obviously broken.** Dashboard's
+    tomorrow's-arrivals equipment-shortage counter
+    (`dashboard/data.ts`) gated its whole counting block on
+    `eq.type === "partial"` — but `equipment_requested`'s real,
+    confirmed shape (`RegistrationWizard.tsx`, `EquipmentModal.tsx`) has
+    never had a `type` field, only `{ items: [...], computer: boolean }`.
+    This condition has therefore been false on every single record
+    since the feature existed, silently producing an always-empty
+    shortage list with no error, no warning, nothing — a shape mismatch
+    exactly like the "table's real shape isn't what a field name
+    suggests" class of bug this project has hit repeatedly (see the
+    "Before writing any insert/update..." working practice), except
+    here it was a *read*-side guard condition, not a write, so there
+    was no RLS rejection or constraint violation to surface it either.
+    Found only because this session was independently re-confirming the
+    exact same `equipment_requested` shape while adding the weights-kg
+    field, and noticed the dashboard code's assumed shape didn't match.
+    Fixed to read the real array shape directly. **Lesson: when
+    re-confirming a payload shape for one purpose (adding a field),
+    check every *other* consumer of that same payload for the same
+    assumption — a guard condition checking a field that was never
+    really set is just as silently broken as a query selecting a
+    column that doesn't exist, and won't be caught by `tsc`, lint, or
+    even normal functional testing of the feature whose shape you're
+    confirming, since the dead consumer is a completely different
+    feature (Dashboard, not Registration).**
+
 ## Dead-code audit (2026-07-23 session)
 
 - `npm run lint` — clean, no unused-var/import warnings.
@@ -1961,6 +2304,44 @@ own.
 `BOAT_MODE_LABELS`'s unnecessary export, fixed in place. Everything else
 from today's two features checks out clean under both the symbol-grep
 and usage-count methods.
+
+## Dead-code audit (2026-07-26 session — Profile tab, reverse Join-Ride alert, login security, office console)
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run after every
+  feature and again at session end.
+- Grepped for `TODO`/`FIXME`/`XXX` across every new/edited file this
+  session (`settings/profile/`, `scheduling/`, `dashboard/data.ts`,
+  `login/`, `reset-password/`, `office/`, `lib/actions/auth.ts`,
+  `lib/actions/office.ts`, `lib/dal.ts`) — none found.
+- Usage-count pass on every new exported symbol
+  (`updateProfile`, `StartBillingForm`, `startBilling`, `markPaid`,
+  `sendOwnerResetLink`, `unlockOwnerLogin`, `requestPasswordReset`,
+  `isWeightsItem`, and the private `manilaTodayStr`/
+  `addOneMonthToDateStr` helpers) — all resolve to exactly their
+  definition site plus their real call site(s), no orphans. `markPaid`
+  initially looked suspicious at 4 files, but the other two
+  (`reports/actions.ts`, `reports/StaffTab.tsx`) turned out to be an
+  unrelated, pre-existing, identically-named function for staff
+  commission payouts — a naming collision across separate modules, not
+  a duplicate or dead definition; confirmed both are genuinely used
+  within their own features.
+- The three real bugs found this session (PostgREST ambiguous-embed
+  silent failure, the uncontrolled-`defaultValue` stale dropdown, and
+  `markPaid`'s timezone-truncation date bug) were all caught by
+  functional browser testing and direct-query/direct-SQL comparison,
+  not by static analysis — see retrospective items 29-31 for the full
+  account of each.
+- The one pre-existing dead-code bug found and fixed (Dashboard's
+  equipment-shortage counter checking a `type` field that was never
+  real) — see retrospective item 32.
+- Test platform admin, test dive center, test owner, and all associated
+  `auth.users`/`auth.identities` rows deleted after verification
+  (`schedules.created_by` nulled in its own committed statement first,
+  per retrospective #28). Database confirmed back to just the real
+  `aquadeskonline@gmail.com` platform admin account.
+
+**Nothing else found that needed fixing.** Both repos' `git status`
+checked at session end.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
