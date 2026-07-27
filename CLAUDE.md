@@ -109,7 +109,12 @@ dive insurance moved from a rebuild-only "Integrations" tab into Profile,
 matching the live app). Two real bugs found and fixed during this
 build's own verification (a saved trip warning about double-booking
 against itself; `markBoatReturned` missing a duplicate-activity guard
-entirely) — see the full write-up for both.
+entirely) — see the full write-up for both. A final end-of-day audit
+pass (requested explicitly before closing out) found one more real
+regression beyond those two: the rebuilt trip-save path never wrote
+`schedule_divers.experience_type`, silently breaking `/crew`'s
+per-diver experience-type badge for any new trip — found via a
+cross-page grep, fixed, and verified end-to-end (see retrospective #37).
 
 ## Current state (as of 2026-07-25, continued session — Scheduling, rebuild complete)
 
@@ -1094,22 +1099,36 @@ tracked in full in `aquadesk-app/KNOWN_GAPS.md`:
 ### Suggested next step
 
 **The rebuild's originally-agreed page-by-page build order is complete**,
-and as of the 2026-07-26 session so is a large follow-up arc closing
-every gap found once the user actually started using the app and
-compared it to the live app directly: Settings Profile tab, the reverse
-Join-Ride Dashboard alert, a full login-security build (password reset,
-account lockout, suspended-account blocking), an office console
-upgrade, real Resend-backed invoice email delivery (sandbox-limited
-until a domain is verified), and a full nav/Staff/Divers/Scheduling
-rebuild to match the live app's real page layout and behavior (Staff
-moved into Settings, a real "Divers" triage-tool page was built,
-Scheduling's diver discovery and crew-code generation were fixed).
-**The rebuilt pages have not yet been reviewed by the user** — no chat
-message has confirmed the nav/Staff/Divers/Scheduling changes actually
-match expectations; that's the natural next checkpoint, not a new
-feature to build unprompted. Beyond that, whatever comes next is either
-a refinement of what's already built, closing one of the documented
-known gaps below, or new scope the user brings.
+and as of the 2026-07-26 session (four continuations, same day) so is a
+large follow-up arc closing every gap found once the user actually
+started using the app and compared it to the live app directly: Settings
+Profile tab, the reverse Join-Ride Dashboard alert, a full login-security
+build, an office console upgrade, real Resend-backed invoice email
+delivery, a full nav/Staff/Divers/Scheduling rebuild to match the live
+app's real page layout, **and then, after the user reviewed that rebuild
+and gave three more specific "treat the live app as the exact spec"
+requests**: Group/Individual Management's active-window logic fixed to
+match `divers.html`'s real `isVisible()` rule, Scheduling fully rebuilt
+around the live app's real three-phase Prepare/Build/Complete workflow
+(clips backed by real, previously-unused schema tables, not the live
+app's own JSON-blob/duplication patterns), and a Settings tab audit
+confirming all 12 live-app tabs' functionality is present (one real
+mismatch fixed: dive insurance moved from a rebuild-only Integrations tab
+into Profile). **Both repos are committed as of this session's end** —
+check `git status` before assuming that's still true in a future session.
+
+**Nothing is currently known to be broken or half-finished** — the
+`experience_type` regression found during this session's own final audit
+(retrospective #37) was found and fixed *within* the same session, not
+left open. The one genuinely open item is retrospective #38 (the
+first-time password-set flow failing against a raw-SQL-seeded test user)
+— unresolved, not yet known whether it's a real product bug or a testing-
+fixture gap; investigate if a future session hits it again or needs to
+exercise that flow.
+
+Beyond that, whatever comes next is either a refinement of what's already
+built, closing one of the documented known gaps below, or new scope the
+user brings — no next page or feature is implied by prior planning.
 
 Known, documented gaps worth revisiting whenever a future session
 touches these areas: package-mode nitrox/15L add-on pricing (Divers, no
@@ -1978,6 +1997,93 @@ The point isn't the fix (already applied) — it's recognizing the
     rendered page output before concluding something regressed — this
     is now a confirmed recurring pattern in this environment, not a
     one-off.**
+
+### Session 2026-07-26, continued yet again (Group Management, Scheduling phase rebuild, Settings audit)
+
+36. **A single shared dataset fetched once for N sibling components, with
+    no way to identify which row belongs to which sibling, makes any
+    "exclude myself" check impossible — and the bug only shows up after
+    the first row is saved, not before.** `SchedulingClient` fetches one
+    whole-day `DayAssignment[]` (a single query, not N queries) and hands
+    it to every `TripCard` for double-booking warnings. The first version
+    had no `scheduleId` on each row, so a freshly-saved trip's own
+    `TripCard` couldn't tell its own assignments apart from a genuinely
+    different trip's — it warned "2 divers are also assigned to another
+    trip today" pointing at itself. Caught immediately in browser
+    verification (saved a trip, warning appeared instantly) — a case
+    where the bug was invisible until the exact moment of testing the
+    real save-then-redisplay cycle, not something a code read alone would
+    have caught. Fixed by adding `scheduleId` to `DayAssignment` and
+    filtering `dayContext.filter(d => d.scheduleId !== scheduleId)`
+    client-side per card before handing it to `WarningsBanner`. **Lesson:
+    whenever a single fetched collection is shared across multiple
+    sibling instances of the same component (to avoid N separate
+    queries), each row needs its own owning-entity ID preserved in the
+    data — collapsing "the whole day's assignments" into "other trips'
+    assignments" server-side (via an exclude parameter) silently breaks
+    the moment a sibling needs to reason about its own identity within
+    that shared set. Prefer returning the unfiltered set with IDs intact
+    and filtering client-side, not filtering server-side and hoping no
+    consumer ever needs to exclude itself.**
+
+37. **Replacing a table's writer with a new one, driven by a new UI's own
+    local state, silently drops any column the old writer set that the
+    new UI never surfaces directly.** The original `saveTripDiverAssignments`
+    (now-deleted `DiverAssignmentPanel`) wrote `schedule_divers.experience_type`
+    per diver. Its replacement, `saveTripTeams` (driven by the new
+    clip-based `Team`/`TeamDiver` client state in `TripCard.tsx`), was
+    designed purely from what Phase 2's UI actually displays and edits —
+    staff, nitrox/15L flags — and nobody re-checked the old writer's full
+    column list against the new one's. The result: every trip built
+    through the rebuilt Scheduling flow wrote `schedule_divers.experience_type
+    = null`, which is invisible anywhere *in Scheduling itself* (nothing
+    there reads that column) but silently broke `/crew`'s per-diver
+    experience-type badge, since `get_crew_schedule` (a SQL RPC, migration
+    010) reads `sd.experience_type` directly. Not caught by `tsc`/lint
+    (the column is nullable, a `null` write is a valid value, not a type
+    error) and not caught by the session's own Scheduling verification
+    (nothing in Scheduling's own UI displays that column back). Only
+    found by a deliberate end-of-session cross-page grep for every other
+    reader of `experience_type` across `src/app`, which turned up
+    `/crew`'s RPC-fed consumer — the exact "grep the whole codebase, not
+    just files being rewritten" practice already documented earlier in
+    this file, but this time for a column read by a *database function*,
+    not just other TypeScript files. Fixed by threading `experienceType`
+    through `ClipMember` (sourced from the diver's current open visit,
+    fetched in `fetchClipsRaw`) → `TeamDiver` → `TripTeamInput` →
+    `saveTripTeams`'s insert; verified end-to-end by building a real trip
+    with a `dive_course` diver and confirming both the persisted
+    `schedule_divers.experience_type` value and `/crew`'s rendered badge.
+    **Lesson: when a table gets a new writer replacing an old one, diff
+    the new writer's full column list against the old writer's — not
+    just against what the new UI happens to expose or edit — and
+    specifically check for columns read only by a SQL RPC/function, since
+    those consumers won't show up in a TypeScript-only grep and won't be
+    caught by any type checker.**
+
+38. **(Testing technique, unresolved — flagged for a future session, not
+    root-caused this session.)** Setting a first-time password via the
+    real `/login` "Set your password" flow failed with "Could not update
+    password. Please try again." for a raw-SQL-seeded test owner account
+    — even though the exact same `createAuthUser()`-style fixture pattern
+    (all 8 token columns `''`, correct `identity_data`, `password_changed`
+    left at its default `false`) has worked reliably for *login* testing
+    across many past sessions (see retrospective #26). This is a
+    different code path (the first-time password-set Server Action, not
+    sign-in) and wasn't exercised via this raw-seed pattern before today.
+    Worked around by setting `public.users.password_changed = true`
+    directly via SQL rather than debugging the real flow, since it was
+    tangential to this session's actual work. **Not confirmed whether
+    this is a real product bug** (would also affect a genuine new
+    secretary/owner's first login) **or another raw-seed-fixture gap**
+    (something the real Supabase Auth signup flow sets that this
+    session's raw insert doesn't) — genuinely unknown either way. If a
+    future session needs to exercise the first-time-password-set UI flow
+    against a raw-SQL-seeded user again and hits the same error, treat it
+    as a real lead worth root-causing (start by diffing against a
+    `password_changed=false` row created through the real signup/create-
+    secretary path), not as an already-understood quirk to route around
+    again.
 
 ## Dead-code audit (2026-07-23 session)
 
@@ -2966,6 +3072,64 @@ and one real `dive_centers` row.
 fix** (see above), plus four confirmed-dead action/data-layer pairs
 removed as a direct consequence of deleting `DiverAssignmentPanel`.
 Nothing else found.
+
+## Dead-code / regression audit (2026-07-26 session, final end-of-day pass)
+
+Requested explicitly by the user before closing out for the day — a
+closer pass specifically checking whether anything built earlier the
+same day left old functions/code unused instead of being replaced in
+place, beyond the audit already done mid-session (immediately above).
+
+- Broad `grep` across the **whole** `src/app` (not just `scheduling/`/
+  `divers/`) for every symbol removed or replaced this session
+  (`TripBuilderPanel`/`DiverAssignmentPanel`/`ConfirmPanel`/
+  `DaySelector`/`TripListPanel`/`ExperienceTypeModal`,
+  `saveTripDiverAssignments`, `DiverAssignmentInput`,
+  `searchDiversForAssignment`/`loadActiveGroups`/
+  `loadGroupMembersForAssignment`/`GroupOption`, the old `settings/
+  integrations/` path) — zero stale references found anywhere outside
+  the files already fixed. Confirmed the `CourseRateOption`/
+  `loadCourseRateOptions` matches in `divers/`/`diver-form/` are the
+  already-known naming-collision false positive (separate, still-live
+  symbols for the push-to-schedule experience-tagging flow), not leftover
+  references to the ones removed from `scheduling/`.
+- Fresh usage-count pass (`grep -rl "\bsymbol\b" src/app | wc -l`) across
+  every symbol added this session, whole-app scope — all resolved to
+  either false positives already explained in the mid-session audit
+  (`ClipMember`, `loadExcludedDiverIds`, `filterActiveIndividualCards` —
+  each genuinely consumed within its own defining file) or genuine
+  multi-file usage. `includeDiverForDay` now correctly shows 2 files
+  (definition + real consumer) after being wired up.
+- Checked for any other page reading `DayAssignment`,
+  `schedule_team_clips`, or `schedule_day_diver_exclusions` outside
+  `scheduling/` — none found, confirming the `DayAssignment.scheduleId`
+  fix (retrospective #36) and the clip tables are genuinely
+  Scheduling-only concerns with no cross-page regression risk.
+- **One real, more serious regression found and fixed this pass**:
+  cross-page grep for `experience_type` (not scoped to `scheduling/`,
+  specifically to catch consumers a code-only review of the rewritten
+  files would miss) turned up `/crew`'s `get_crew_schedule` RPC reading
+  `schedule_divers.experience_type` directly — a column the rebuilt
+  `saveTripTeams` never wrote. See retrospective #37 for the full account
+  and the fix (`ClipMember`/`TeamDiver`/`TripTeamInput` all gained
+  `experienceType`, sourced from the diver's open visit). Verified
+  end-to-end: built a real trip with a `dive_course`-tagged diver,
+  confirmed the persisted column and `/crew`'s rendered badge both
+  correct. `tsc --noEmit`/`npm run lint` re-run clean after the fix.
+- Database confirmed empty of test data after this pass's own
+  verification (a third seeded dive center, used specifically to
+  reproduce and verify the `experience_type` fix) — back to just the
+  two real accounts and one real `dive_centers` row.
+
+**One real regression found this pass that the earlier same-day audit
+missed** (`schedule_divers.experience_type` never written by the new
+save path) — the mid-session audit's usage-count method is good at
+catching *unused* exports but does not catch a *write path that's
+missing a column entirely*, since the column itself doesn't appear as a
+dead symbol anywhere in the TypeScript it was reviewing. See
+retrospective #37 for why this specific class of gap (a column read only
+by a SQL RPC) needs its own explicit cross-page/cross-language grep, not
+just a symbol-usage pass.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
