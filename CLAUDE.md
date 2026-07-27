@@ -50,6 +50,171 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-07-27 session — feedback pass: Settings 12-tab split, Scheduling cards/UI, Diver Form print, Reports charts, Sidebar)
+
+The user started giving direct, itemized feedback after using the rebuild
+day-to-day, across six areas in one message. All six were researched
+against the actual rebuild code (and the old app's real HTML/JS where
+relevant) before any code changed, four genuinely ambiguous points were
+resolved via `AskUserQuestion`, and the whole thing went through
+`EnterPlanMode` given the size (comparable to a full-page rebuild).
+
+- **Settings split back to the live app's real 12 tabs.** A prior session
+  had deliberately consolidated `settings.html`'s 12 tabs into 6 — the
+  user disagreed once actually using it, specifically because Fleet and
+  Dive Sites had no click target of their own (buried inside a bundled
+  "Equipment" tab). Read `settings.html` in full to get the *exact* tab
+  boundaries (not guessed) — some splits were non-obvious: "Equipment
+  Rental" is rental gear **pricing** (₱ rates), separate from "Inventory"
+  (tanks/fuel/rental-gear **stock counts**); "Exchange Rates" bundles
+  Payment Surcharges together with the currency table; "Passwords" is
+  just Owner/Billing password management, separate from "Access &
+  Permissions" (secretary account creation + toggles). New tab folders:
+  `settings/fleet/`, `dive-sites/`, `courses/`, `equipment-rental/`,
+  `exchange-rates/`, `passwords/`, `access/` — each following this
+  codebase's existing per-tab `page.tsx`/`data.ts`/`actions.ts`/section-
+  component shape, split mechanically since every section was already
+  its own component. `settings/equipment/` renamed to `settings/
+  inventory/` (Tanks/Fuel/Gear only now); `settings/staff-access/`
+  deleted entirely, split into `passwords/` + `access/`. `settings/
+  pricing/` trimmed to just pricing-mode + packages/tiers + other
+  charges + the rebuild-only Staff Commission & Join Ride rates section
+  (which has no live-app precedent anywhere — kept in Pricing & Rates
+  since there's no better home for it). `SettingsTabs.tsx` now lists all
+  12 in the live app's real order; its existing `pathname === href ||
+  startsWith(href + "/")` active-check (already fixed for a prefix-
+  collision bug in an earlier session) needed no further changes since
+  none of the 12 new slugs collide. One real cross-folder dependency:
+  `confirmPricingMode` (still in `pricing/actions.ts`) auto-seeds
+  `DEFAULT_COURSES` when switching into tier mode — that constant now
+  lives in `courses/constants.ts`, imported across the folder boundary.
+  Verified end-to-end in a real browser against a seeded test dive
+  center: all 12 tabs load and render seeded data correctly, and the
+  riskiest interaction — actually switching pricing mode package→tier,
+  which exercises the cross-folder `DEFAULT_COURSES` import — was
+  exercised for real (not just compiled), confirmed via direct SQL that
+  the mode flipped and the existing course-rate row wasn't duplicated.
+  **Dead-code sweep found one more stale reference than the obvious
+  ones**: `settings/staff/components/StaffFormModal.tsx` still said
+  "Secretary logins themselves are created on Settings > Staff Access"
+  — fixed to "Access & Permissions". Also fixed two stale "Settings >
+  Equipment > Dive Sites" references in `diver-form/[id]/pricing.ts`
+  (now just "Settings > Dive Sites") and one "Settings > Pricing &
+  Rates" in `VisitPanel.tsx`'s empty-courses tooltip (now "Settings >
+  Courses") — all found by grepping the whole `src/` tree for the old
+  tab names' text, not just code symbols, since these were UI copy
+  strings a symbol-rename pass would never catch.
+- **Scheduling: richer diver mini-cards, cleaner Delete/Move/Exclude,
+  gated guest-divers field.** The user specifically likes the live
+  app's Phase 1 diver cards (nationality, cert level, dive count, age,
+  fun-diving-vs-course) for seeing at a glance who's compatible to dive
+  together — the rebuild's Phase 1 (`PhaseOnePanel.tsx`) only ever
+  showed a bare name. `divers.nationality`/`logged_dives`/`birthday`
+  already existed in the schema (Stage 1a, unused by Scheduling until
+  now) — extended `ClipMember` and `DiverPickResult`
+  (`scheduling/data.ts`) with `nationality`/`loggedDives`/`age`
+  (computed server-side from `birthday`, plain Y-M-D arithmetic, no
+  Date-object timezone risk) and, for clip members only, `courseName`
+  (resolved via the diver's open visit's `course_rate_id` →
+  `course_rates.course_name`). New `DiverInfoCard` sub-component in
+  `PhaseOnePanel.tsx` renders all four lines for both loose divers and
+  clip members, with an orange left-border accent for course divers
+  (this codebase's palette has no purple, unlike the old app's CSS).
+  Delete/Move/Exclude got real UI polish, not a redesign: Move/Exclude
+  are now bordered buttons with breathing room instead of bare color-
+  only text links; the "Move to:" picker now expands directly under the
+  specific diver's own row (labeled "Move Alex Tan to:") instead of a
+  generic picker at the bottom of the whole clip card with no link back
+  to which diver was clicked; same-named clips are disambiguated by
+  appending their `source` ("carried over"/"returned"). `window.confirm`
+  stayed for Delete (already this codebase's established pattern in 4
+  other places) — not replaced just here. The "Other divers joining this
+  boat" block in `TripCard.tsx` (guest-divers count/dive-center/notes)
+  rendered unconditionally before, confirmed to match the old app's own
+  unconditional `joinerHTML()` — not a rebuild bug, but the user wants
+  it changed going forward: now gated to `boatMode === "own_boat" ||
+  "rental"` only, hidden (not cleared) on Join Ride. Verified end-to-end
+  in a real browser: seeded a full-info diver and a minimal-info diver
+  (confirming the "Age not set."-style fallback text), built a clip and
+  confirmed the course-name join renders ("Course - Open Water Diver"),
+  clicked Move and confirmed the picker anchors under the right diver,
+  excluded a diver from a clip and confirmed it returns to Loose Divers,
+  and toggled all three boat modes confirming the guest-divers block
+  only shows for Own Boat/Rental.
+- **Diver Form: Signed Documents print scoped correctly.**
+  `DocumentsViewer.tsx`'s print button was a bare `window.print()` with
+  no dedicated print markup — and critically, every *other* sibling
+  panel on the page (`ProfileHeader`, `VisitPanel`, `BillSummary`,
+  `DepositsPanel`, `NotesPanel`) had zero print handling at all, unlike
+  `InvoicePanel` (the only one that already had the established
+  `print:hidden` on-screen / `hidden print:block` print-only pattern).
+  So printing anything from this page — Signed Documents or an Invoice
+  — printed the whole workspace: profile buttons, editable billing
+  fields, the notes box. Root-cause fix: added `print:hidden` to those
+  five panels' outermost wrappers, matching `InvoicePanel`'s existing
+  guard — this fixes printing for *both* documents on this page, not
+  just Signed Documents. `DocumentsViewer.tsx` gained a real `hidden
+  print:block` section: full Arrival/Departure/Accommodation/
+  Certification, **every** medical question with its answer (mapping
+  the full `medicalAnswersSnapshot`, not the `yesAnswers`-only filter
+  used on-screen — confirmed with the user this should print in full),
+  Privacy Consent, the complete unclamped waiver HTML, and the
+  signature image. On-screen, the previously-always-expanded
+  `max-h-48 overflow-y-auto` full waiver dump was replaced with a
+  collapsed-by-default `<details><summary>View full waiver
+  text</summary>` — reachable with one click, not shown by default
+  (medical declaration on-screen was already yes-only, needed no
+  change). Verified via direct DOM inspection of the print-only block's
+  `innerText` (not an actual `window.print()` call — this project's own
+  established caution that auto/triggered print hangs the automated
+  browser pane) against a seeded registration with 4 medical questions
+  (mixed yes/no) and a long waiver: confirmed all 4 questions with
+  correct Yes/No answers and the full unclamped waiver text were
+  present, and confirmed exactly 5 `print:hidden` panels via a
+  `document.querySelectorAll` count.
+- **Reports Overview: fixed the Money Snapshot donut overlap, added
+  bars to "Not Yet Settled".** The center peso total inside the donut's
+  92px circle had no width guard (`text-xl`, no `overflow-hidden`) — a
+  large peso figure (a real seed like ₱9,999,999 was used to reproduce
+  it, not assumed) visibly overflowed the circle and into the legend.
+  Fixed with conditional font sizing (drops to `text-xs` past 9
+  characters) plus `overflow-hidden`/`px-1` as a hard backstop, and
+  `min-w-0`/`flex-wrap` on the donut+legend row so narrow viewports
+  reflow instead of overlapping. Verified via direct DOM measurement
+  (`scrollWidth` vs. `clientWidth`), not a screenshot (unreliable in
+  this sandbox per this project's standing note) — confirmed 63px of
+  content fits cleanly in the 92px circle with the long figure. "Not
+  Yet Settled" (previously a plain 6-row `SummaryRow` list, no chart at
+  all) gained a new `SettledBarList` — a horizontal bar per line,
+  colored teal for "owed to you" rows and orange for "you owe" rows,
+  deliberately reusing the exact color pairing the Money Snapshot donut
+  already established rather than inventing a new convention.
+- **Sidebar: removed the nav-list scrollbar.** `Sidebar.tsx`'s
+  `<nav className="flex-1 py-4 overflow-y-auto">` was the only scroll
+  region in the sidebar (header and user-profile footer are both
+  fixed) — the live app has no such region at all, and the user
+  specifically asked for it gone, not just fixed to not trigger.
+  Removed `overflow-y-auto`; confirmed safe since there are only 7 nav
+  items today, nowhere near enough to overflow a real viewport (checked
+  computed `overflow-y: visible` and `scrollHeight === clientHeight`
+  post-fix, not just eyeballed).
+
+**Verification approach**: `npx tsc --noEmit`/`npm run lint` run clean
+after every one of the five areas above, not just at the end. A test
+platform-admin-free dive center (`Settings Test DC`, raw-SQL-seeded per
+this project's established `auth.users`/`auth.identities` fixture
+pattern — all 8 token columns `''`, correct `identity_data`) was created,
+extended with staff/divers/a registration/a large activity as each
+feature needed it, exercised through the real browser UI for every flow
+above, then fully deleted (`schedules`/`schedule_team_clips`/
+`schedule_day_diver_exclusions.created_by` nulled in their own committed
+statement first, per the established cleanup-ordering lesson). Database
+confirmed back to just the two real accounts
+(`aquadeskonline@gmail.com`, `demodivecenter@gmail.com`) and the one real
+`dive_centers` row at session end. **Both repos are uncommitted as of
+this session's end** — the user has not yet asked to commit; check `git
+status` before assuming otherwise in a future session.
+
 ## Current state (as of 2026-07-26 session — Profile tab, reverse Join-Ride alert, login security, office console)
 
 **Both originally-requested gaps are closed, and the scope grew
