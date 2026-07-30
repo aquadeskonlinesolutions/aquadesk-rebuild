@@ -50,6 +50,178 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-07-30 session, continued a fifth and sixth time — Scheduling Phase 1/cert-labels/nitrox-UX/preview/boat-return, then a real `/crew` login bug + Diver Form table cleanup, Boat Manifest, Reports, Scheduling Spare Tanks)
+
+Two more same-day passes, both fully committed and pushed by session end
+(a change from earlier same-day sessions, which sometimes ended
+uncommitted pending the user's go-ahead — this time the user explicitly
+asked to commit after each pass).
+
+**Pass five** (`aquadesk-app` commit `b01345e`) — five itemized
+Scheduling complaints, all researched against `scheduling.html` before
+any code changed:
+- **Phase 1 reverted from a side-by-side sticky sidebar back to the live
+  app's real two-row layout** (Loose Divers full-width on top, Suggested
+  Clips below) — confirmed from `scheduling.html`'s actual
+  `.phase-one-shell` (a vertical grid of two `.phase-section` blocks,
+  each internally a 4-col responsive card grid), not the sidebar shape a
+  *prior* session had deliberately chosen for 50+-diver scannability.
+  Explicitly flagged this reversed trade-off to the user in the plan
+  rather than silently dropping it — matching the live app was the
+  explicit ask.
+- **Certification level shown as the raw enum key** (`advanced_open_water`)
+  in Scheduling's diver cards and Phase 2 team rows — added
+  `CERT_LEVEL_LABELS` to `scheduling/constants.ts` (this codebase's
+  established per-page constants-duplication pattern) and used it at
+  both display sites.
+- **Nitrox/15L selection rebuilt to match the live app's real mechanism.**
+  The old rebuild had one ambiguous pill per dive site that cycled
+  Air12L→Nitrox→Air15L and never gated on nitrox certification.
+  `scheduling.html`'s real `diverFlagsHTML()` is two clearly labeled
+  checkbox rows per diver — "Nitrox" (only rendered at all if the diver
+  is nitrox-certified; a non-certified diver sees "Not nitrox certified"
+  instead) and "15L" (always shown) — with a toast error rejecting any
+  attempt to check both for the same dive. Rebuilt `TripCard.tsx` to
+  match exactly, using the already-threaded-but-previously-unused
+  `TeamDiver.nitroxCertified` field as the gate.
+- **Phase 3's trip summary never showed Captain/Crew/Dive Sites on
+  screen** — only buried in the clipboard "Copy Preview" text. Rebuilt
+  `PhaseThreePanel.tsx`'s `TripSummaryCard` header to include a visible
+  meta row (Date/Departure/Captain/Crew/diver count) and a site-chips
+  row, matching `scheduling.html`'s real `confirmTripHTML()` structure.
+- **Boat Return client-side gating.** `markBoatReturned`'s actual logic
+  was already correct (documented in full for the user: time-gated only
+  if a departure time was saved at all — a trip with none is returnable
+  immediately, a genuine rebuild-specific case since this rebuild, unlike
+  the live app, doesn't require a departure time to save a trip; tier
+  mode writes one `activities` row per site per diver, package mode
+    writes one combined row per diver with aggregated flags; pricing is
+  never touched here, only Diver Detail's Auto-Price/Apply Charges do
+  that). The only real gap was UX: the button was always clickable and
+  only failed server-side. Added a client-side Manila-anchored
+  `canReturn` check (mirroring `actions.ts`'s own `nowManilaMinute()`
+  pattern) that shows "Available at h:mm AM/PM" instead of an enabled
+  button before departure time, matching `scheduling.html`'s real
+  `return-bar wait` state.
+- Verified live end-to-end: built a two-diver trip (one nitrox-certified,
+  one not), confirmed the layout/labels/checkbox-gating/toast, saved it
+  with no departure time and confirmed Boat Returned was immediately
+  available and produced the correct tier-mode `activities` rows (one
+  per site per diver, each row's own nitrox/15L flag), then built a
+  second trip with a future departure time and confirmed the button was
+  replaced by "Available at 11:59 PM" until that time passed.
+
+**Pass six** (`aquadesk-app` commit `34bd3bb`, root repo commit
+`0e32da5`) — six more itemized complaints across Diver Form, Boat
+Manifest, Reports, and Scheduling, one of which ("staff.html is not
+accessible") turned out to be a real, previously-undiscovered production
+bug, not a vague complaint:
+
+- **`/crew` (the rebuilt equivalent of the live app's token-entry
+  staff.html) was genuinely redirecting every visitor to `/login`.**
+  Diagnosed by first testing on a **completely fresh, separate dev-server
+  copy** (this project's established `robocopy`-to-a-temp-directory
+  technique, to rule out the shared server being stale before trusting
+  the result) — the bug reproduced there too, proving it was real, not a
+  stale-server artifact (the opposite of what the initial static-analysis
+  pass suggested — see retrospective #41 below for the wrong turn this
+  took). **Root cause**: `src/lib/supabase/proxy.ts`'s `PUBLIC_ROUTES`
+  allowlist (`["/login", "/register", "/account/password"]`) never
+  included `/crew` — so the proxy redirected every unauthenticated
+  visitor away from it before the request ever reached
+  `crew/page.tsx`, which is exactly backwards for a page whose *entire*
+  audience has no login. **Also found and fixed the identical bug on
+  `/reset-password`** (same file, same missing-allowlist cause) —
+  password-reset links were equally broken for the only audience that
+  would ever click one (logged-out users). Fix: added both paths to
+  `PUBLIC_ROUTES`. Verified on both the fresh copy and the real shared
+  dev server afterward.
+- **Diver Form's activities table had three rebuild-only additions with
+  no live-app precedent**: a per-row Total column, a per-row Discount
+  column, and per-row Auto-Price/Save buttons. Confirmed from
+  `diver-form.html`'s real `buildActivityRow()`/`updateActivity()`/
+  `saveActivity()`: the live table shows **no per-row total or discount
+  at all** (discount is a single whole-bill field — which the rebuild
+  *already* has correctly, in `BillSummary.tsx`, entirely separate from
+  the per-row `activities.discount` column being removed from the UI
+  here) and edits **persist immediately with no manual Save/Auto-Price
+  step** — the live app's only recompute mechanism is the already-correct
+  bulk "↺ Apply Charges" button. Rebuilt `VisitPanel.tsx`'s `ActivityRow`
+  to match: removed the Total/Discount columns and the Auto-Price/Save
+  buttons, converted every field to commit on blur (text/number) or
+  change (the status select) via a `fieldsRef` mirror (avoiding a stale-
+  closure read, this codebase's own established pattern) rather than the
+  live app's literal oninput-per-keystroke, and replaced the Action
+  column with a bare `✕` (or a `🔒` for Boat-Return-created rows) —
+  removed the now-fully-dead `autoPriceActivityRow`/`AutoPriceRequest`
+  from `actions.ts` (confirmed via grep this was their only caller).
+- **Certification level shown as the raw enum** — this time in Diver
+  Form's Signed Documents panel (`DocumentsViewer.tsx`, both the
+  on-screen and print views) exactly as the user reported, plus a second
+  instance found while verifying (not originally reported): the Diver
+  Form list page (`DiversListClient.tsx`) had the same bug. Fixed both;
+  added a new `diver-form/constants.ts` (the list page's own level, since
+  `diver-form/[id]/constants.ts` is one directory too deep to import from
+  cleanly) with the same duplicated `CERT_LEVEL_LABELS` map.
+- **Boat Manifest**: confirmed from `boat-manifest.html`'s real
+  `displayBoatName()` that every rendered boat name gets an "MBCA "
+  prefix (guarded case-insensitively so it's never doubled) — added an
+  equivalent `mbca()` helper in `BoatManifestClient.tsx`, applied at all
+  three render sites (trip dropdown, lead paragraph, oath paragraph).
+  Also confirmed the live app's one-page print fit is achieved entirely
+  by a print-only compaction stylesheet (smaller fonts, `height:auto`
+  table cells instead of the screen's fixed row height, tightened
+  margins, an explicit `@page{size:A4 portrait;margin:8mm}`) — the
+  rebuild had zero `@media print` rules anywhere before this. Added an
+  equivalent scoped `<style>` block.
+- **Reports**: the user's "confusing Rental" complaint turned out to be
+  specifically about Overview's "Not Yet Settled" section (the
+  `Rental — To Collect`/`Rental — To Pay` lines under Net Profit), not
+  the Rental Gears tab itself — confirmed the tab's own label/card
+  title/stat-card names already match `reports.html` verbatim and were
+  left untouched. Renamed the four bare "Rental ..." strings in
+  `OverviewTab.tsx` only to lead with "Gear Rental". Also fixed the
+  Money Snapshot donut overflow **again** — a prior session's fix only
+  guarded the inner 92px text "hole" with `overflow-hidden`; the outer
+  150px ring itself had no clipping ancestor and no responsive cap, so it
+  could still visibly escape its card on a narrow column. Added
+  `overflow-hidden` to the card/wrapper and changed the ring from a bare
+  `w-[150px] h-[150px]` to `w-full max-w-[150px] aspect-square` so it
+  scales down instead of overflowing — verified by forcing the card down
+  to 100px wide and confirming the ring shrank to fit rather than
+  escaping.
+- **Scheduling: Spare Tanks** — no live-app precedent anywhere (grepped
+  every reference `*.html` for "spare"), a genuinely new, rebuild-only
+  feature per the user's explicit ask: a per-trip repeatable list of
+  spare tanks, each independently typed (Air 12L / Air 15L / Nitrox — so
+  carrying "both" or "all three" is just adding more rows of different
+  types), folded directly into the existing tank tally rather than a
+  separate breakdown line. **Migration 020**
+  (`database/020_schedule_spare_tanks.sql`): new `schedule_spare_tanks`
+  table (`dive_center_id`, `schedule_id`, `tank_type` reusing the
+  existing `public.tank_type` enum, `sort_order`), same 4-policy RLS
+  block as `schedule_crew`. `computeTankTally` (`scheduling/tanks.ts`)
+  gained an optional `spareTankTypes` param folded into the same
+  air12l/air15l/nitrox totals; `TripCard.tsx` gained a "Spare Tanks"
+  `SectionBox` (repeatable type-`<select>` rows, starts empty unlike
+  Crew/Sites' 3-slot default); `PhaseThreePanel.tsx`'s two tally call
+  sites (the on-screen summary and the Copy Preview/Download Image text)
+  both pass the trip's spare tanks through too. Verified end-to-end: two
+  spare tanks (one Nitrox, one Air 15L) correctly changed the live
+  Build-phase tally, persisted to `schedule_spare_tanks` on save
+  (confirmed via direct SQL), and the identical folded-in tally appeared
+  in Phase 3.
+- Verified all six live end-to-end against a fresh seeded test dive
+  center; cleaned up afterward (`schedules.created_by` nulled in its own
+  committed statement first, per the established cleanup-ordering
+  lesson). Database confirmed back to just the two real accounts and one
+  real `dive_centers` row.
+
+**Dead-code audit for both passes**: see the dedicated dead-code-audit
+entry further down — nothing found needing a fix beyond what's already
+described above (the `autoPriceActivityRow` removal and a stale comment
+referencing it, both already fixed in place, not left dangling).
+
 ## Current state (as of 2026-07-30 session, continued yet again — on-brand dialogs, package-pricing correctness, Scheduling visual mirror)
 
 A fourth same-day pass. Three pieces of feedback: native browser popups
@@ -1775,7 +1947,7 @@ each committed at the end:
   Scheduling diver-card/Delete-Move-Exclude UI polish, Diver Form's
   Signed Documents print scope fixed, Reports Overview chart fixes,
   Sidebar scrollbar removed.
-- **2026-07-30 (four sessions, same day)**: first, Signed Documents
+- **2026-07-30 (six sessions, same day)**: first, Signed Documents
   identity snapshot (a real legal-record fix, not cosmetic), Group
   Management's date filter removed, and a six-part Scheduling overhaul
   — clip-exclude bug, 3-slot dive sites, auto-generating crew token,
@@ -1796,21 +1968,46 @@ each committed at the end:
   prevented a trip from ever revisiting the same dive site twice), and
   a Scheduling visual mirror pass (navy trip-card headers, collapsible
   cards, section-boxed forms, filled pill phase tabs, a shared
-  Button/SectionBox component pair).
+  Button/SectionBox component pair). Then, a fifth pass reverting Phase
+  1 to the live app's real two-row layout, fixing certification labels,
+  rebuilding nitrox/15L selection to match the live app's real
+  certification-gated checkboxes, adding Captain/Crew/Dive Sites to
+  Phase 3's on-screen preview, and client-side Boat Return time gating.
+  Finally, a sixth pass that found and fixed a real, previously-unknown
+  bug (`/crew` and `/reset-password` both silently redirected every
+  logged-out visitor to `/login`, since `proxy.ts`'s `PUBLIC_ROUTES`
+  allowlist never included either), removed three more rebuild-only
+  additions from Diver Form's activities table (Total/Discount columns,
+  Auto-Price/Save buttons) in favor of auto-save matching the live app,
+  fixed certification labels in two more spots, added the live app's
+  real "MBCA " boat-name prefix and a one-page print stylesheet to Boat
+  Manifest, renamed Reports Overview's ambiguous "Rental —" labels to
+  "Gear Rental —" and fixed the Money Snapshot donut overflow more
+  thoroughly, and added a new rebuild-only Spare Tanks feature to
+  Scheduling (migration 020).
 
-**Check `git status` in both repos before assuming either is clean** —
-each of the four same-day sessions committed its own work before the
-next started, except the most recent (this document's latest write-up)
-— still uncommitted as of this writing, pending the user's go-ahead.
+**Both repos are clean and pushed as of this writing** — all six
+same-day passes are committed (the fifth as `aquadesk-app@b01345e`, the
+sixth as `aquadesk-app@34bd3bb` + root repo `@0e32da5`), unlike some
+earlier same-day passes that ended uncommitted pending the user's
+go-ahead. Still always run `git status` in both repos before assuming
+either is clean in a future session — this is a snapshot at write-time.
 
 **Nothing is currently known to be broken or half-finished.** The one
 genuinely open item from a prior session is retrospective #38 (the
 first-time password-set flow failing against a raw-SQL-seeded test
 user) — unresolved, not yet known whether it's a real product bug or a
 testing-fixture gap; investigate if a future session hits it again or
-needs to exercise that flow. Today's sessions each closed cleanly with
-their own dead-code audit (see those sections above) — nothing left
-dangling.
+needs to exercise that flow. **A second, now-resolved production bug**
+(retrospective #41 below) was found and fixed this session — `/crew`/
+`/reset-password` silently redirecting logged-out visitors to `/login` —
+worth a quick sanity check early in a future session if any other
+anon-accessible route is ever added (`/office`? no — that's
+authenticated-only by design; any *new* public route needs its path
+added to `proxy.ts`'s `PUBLIC_ROUTES`, or it will silently 404-equivalent
+via a login redirect with no error anywhere in the route's own code).
+Today's sessions each closed cleanly with their own dead-code audit (see
+those sections above) — nothing left dangling.
 
 Whatever comes next is most likely more of the same: the user brings
 direct feedback from actual use, research the real behavior before
@@ -2831,6 +3028,79 @@ The point isn't the fix (already applied) — it's recognizing the
     explicitly (`$N::uuid`, `$N::text`) at *every* usage site, not just
     the first. Cheaper to add the casts up front than to iterate through
     Postgres's type-inference errors one at a time.**
+
+### Session 2026-07-30, continued a fifth and sixth time (Scheduling UX fixes, a real `/crew` login bug, Diver Form table cleanup)
+
+41. **A real, reproducible bug was initially misdiagnosed as a stale
+    dev-server artifact — the opposite mistake from every prior
+    "don't trust the first read" lesson in this file — because the
+    search for its cause used the wrong Next.js convention name.** The
+    user reported `/crew` (the live app's staff.html equivalent) as
+    "not accessible." Testing confirmed a real `GET /login?next=%2Fcrew`
+    redirect, but a static-analysis pass found *nothing*: no
+    `middleware.ts` anywhere in the repo (confirmed by filesystem search
+    and `git log --all` — never tracked, ever), the running server's own
+    `.next/dev/server/middleware-manifest.json` genuinely empty
+    (`"middleware": {}`), no redirect/rewrite rule in
+    `routes-manifest.json`, and `/register` (a known-working anon route)
+    loading fine on the exact same server at the same time. This
+    combination — reproducible bug, zero source-level cause findable —
+    was read as evidence of a **stale/desynced shared dev-server
+    process** (this project's own well-documented failure mode from
+    prior sessions), and a whole verification plan step was built around
+    that hypothesis ("test on a fresh copy; if it reproduces there too,
+    it's real; if not, it's stale"). When actually tested on a genuinely
+    fresh, separate directory copy, **the bug reproduced identically** —
+    disproving the stale-server hypothesis outright, and costing a full
+    robocopy-a-directory verification cycle that turned out to prove the
+    wrong half of the theory. The real cause was found only by accident,
+    reading the fresh server's own startup log line for line: `GET /
+    307 in 3.2s (next.js: 2.7s, **proxy.ts: 241ms**, application-code:
+    270ms)`. This project's Next.js version (16.2.11, per `AGENTS.md`'s
+    own standing warning: *"This is NOT the Next.js you know — APIs,
+    conventions, and file structure may all differ from your training
+    data. Read the relevant guide in `node_modules/next/dist/docs/`
+    before writing any code."*) renamed the middleware-equivalent
+    convention from `middleware.ts` to `src/proxy.ts` — a completely
+    different file (`src/lib/supabase/proxy.ts`'s `PUBLIC_ROUTES`
+    allowlist, missing `/crew` and `/reset-password`) that a
+    `middleware.ts`-shaped search would never find, no matter how
+    thorough. **Lesson: when a Next.js (or any fast-moving framework)
+    convention search comes back completely empty *and* the observed
+    behavior looks exactly like something that convention would produce,
+    treat "the convention itself may have been renamed in this version"
+    as a live hypothesis before falling back to "this must be
+    environmental/stale" — especially in a project whose own `AGENTS.md`
+    already explicitly warns that this exact category of thing (file
+    conventions, APIs) differs from training-data assumptions. A
+    `grep -r "proxy\|middleware" node_modules/next/dist/docs/` or just
+    reading that referenced docs folder once up front would have found
+    this in seconds instead of a full stale-server-artifact detour.**
+    Once found, the fix was one line (add `/crew` and `/reset-password`
+    to `PUBLIC_ROUTES`) — the wrong turn was entirely in the diagnosis,
+    not the fix.
+
+42. **(Testing technique, not a code defect.)** Cleaning up the
+    temporary fresh-server verify directory
+    (`aquadesk-app-verify`, created for retrospective #41's diagnosis)
+    repeatedly failed with `Remove-Item : Cannot remove the item ...
+    because it is in use` even after the dev server process running from
+    it was confirmed killed and every file inside it was individually
+    removable. The actual holder of the lock was the Bash tool's own
+    persistent shell — an earlier `cp` command in that same investigation
+    had `cd`'d into the verify directory to run a relative-path copy, and
+    the shell's working directory was never changed back afterward, so
+    the directory itself (not any file in it) stayed "in use" by that
+    shell process the whole time. Confirmed via `pwd` and fixed by
+    `cd`-ing the shell back to the project root before retrying the
+    delete, which then succeeded immediately. **Lesson: before deleting
+    a scratch/verify directory, check whether *this session's own*
+    persistent shell (Bash tool's cwd persists across calls) still has it
+    as its working directory — a `pwd` check costs nothing and this
+    exact symptom (every individual file/subfolder removable, but the
+    parent directory itself refuses) is the specific signature of that
+    cause, distinct from an external process actually holding a file
+    handle.**
 
 ## Dead-code audit (2026-07-23 session)
 
@@ -4030,6 +4300,61 @@ what the user asked for this session and predates these changes.
 the session write-up above** (the `schedule_sites` unique-constraint
 bug, found and fixed via migration 019 during this session's own live
 verification, not left for a future pass).
+
+## Dead-code audit (2026-07-30 session, continued a fifth and sixth time — Scheduling UX fixes, `/crew` login bug, Diver Form table cleanup)
+
+Requested explicitly by the user at session close, as its own separate
+step, specifically checking whether anything built across *both* of
+today's remaining passes left old functions/code unused instead of
+being replaced in place.
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run after every
+  part of both passes and again fresh at the very end.
+- Grepped the whole `src/` tree for every symbol removed today
+  (`cycleDiverTank`, `autoPriceActivityRow`, `AutoPriceRequest`) — zero
+  remaining references to any of them. `autoPriceActivityRow`'s removal
+  also left one stale explanatory comment referencing it by name in
+  `applyChargesToVisit`'s doc comment (`actions.ts`) — caught and
+  reworded in the same pass, not left dangling.
+- Usage-count pass (`grep -rl "\bsymbol\b" src/ | wc -l`) on every new
+  symbol added across both passes: `mbca`, `replaceScheduleSpareTanks`,
+  `setSpareTankSlot`/`addSpareTank`/`removeSpareTank`,
+  `toggleDiverNitrox`/`toggleDiverTank15l`, `formatTime12h`,
+  `nowManilaMinute` (the new client-side copy in `PhaseThreePanel.tsx`),
+  `CERT_LEVEL_LABELS` (the new `diver-form/constants.ts` copy). Several
+  showed "1 file" under the blunt heuristic — per retrospective #25's
+  standing warning, checked each one's actual occurrence lines rather
+  than trusting the count alone: every one resolved to a real
+  definition-plus-call-site pair within its own file (all are
+  intentionally module-private helpers, never exported, so "1 file" is
+  the *correct* outcome here, not a red flag) — none were dead.
+- The two additional certification-label bugs found while verifying
+  (Diver Form's list page, `DiversListClient.tsx`) were genuine gaps
+  beyond the one the user reported (`DocumentsViewer.tsx`) — found by
+  grepping the whole codebase for every remaining raw
+  `certificationLevel`/`certification_level` display expression rather
+  than stopping at the one reported site, per this project's standing
+  "grep the whole codebase, not just the reported spot" practice. Both
+  fixed, not just the reported one.
+- Confirmed `ActivityFields.discount` (the type field backing the now
+  UI-removed per-row Discount column) is still correctly threaded
+  through unchanged — `toFields`/`commit` still read/pass the row's own
+  already-persisted value, just never expose an editor for it anymore;
+  the `activities.discount` **database column** itself is untouched and
+  still real, matching this project's established "TypeScript-layer-only
+  removal, don't touch a column something else might still read"
+  precedent from retrospective #25's own `Visit.isPaid` case.
+- Test dive centers (`Scheduling Feedback Test DC`, `Feedback Pass 2 Test
+  DC`) and their `auth.users` rows deleted after verification, confirmed
+  via direct query that the user's own real `Demo Dive Center` was never
+  touched. Database confirmed back to just the two real accounts and one
+  real `dive_centers` row at session end.
+
+**Nothing found that needed fixing beyond what's already described in
+the session write-up above** — the `autoPriceActivityRow` removal and
+its one stale comment reference, and the second certification-label
+bug, were all caught and fixed during this session itself, not left for
+a future pass.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
