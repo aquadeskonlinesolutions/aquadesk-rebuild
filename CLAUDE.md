@@ -50,6 +50,177 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-07-30 session, continued — Diver Form Apply Charges + Scheduling captain/crew/UI feedback pass)
+
+A third same-day feedback pass, immediately following the Signed
+Documents/Group Management/per-dive-tank session below. The user gave
+two more real, concrete pieces of feedback after using the rebuild
+against the live app directly: Diver Form was missing its bulk "Apply
+Charges" action and had a rebuild-only nitrox/15L checkbox mechanism
+with no live-app precedent, and Scheduling had seven more gaps (diver
+card scaling, departure-time UI, fuel-capture phase, missing preview
+info, dive-site layout, missing captain/crew capture, join-rider
+placement). Researched `diver-form.html`'s real `recalculateAllRows()`
+and `scheduling.html`'s real crew/captain/fuel/dive-site mechanics
+before writing any code, went through `EnterPlanMode` given the size.
+
+- **Migration 018** (`database/018_scheduling_captain_crew.sql`): adds
+  `schedules.captain` (a genuine per-trip free-text field, confirmed
+  from the live app's real `t.captain` — entered fresh per trip, *not*
+  sourced from `boats.captain`, which stays a separate Settings > Fleet
+  concern untouched by this session) and a new `schedule_crew` table
+  (`schedule_id`, `crew_name`, `sort_order`) — the relational
+  equivalent of the live app's `notes.crews` JSON array, matching this
+  project's standing anti-JSON-blob rule the same way `schedule_sites`
+  already does for multi-site trips. Also updates `get_crew_schedule`
+  (from `010_staff_roster_fields.sql`) to surface both fields — this
+  closes the "no Crew line" known gap from the earlier same-day session
+  by giving the preview/`\/crew` a real schema field to read instead of
+  fabricating one.
+- **Scheduling — eight items, one already correct:**
+  - **"At least one dive site required before saving" was already
+    enforced** both client- and server-side — confirmed to the user as
+    a non-issue, no code changed for this one.
+  - **Fuel Consumed (L) moved from Phase 3 (Complete) to Phase 2
+    (Build)** — required to save an own-boat trip now (matching the
+    live app's real `validateTrip`), persisted via `createTrip`/
+    `updateTrip`'s existing `fuel_consumed_liters` column write.
+    `markBoatReturned` no longer takes a fuel-liters parameter — it
+    reads the already-saved `schedules.fuel_consumed_liters` for the
+    actual deduction/log, matching the live app's real design (captured
+    once at trip-build time, deducted later at actual return).
+  - **Boat Captain (required, own-boat) and Dive Crew (3 default slots
+    + "+ Add Crew") added to `TripCard.tsx`**, writing to the new
+    migration-018 fields via `replaceScheduleCrew` (delete-and-reinsert,
+    same shape as `replaceScheduleSites`).
+  - **Departure Time switched from a native `<input type="time">` to 3
+    dropdowns** (Hour 1-12 / Minute / AM-PM), matching
+    `scheduling.html`'s real `departureTimeHTML()` — converts to/from
+    the stored 24h `HH:MM` at the edges, no schema change.
+  - **Dive Sites changed from a vertical stack to a horizontal 3-column
+    grid** (`grid grid-cols-3 gap-2`), matching `scheduling.html`'s real
+    `.sites-list` layout — reads as one compact row/block, "+ Add Dive
+    Site" appends another slot to the same grid.
+  - **"Other divers joining this boat" (join-rider fields) moved to the
+    bottom of the trip form**, after Notes and the Teams section,
+    immediately above the Save/Delete/Cancel footer.
+  - **Phase 3 preview (on-screen header, Copy Preview, Download Image)
+    now shows Captain + Crew lines**, sourced from the new
+    `schedules.captain`/`schedule_crew` fields — verified the exact
+    Copy Preview text matches `scheduling.html`'s real `buildPreview()`
+    line order (`Captain: X` / `Crew: X` right after Departure, before
+    the dive-site line). `/crew`'s `CrewScheduleClient.tsx` also renders
+    both lines now, matching `staff.html`'s real `👨‍✈️ Captain:` /
+    `🧑‍🤝‍🧑 Crew:` display.
+  - **Phase 1's "Loose Divers" list is now a fixed-width (20rem),
+    sticky, independently-scrolling sidebar** (`PhaseOnePanel.tsx`,
+    `md:grid-cols-[20rem_1fr]` with the divers column
+    `md:sticky md:top-4 md:max-h-[calc(100vh-8rem)] md:overflow-y-auto`)
+    beside Suggested Clips, matching `scheduling.html`'s real
+    `.available-panel` structure — confirmed via research this was the
+    actual mechanism that keeps 50+ divers usable, not smaller card
+    text (the rebuild's `DiverInfoCard` was already more compact than
+    the live app's own two-line cards from an earlier session).
+    Verified live with 15 seeded divers: the column stays exactly
+    320px wide with `position: sticky` and a 592px `max-height` /
+    `overflow-y: auto` — confirmed via direct computed-style query, not
+    just visual inspection.
+- **Diver Form — Apply Charges + nitrox/15L, matching the live app's
+  real mechanism exactly.** Research confirmed `diver-form.html` has
+  **no nitrox/15L checkbox anywhere** — `nitrox_fee`/`fifteen_l_fee`
+  are always plain editable number fields, auto-filled only by the
+  visit-level `recalculateAllRows()` ("↺ Apply Charges," the *only*
+  pricing-recompute mechanism in the live app — there's no per-row
+  auto-price there at all), which reads per-dive flags set upstream,
+  once, by Scheduling's Boat Return step.
+  - `scheduling/actions.ts`'s `markBoatReturned` is now the sole writer
+    of these flags: extended to look up each diver's
+    `schedule_diver_dive_tanks` per site index and write
+    `activities.flags = {nitrox_requested: true}` /
+    `{tank_15l_requested: true}` on each created activity row (already-
+    existing `activities.flags jsonb` column, unused until now —
+    "structured replacement for the old JSON-encoded notes blob," per
+    its own schema comment).
+  - New bulk `applyChargesToVisit(diverId, visitId)` action
+    (`diver-form/[id]/actions.ts`), modeled directly on
+    `recalculateAllRows()`: walks every non-cancelled activity in
+    `date, created_at` order with a real running 1-based cumulative
+    dive count (a more correct retroactive tier computation than the
+    existing per-row path, which could only ever see a flat sibling
+    count), applies per-day marine/shark/fuel cadence dedup via running
+    per-date trackers built fresh each pass, and fills nitrox/15L from
+    each row's own `flags`. New "↺ Apply Charges" button in
+    `VisitPanel.tsx`'s header (next to "+ Add Activity"), reloading
+    after — matching this codebase's established multi-row-affecting-
+    action pattern (Add Activity, bill unlock).
+  - Removed `ActivityRow`'s rebuild-only `wantsNitrox`/`wants15L`
+    checkbox UI and local state entirely (confirmed zero checkboxes
+    remain in the activities table via a live DOM query). Per-row
+    "Auto-Price" stays as a convenience (useful for re-pricing one row
+    after manually changing its dive site) but now sources
+    `wantsNitrox`/`wants15L` from the row's own stored `flags` server-
+    side (`autoPriceActivityRow`) instead of client checkbox state —
+    both paths now read the exact same source of truth.
+  - **Verified end-to-end against real seeded tier-mode pricing**
+    (base_dive ₱1000, nitrox ₱200, tank_15l ₱150): a diver nitrox on
+    dive 1 only got Apply Charges → ₱1200/₱1000 per row, ₱2200 visit
+    total; a diver 15L on dive 2 only got ₱1000/₱1150, matching
+    hand-computed expected values exactly (confirmed via direct SQL,
+    not just the UI). A manually-added walk-in activity row (no
+    schedule-derived flags) correctly stayed at nitrox/15L = ₱0 after
+    Apply Charges, number field still manually editable. Zeroed a
+    row's nitrox fee by hand, saved, then re-ran that row's own
+    per-row Auto-Price and confirmed it recomputed back to ₱200 purely
+    from the stored flag — proving both the bulk and per-row paths
+    genuinely share the same flag-driven source of truth.
+
+**Testing-technique note, not a code defect — a new environment
+constraint, not previously documented**: this session's dev-server
+setup hit two new blockers beyond the ones already catalogued. First,
+`preview_start` (both by config name and by explicit non-3000 port)
+refused to start, reporting "Port 3000 is in use by another chat's dev
+server" even with `autoPort: true` and no hardcoded port flag in
+`.claude/launch.json` — tracing it further, Next.js 16's Turbopack dev
+server itself refuses a second instance **pointed at the same project
+directory**, regardless of port (`⨯ Another next dev server is already
+running... Dir: D:\Rebuild\aquadesk-app`), which is what the tool's
+own port-conflict message was actually surfacing. Second, attempting to
+route around this with a `node_modules` **directory junction** (to
+avoid a full reinstall in an isolated copy) made Turbopack fail
+outright with `Symlink [project]/node_modules is invalid, it points
+out of the filesystem root` — Turbopack's resolver doesn't accept a
+junction/symlinked `node_modules`. **Lesson: verifying UI changes while
+another session has its own dev server running against the same
+project directory needs a genuinely separate directory copy — `git
+worktree` only reflects committed state so doesn't help for
+uncommitted work-in-progress, and `node_modules` must be a real copy
+(`robocopy`, not a junction) for Turbopack to accept it.** Worked
+around this session by `robocopy`-copying the whole tree (excluding
+`node_modules`/`.next`/`.git`) to `aquadesk-app-verify`, then a full
+real copy of `node_modules` into it, running `next dev` there on its
+own port; the temporary directory and its dev server were both torn
+down after verification completed, confirmed via `Test-Path` that
+`aquadesk-app-verify` no longer exists.
+
+**Verification approach**: a fresh test dive center (`Feedback Test DC
+2`) seeded via the established raw-SQL fixture pattern — owner, one
+boat, two dive sites, tier-mode rate config (base_dive/nitrox/tank_15l),
+and 15 divers with open fun-diving visits (for the Phase 1 scale test)
+— exercised through the real browser UI for every flow above: Phase 1's
+sticky column at 15 divers, a full Phase 2 own-boat trip build
+(captain/fuel/crew validation, departure-time dropdowns, horizontal
+dive-site grid, join-riders at the bottom, per-dive nitrox/15L tank
+pills, tank tally), Phase 3's preview/Copy Preview/`/crew` display, Boat
+Return, and Diver Form's Apply Charges (bulk and per-row) against the
+resulting per-dive-flagged activity rows. Database confirmed back to
+just the two real accounts (`aquadeskonline@gmail.com`,
+`demodivecenter@gmail.com`) and the one real `dive_centers` row at
+session end (`schedules.created_by` nulled in its own committed
+statement first, per the established cleanup-ordering lesson). Both
+repos' code is committed... **no — check `git status` before assuming
+that**; as of this write-up both repos have this session's changes
+staged in the working tree but the user has not yet asked to commit.
+
 ## Current state (as of 2026-07-30 session — Signed Documents identity, Group Management visibility, Scheduling per-dive tank overhaul)
 
 A second feedback-pass session, larger than the first. Three areas, all
@@ -1409,11 +1580,12 @@ tracked in full in `aquadesk-app/KNOWN_GAPS.md`:
    parameter, no mid-visit experience-type change in Diver Detail, no
    Waiver/Medical preview modal, no "remember me"/password-strength
    meter) — see `aquadesk-app/KNOWN_GAPS.md` for full entries on each.
-5. **New 2026-07-30 gap**: the Scheduling preview (Copy Preview / Download
-   Image) doesn't show a "Crew:" line the way the live app does for
-   own-boat trips — the rebuild's `boats` table has no crew-list column,
-   only `captain`. Deliberately not fabricated; would need a real schema
-   addition (a crew-members field or table on `boats`) if ever requested.
+**Resolved same-day**: the "no Crew line in the Scheduling preview" gap
+noted after the per-dive-tank session was closed a few hours later the
+same day — migration 018 added `schedules.captain`/`schedule_crew`, and
+the preview/`/crew` display both read them now. See the "Diver Form
+Apply Charges + Scheduling captain/crew/UI feedback pass" write-up
+above.
 
 ### Suggested next step
 
@@ -1436,16 +1608,25 @@ each committed at the end:
   Scheduling diver-card/Delete-Move-Exclude UI polish, Diver Form's
   Signed Documents print scope fixed, Reports Overview chart fixes,
   Sidebar scrollbar removed.
-- **2026-07-30 (this session)**: Signed Documents identity snapshot
-  (a real legal-record fix, not cosmetic), Group Management's date
-  filter removed, and a six-part Scheduling overhaul — clip-exclude bug,
-  3-slot dive sites, auto-generating crew token, real per-dive nitrox/
-  15L tracking (the largest single piece — two new tables), tank-tally
-  correctness + repositioning, and a schedule-preview reformat.
+- **2026-07-30 (two sessions, same day)**: first, Signed Documents
+  identity snapshot (a real legal-record fix, not cosmetic), Group
+  Management's date filter removed, and a six-part Scheduling overhaul
+  — clip-exclude bug, 3-slot dive sites, auto-generating crew token,
+  real per-dive nitrox/15L tracking (two new tables), tank-tally
+  correctness + repositioning, and a schedule-preview reformat. Then,
+  Diver Form's bulk "Apply Charges" action (matching `diver-form.html`'s
+  real `recalculateAllRows()`, replacing a rebuild-only nitrox/15L
+  checkbox with the live app's real flag-driven mechanism) plus an
+  eight-part Scheduling pass — captain/crew capture (migration 018),
+  fuel moved to Phase 2, departure-time dropdowns, a sticky Phase 1
+  diver sidebar, a horizontal dive-site grid, join-riders moved to the
+  bottom, and Captain/Crew added to the preview and `/crew`.
 
-**The 2026-07-30 session's code is committed in both repos; this
-documentation update itself may not be yet** — check `git status` in
-both repos before assuming either is clean in a future session.
+**Check `git status` in both repos before assuming either is clean** —
+the first 2026-07-30 session's code was committed before the second
+started; the second session's changes (this document's most recent
+write-up) were still uncommitted as of this writing, pending the user's
+go-ahead.
 
 **Nothing is currently known to be broken or half-finished.** The one
 genuinely open item from a prior session is retrospective #38 (the
@@ -1470,10 +1651,9 @@ selection (Divers, also manual entry), Diver Detail only ever shows the
 diver's single most recent visit (no full multi-visit history browser),
 Join-Ride/Rental boats have no persisted distinction from each other
 (Scheduling, accepted cosmetic gap), no bulk group-billing review
-(Divers > Group Management), no unlinked-secretary banner on Staff
-Access, and no "Crew" line in the Scheduling preview (new 2026-07-30 gap,
-see Known Gaps above) — none of these were blocking for their respective
-builds, all called out inline in the write-ups above. Plus the smaller
+(Divers > Group Management), and no unlinked-secretary banner on Staff
+Access — none of these were blocking for their respective builds, all
+called out inline in the write-ups above. Plus the smaller
 earlier-2026-07-26-session findings tracked in `aquadesk-app/KNOWN_GAPS.md`
 (cert-card compression, registration validations, Waiver/Medical preview,
 Diver Detail mid-visit experience-type change, login cosmetics).
@@ -3584,6 +3764,60 @@ instead of being replaced in place.
 
 **Nothing found that needed a code fix beyond the already-caught
 `readOnly` prop** (see above) — the rest of the audit came back clean.
+
+## Dead-code audit (2026-07-30 session, continued — Diver Form Apply Charges + Scheduling captain/crew/UI feedback pass)
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run after every
+  part of the change and again fresh at the end.
+- Grepped the whole `src/` tree for the removed `wantsNitrox`/
+  `wants15L` checkbox state and the `isCourseVisit` prop it was gated
+  by (`VisitPanel.tsx`) — zero remaining references; `isCourseVisit`
+  was removed completely (type, destructure, and call site), not left
+  as a dead prop, matching the same-day precedent set by the
+  `readOnly`-prop removal in the earlier session's audit above.
+  Confirmed live via `document.querySelectorAll('table input[type=
+  "checkbox"]')` on a real activities table — zero checkboxes.
+- Grepped for `fuelLiters` (the removed Phase 3 local input state) and
+  `boat?.captain` (the old, always-empty preview/header source) —
+  `PhaseThreePanel.tsx` has neither; both call sites now read
+  `detail.captain`/`detail.fuelConsumedLiters`/`detail.crew` instead.
+  `boats.captain` itself is untouched and still legitimately read by
+  Settings > Fleet (`BoatsSection.tsx`) and Boat Manifest
+  (`boat-manifest/data.ts`) — confirmed these are a separate,
+  pre-existing feature (a boat's own Fleet-configured captain) not
+  superseded by the new per-trip `schedules.captain`, so left alone;
+  not a stale reference.
+- Usage-count pass on every new exported symbol this session
+  (`replaceScheduleCrew`, `validateOwnBoatFields`, `tankFlagsFromRow`,
+  `applyChargesToVisit`, `to12h`/`to24h`, `padCrewSlots`,
+  `MIN_CREW_SLOTS`) — all resolve to 2+ files (definition plus a real
+  call site) or are correctly used only within their own defining file
+  (`to12h`/`to24h`/`padCrewSlots` are `TripCard.tsx`-local, matching
+  the existing `padSiteSlots`/`MIN_SITE_SLOTS` pattern they mirror).
+- The `markBoatReturned` signature change (dropping its
+  `fuelLitersConsumed` parameter) was traced to its one caller
+  (`TripSummaryCard.returnBoat` in `PhaseThreePanel.tsx`) — confirmed
+  no other file calls it, so this wasn't a partial signature change
+  left half-migrated.
+- **One pre-existing (not newly introduced) rough edge noticed, not
+  fixed — out of scope for what was asked**: a freelancer team's name
+  (e.g. "DM Alex") reverts to "Unassigned" after a trip is saved and
+  reloaded, because `TripCard.tsx`'s load path resolves a team's
+  display name via `staffOptions.find(s => s.id === t.staffId)?.
+  fullName ?? "Unassigned"` — always "Unassigned" for a freelancer
+  since `staffId` is null by design. This is unchanged pre-existing
+  code from the original three-phase Scheduling rebuild, not touched
+  or caused by this session's edits (confirmed by reading the exact
+  same logic, unmodified, in the file's git history) — noted here for
+  a future session rather than silently worked around.
+- Database confirmed empty of test data at session end — only the two
+  real accounts and the one real `dive_centers` row remain (see the
+  main write-up above for the exact cleanup sequence).
+
+**Nothing found that needed fixing beyond what's already noted above.**
+The one real pre-existing rough edge found (freelancer name reverting
+to "Unassigned" on reload) is flagged, not fixed — it wasn't part of
+what the user asked for this session and predates these changes.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
