@@ -50,6 +50,153 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-07-30 session — Signed Documents identity, Group Management visibility, Scheduling per-dive tank overhaul)
+
+A second feedback-pass session, larger than the first. Three areas, all
+researched against the actual rebuild code and the old app's real
+`scheduling.html`/`diver-form.html` before any code changed — nothing
+here was guessed, and one genuine scope fork (whether to track staff
+tank consumption per dive, not just divers') was confirmed with the user
+via `AskUserQuestion` before building it. Went through `EnterPlanMode`
+given the size (the Scheduling piece alone is comparable to a full
+Scheduling-rebuild session).
+
+- **Signed Documents now shows who signed — via a real immutable
+  snapshot, not a live join.** `diver_registrations` had no identity
+  columns of its own (only a `diver_id` FK) — despite already snapshotting
+  accommodation/certification/waiver/medical answers specifically so a
+  signed record can't drift after a later profile edit. **Migration 017**
+  (`database/017_registration_identity_snapshot.sql`) adds
+  `first_name`/`last_name`/`birthday`/`nationality`/`email`/`phone`/
+  `whatsapp` to `diver_registrations`, and `submit_diver_registration` now
+  copies those same fields there too (the wizard already submitted them —
+  they were only ever written to `divers`, never snapshotted). Same
+  migration also adds the two new Scheduling tables below. `DocumentsViewer.tsx`
+  gained an identity block at the top of both the on-screen and print
+  views, reading the registration's own frozen fields with a fallback to
+  the diver's current profile (already available in `DiverDetailClient.tsx`
+  as `diver`, threaded down as a new prop) only for pre-migration rows.
+  **Verified the actual legal property, not just that it renders**: edited
+  Maria Santos's first name via Edit Diver Info mid-session (profile header
+  correctly updated to "MariaEdited Santos"), confirmed Signed Documents'
+  identity block — on-screen and in the print-only block — still correctly
+  showed "Maria Santos," proving the snapshot genuinely doesn't drift.
+- **Divers > Group Management now shows every group regardless of arrival
+  date.** `divers/data.ts`'s `loadGroups()` was calling `isGroupActive()`
+  and filtering — removed entirely; Individual Management's own logic was
+  independently re-verified as already matching the ask exactly (visible
+  from arrival−1, hidden after departure only once the bill is fully
+  closed) and needed no change. `isGroupActive` in `divers/visibility.ts`
+  was dead code once its only call site was removed — deleted, not left
+  behind. Verified with two seeded 2099-dated groups (one with a member,
+  one empty) — both now show unconditionally where they'd previously have
+  been hidden.
+- **Scheduling — six fixes, the largest being real per-dive nitrox/15L
+  tracking:**
+  - **Diver cards made more compact** (`PhaseOnePanel.tsx`'s
+    `DiverInfoCard`) — merged the nationality/cert and dives/age lines
+    into one smaller-text line, dropped the "Fun Diving" line entirely
+    (only course divers get a line now) — same four facts, tighter.
+  - **Fixed a real bug**: excluding a diver from a clip
+    (`excludeDiverFromClip`) silently returned them to Loose Divers on
+    next refresh, because `loadPhaseOneData`'s `clippedIds` and
+    `ClipCard`'s rendered member list both filtered out excluded members
+    entirely. Confirmed against `scheduling.html`'s real mechanic
+    (`clipDiverRowHTML`/`allClipDiverIds`): an excluded member should stay
+    visibly attached to the clip (grayed, "Not diving this trip" tag,
+    "Include" to undo), never fall back to the pool. Fixed by dropping the
+    exclusion filter from `clippedIds` and rendering all `clip.members` in
+    `ClipCard`; added the mirror `includeDiverInClip` action. Verified
+    live: excluded a clip member, confirmed she stayed in the clip (not
+    Loose Divers), clicked Include, confirmed she returned to normal.
+  - **Dive Sites is now 3 default dropdown slots ("Dive Site 1/2/3",
+    sourced from Settings > Dive Sites) + "+ Add Dive Site"**, replacing
+    the old flat multi-select-button UI — confirmed exact match to
+    `scheduling.html`'s real `sites:['','','']` seeding and `sitesHTML()`.
+    `TripCard.tsx`'s `form.siteIds` became a slot array (empty string =
+    unfilled slot), filtered down to real ids only at save time.
+  - **Crew token now auto-generates**, no manual click — confirmed the
+    live app's `generateToken()`/`refreshStaffToken()` fire automatically
+    whenever Phase 3 is viewed, with no "Generate" button anywhere; the
+    rebuild's manual button was the deviation. `PhaseThreePanel.tsx`'s
+    token `useEffect` now calls `generateCrewToken()` itself when none
+    exists yet; the button and its now-dead `readOnly` prop (only ever
+    used to gate that button) were removed from both `PhaseThreePanel`
+    and its `SchedulingClient.tsx` call site.
+  - **Real per-dive nitrox/15L tracking — the biggest single piece.**
+    `schedule_divers` had one `is_15l`/`nitrox_requested` boolean per
+    diver for the *whole trip*; the live app genuinely supports a diver
+    being nitrox on dive 1 and plain air on dive 2 of the same multi-site
+    trip (`getNitroxIndexes`/`getTank15lIndexes` — real per-dive index
+    arrays), and separately tallies **one tank per staff member per dive
+    site** too (confirmed by the user as worth adding, not skipping).
+    Migration 017 adds two new additive tables —
+    `schedule_diver_dive_tanks` (schedule_diver_id, site_index, tank_type)
+    and `schedule_staff_dive_tanks` (schedule_id, staff_name, site_index)
+    — both keyed by `schedule_sites.sort_order`'s existing index
+    convention, both with the standard 4-policy RLS block copied from
+    `schedule_team_clip_divers` (the one-time policy-creation loop in 001
+    already ran and can't be re-run for new tables). `schedule_divers.
+    is_15l`/`nitrox_requested` stay as real columns — now derived summary
+    booleans ("at least one dive uses this tank"), so `/crew`'s
+    `get_crew_schedule` RPC and every other existing consumer keep working
+    unchanged (confirmed via a whole-codebase grep before considering this
+    done, per this project's standing "grep before shipping a column's
+    first real writer" lesson). `TripCard.tsx`'s UI replaced the single
+    15L/Nitrox checkbox pair per diver with a compact pill button per
+    *active* dive site (cycles Air 12L → Nitrox → Air 15L on click,
+    functional parity not pixel parity with the old app's checkboxes), plus
+    one nitrox-only pill row per team for the staff member. New
+    `scheduling/tanks.ts` (`computeTankTally`) is the single shared pure
+    function both `TripCard.tsx` (Build-phase live tally) and
+    `PhaseThreePanel.tsx` (Complete-phase summary) now call — previously
+    each had its own independently-wrong computation that disagreed with
+    each other.
+  - **Tank tally fixed and repositioned.** The bug: the rebuild counted
+    *divers*, not *diver-dives* — a diver on a 2-site trip tallied as 1
+    tank instead of 2, and staff tanks were never counted at all. Fixed by
+    the new per-dive schema above feeding the shared `computeTankTally`.
+    Repositioned in `PhaseThreePanel.tsx` from right after the header
+    (before the diver list) to after the per-staff diver groupings,
+    matching every rendering context in `scheduling.html`
+    (`tankBarHTML`/`tankTallyHTML`/preview text all put it last).
+  - **Schedule preview (Copy Preview text + Download Image) reformatted**
+    to match `scheduling.html`'s real `buildPreview()`/`tripImageRows()`
+    order exactly: boat → date → departure → captain → `Dive 1 - Site |
+    Dive 2 - Site` line → blank → per-staff-group divers (course divers
+    show `"Name - Course - CourseName"`, fun divers show per-dive tank
+    detail like `"Name - Nitrox D1"`) → **Tank Tally line** → join-ride/
+    notes; trips separated by `------------------------------`, crew
+    token appended once at the very end of the combined multi-trip text
+    (already correct, unchanged). `loadScheduleDivers` gained a
+    `courseName` field (resolved the same way `fetchClipsRaw` already
+    does it) to make the course-diver preview line possible.
+  - Verified all six live end-to-end in a real browser: built a 2-site
+    trip, set one diver nitrox on dive 1 only and another 15L on dive 2
+    only (confirmed via precise per-row DOM queries — an early
+    imprecise-selector test script briefly clicked the wrong pills,
+    caught and corrected before drawing any conclusion), toggled staff
+    nitrox per site, confirmed the live Build-phase tally updated
+    correctly at every step (`Air 12L: 5 / Air 15L: 1 / Nitrox: 3`
+    matching hand-computed expected values), saved, reached Phase 3 with
+    the crew token appearing with no click, confirmed the repositioned
+    tally, and confirmed Copy Preview's captured text matched the planned
+    format exactly including the per-dive tank tally line and course-diver
+    formatting.
+
+**Verification approach**: a fresh test dive center (`Feedback Test DC`)
+seeded via the established raw-SQL `auth.users`/`auth.identities` fixture
+pattern, extended with staff/boats/two dive sites/three divers (one
+full-info, one course-tagged, one for group testing)/a signed registration/
+two future-dated groups, exercised through the real browser UI for every
+flow above, then fully deleted (`schedules`/`schedule_team_clips`/
+`schedule_day_diver_exclusions.created_by` nulled in their own committed
+statement first, per the established cleanup-ordering lesson). Database
+confirmed back to just the two real accounts and the one real
+`dive_centers` row at session end. **Both repos are uncommitted as of
+this session's end** — the user has not yet asked to commit; check `git
+status` before assuming otherwise in a future session.
+
 ## Current state (as of 2026-07-27 session — feedback pass: Settings 12-tab split, Scheduling cards/UI, Diver Form print, Reports charts, Sidebar)
 
 The user started giving direct, itemized feedback after using the rebuild
