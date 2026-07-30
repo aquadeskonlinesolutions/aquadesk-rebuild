@@ -193,9 +193,11 @@ flow above, then fully deleted (`schedules`/`schedule_team_clips`/
 `schedule_day_diver_exclusions.created_by` nulled in their own committed
 statement first, per the established cleanup-ordering lesson). Database
 confirmed back to just the two real accounts and the one real
-`dive_centers` row at session end. **Both repos are uncommitted as of
-this session's end** — the user has not yet asked to commit; check `git
-status` before assuming otherwise in a future session.
+`dive_centers` row at session end. **Both repos' code is committed** —
+the retrospective/dead-code-audit documentation pass that follows this
+write-up (see the Retrospective and Dead-code audit sections further
+down) may still be uncommitted on top of it; check `git status` in both
+repos before assuming either is fully clean in a future session.
 
 ## Current state (as of 2026-07-27 session — feedback pass: Settings 12-tab split, Scheduling cards/UI, Diver Form print, Reports charts, Sidebar)
 
@@ -1407,56 +1409,74 @@ tracked in full in `aquadesk-app/KNOWN_GAPS.md`:
    parameter, no mid-visit experience-type change in Diver Detail, no
    Waiver/Medical preview modal, no "remember me"/password-strength
    meter) — see `aquadesk-app/KNOWN_GAPS.md` for full entries on each.
+5. **New 2026-07-30 gap**: the Scheduling preview (Copy Preview / Download
+   Image) doesn't show a "Crew:" line the way the live app does for
+   own-boat trips — the rebuild's `boats` table has no crew-list column,
+   only `captain`. Deliberately not fabricated; would need a real schema
+   addition (a crew-members field or table on `boats`) if ever requested.
 
 ### Suggested next step
 
-**The rebuild's originally-agreed page-by-page build order is complete**,
-and as of the 2026-07-26 session (four continuations, same day) so is a
-large follow-up arc closing every gap found once the user actually
-started using the app and compared it to the live app directly: Settings
-Profile tab, the reverse Join-Ride Dashboard alert, a full login-security
-build, an office console upgrade, real Resend-backed invoice email
-delivery, a full nav/Staff/Divers/Scheduling rebuild to match the live
-app's real page layout, **and then, after the user reviewed that rebuild
-and gave three more specific "treat the live app as the exact spec"
-requests**: Group/Individual Management's active-window logic fixed to
-match `divers.html`'s real `isVisible()` rule, Scheduling fully rebuilt
-around the live app's real three-phase Prepare/Build/Complete workflow
-(clips backed by real, previously-unused schema tables, not the live
-app's own JSON-blob/duplication patterns), and a Settings tab audit
-confirming all 12 live-app tabs' functionality is present (one real
-mismatch fixed: dive insurance moved from a rebuild-only Integrations tab
-into Profile). **Both repos are committed as of this session's end** —
-check `git status` before assuming that's still true in a future session.
+**The rebuild's originally-agreed page-by-page build order finished on
+2026-07-25.** Since then the project has been in an ongoing
+**feedback-response phase**: the user uses the app day-to-day and brings
+concrete, itemized feedback; each session researches the actual rebuild
+code and the old app's real HTML/JS before changing anything, then
+verifies every change live in a real browser against seeded test data
+(never the user's real "Demo Dive Center"). Three such passes so far,
+each committed at the end:
 
-**Nothing is currently known to be broken or half-finished** — the
-`experience_type` regression found during this session's own final audit
-(retrospective #37) was found and fixed *within* the same session, not
-left open. The one genuinely open item is retrospective #38 (the
-first-time password-set flow failing against a raw-SQL-seeded test user)
-— unresolved, not yet known whether it's a real product bug or a testing-
-fixture gap; investigate if a future session hits it again or needs to
-exercise that flow.
+- **2026-07-26 (four continuations, one day)**: Settings Profile tab,
+  reverse Join-Ride Dashboard alert, full login-security build, office
+  console upgrade, real Resend-backed invoice email delivery, a full
+  nav/Staff/Divers/Scheduling rebuild to match the live app's real page
+  layout, then Group/Individual Management's active-window fix, a full
+  three-phase Scheduling rebuild, and a Settings tab audit.
+- **2026-07-27**: Settings split back to the live app's real 12 tabs,
+  Scheduling diver-card/Delete-Move-Exclude UI polish, Diver Form's
+  Signed Documents print scope fixed, Reports Overview chart fixes,
+  Sidebar scrollbar removed.
+- **2026-07-30 (this session)**: Signed Documents identity snapshot
+  (a real legal-record fix, not cosmetic), Group Management's date
+  filter removed, and a six-part Scheduling overhaul — clip-exclude bug,
+  3-slot dive sites, auto-generating crew token, real per-dive nitrox/
+  15L tracking (the largest single piece — two new tables), tank-tally
+  correctness + repositioning, and a schedule-preview reformat.
 
-Beyond that, whatever comes next is either a refinement of what's already
-built, closing one of the documented known gaps below, or new scope the
-user brings — no next page or feature is implied by prior planning.
+**The 2026-07-30 session's code is committed in both repos; this
+documentation update itself may not be yet** — check `git status` in
+both repos before assuming either is clean in a future session.
+
+**Nothing is currently known to be broken or half-finished.** The one
+genuinely open item from a prior session is retrospective #38 (the
+first-time password-set flow failing against a raw-SQL-seeded test
+user) — unresolved, not yet known whether it's a real product bug or a
+testing-fixture gap; investigate if a future session hits it again or
+needs to exercise that flow. Today's session closed cleanly with its own
+dead-code audit (see that section above) — nothing left dangling.
+
+Whatever comes next is most likely more of the same: the user brings
+direct feedback from actual use, research the real behavior before
+changing anything, verify live, commit only when asked. No next page or
+feature is implied by prior planning — treat any of the known gaps below
+as fair game to close if the user asks, but none are blocking.
 
 Known, documented gaps worth revisiting whenever a future session
 touches these areas: package-mode nitrox/15L add-on pricing (Divers, no
-dedicated mechanism, stays manual entry), `equipment_rental` never
-auto-computed from a diver's saved equipment selection (Divers, also
-manual entry), Diver Detail only ever shows the diver's single most
-recent visit (no full multi-visit history browser), Join-Ride/Rental
-boats have no persisted distinction from each other (Scheduling,
-accepted cosmetic gap), no bulk group-billing review (Divers > Group
-Management, new 2026-07-26 gap), and no unlinked-secretary banner on
-Staff Access (new 2026-07-26 gap) — none of these were blocking for
-their respective builds, all called out inline in the write-ups above.
-Plus the smaller earlier-2026-07-26-session findings tracked in
-`aquadesk-app/KNOWN_GAPS.md` (cert-card compression, registration
-validations, Waiver/Medical preview, Diver Detail mid-visit experience-
-type change, login cosmetics).
+dedicated mechanism, stays manual entry — **not** the same thing as
+Scheduling's now-real per-dive nitrox/15L tracking added this session),
+`equipment_rental` never auto-computed from a diver's saved equipment
+selection (Divers, also manual entry), Diver Detail only ever shows the
+diver's single most recent visit (no full multi-visit history browser),
+Join-Ride/Rental boats have no persisted distinction from each other
+(Scheduling, accepted cosmetic gap), no bulk group-billing review
+(Divers > Group Management), no unlinked-secretary banner on Staff
+Access, and no "Crew" line in the Scheduling preview (new 2026-07-30 gap,
+see Known Gaps above) — none of these were blocking for their respective
+builds, all called out inline in the write-ups above. Plus the smaller
+earlier-2026-07-26-session findings tracked in `aquadesk-app/KNOWN_GAPS.md`
+(cert-card compression, registration validations, Waiver/Medical preview,
+Diver Detail mid-visit experience-type change, login cosmetics).
 
 Implementation rules that governed Reports, Divers, Staff, and
 Scheduling across this multi-session arc, worth carrying forward into
@@ -2396,6 +2416,65 @@ The point isn't the fix (already applied) — it's recognizing the
     `password_changed=false` row created through the real signup/create-
     secretary path), not as an already-understood quirk to route around
     again.
+
+### Session 2026-07-30 (Signed Documents identity, Group Management visibility, Scheduling per-dive tanks)
+
+39. **(Testing technique, not a code defect — but a genuinely misleading
+    intermediate result, worth flagging clearly.)** While verifying
+    per-dive nitrox/15L selection, the first test script located "the
+    diver's row" with
+    `[...document.querySelectorAll('div')].filter(d =>
+    d.textContent.includes(diverName) && d.querySelector('button'))`,
+    then clicked the first matching row's site-labeled button. This is
+    unsound: `textContent` bubbles up through every ancestor, so *every*
+    container `<div>` wrapping that diver's row also "includes" their
+    name — including the outer Teams container that wraps the whole
+    trip's staff-O2 row and every diver row together. `querySelectorAll`
+    returns elements in document order (ancestors before descendants), so
+    the filter's first match was consistently the wrong, overly-broad
+    ancestor, and the click landed on the **Staff O2** pill instead of
+    the intended diver's pill. This didn't crash or error — it silently
+    toggled the wrong thing, and the resulting tank tally still looked
+    internally self-consistent (numbers added up correctly, just for a
+    different underlying state than intended), which is exactly the kind
+    of wrong-but-plausible result that's easy to mistake for a real
+    application bug. Caught by cross-checking the *actual* per-pill DOM
+    state directly (querying the Staff O2 row's own button classes)
+    against what the tally implied, not by the tally alone. Fixed the
+    test by scoping from a unique per-row anchor instead (each diver row
+    has exactly one "Remove" button; `removeButton.closest(...)` reliably
+    identifies that specific row) rather than filtering a broad element
+    list by substring match. **Lesson: when a browser-automation script
+    needs "the element for X," never filter a broad
+    `querySelectorAll(commonTag)` list by `textContent.includes(X)` —
+    text content bubbles through every ancestor, so the match is
+    ambiguous by construction and will silently prefer outer containers
+    over the specific target. Anchor from a unique, unambiguous element
+    within the target (a button/label that appears exactly once per
+    instance) and navigate via `closest()`/`parentElement` instead. This
+    is a distinct failure mode from the already-documented click-timing,
+    console-buffering, and `read_page`-interactive-filter quirks (items
+    14, 19, 21, 35) — same family of "don't trust the first read/query in
+    this environment," a different specific trap.**
+
+40. **(Testing technique, not a code defect.)** Hand-writing the raw-SQL
+    test-fixture insert for `auth.identities` failed twice before
+    running, with two different Postgres type-inference errors: first
+    "inconsistent types deduced for parameter $1" (the same `$1`
+    parameter was used once as a plain `uuid` column value and once
+    inside `jsonb_build_object('sub', $1::text, ...)` without a cast,
+    so Postgres couldn't settle on one type for it), then after adding
+    one cast, "could not determine data type of parameter $2" (a second
+    parameter used only inside `jsonb_build_object(...)` with no cast
+    anywhere gives Postgres nothing to infer from at all). Both are
+    generic to any parameterized query that reuses the same placeholder
+    across differently-typed contexts, not specific to this table.
+    **Lesson: when a `$N` parameter is used in more than one place in a
+    hand-written parameterized query — especially inside
+    `jsonb_build_object(...)`, which erases the inferred type — cast it
+    explicitly (`$N::uuid`, `$N::text`) at *every* usage site, not just
+    the first. Cheaper to add the casts up front than to iterate through
+    Postgres's type-inference errors one at a time.**
 
 ## Dead-code audit (2026-07-23 session)
 
@@ -3442,6 +3521,69 @@ dead symbol anywhere in the TypeScript it was reviewing. See
 retrospective #37 for why this specific class of gap (a column read only
 by a SQL RPC) needs its own explicit cross-page/cross-language grep, not
 just a symbol-usage pass.
+
+## Dead-code audit (2026-07-30 session — Signed Documents identity, Group Management visibility, Scheduling per-dive tanks)
+
+Requested explicitly by the user before closing out the session, as its
+own separate step (not folded into the feature work), specifically
+checking whether anything built today left old functions/code unused
+instead of being replaced in place.
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run after every
+  feature and again fresh at the very end.
+- Grepped the whole `src/` tree (not just the touched files) for every
+  symbol removed or renamed today: `toggleSite`, `toggleDiverFlag`,
+  `isGroupActive`, and the old tally field names `tank12L`/`tank15L`
+  (replaced by `TankTally`'s `air12l`/`air15l`/`nitrox` shape) — zero
+  remaining references to any of them.
+- Usage-count pass (`grep -rl "\bsymbol\b" src/app | wc -l`) on every
+  new exported symbol added today: `computeTankTally`, `formatTankLine`,
+  `DiveTank`, `StaffDiveTanks`, `loadStaffDiveTanks`, `getStaffDiveTanks`,
+  `includeDiverInClip`, and the new `courseName` field on
+  `ScheduleDiverRow` — all resolve to 2+ files (definition plus at least
+  one real consumer), none at 1. `courseName` showed 8 files at first
+  glance, which per retrospective #25's warning is exactly the kind of
+  count worth checking closely rather than trusting outright — confirmed
+  a false alarm: it's a common field name independently reused across
+  unrelated features (Diver Detail's course-rate display, the
+  push-to-schedule experience-tag modal, Settings > Courses), not a
+  naming collision or a sign of dead code.
+- **One real item, already caught and fixed during implementation itself
+  (confirmed still clean by this end-of-session pass, not newly found
+  here)**: removing `PhaseThreePanel.tsx`'s manual crew-token "Generate"/
+  "Regenerate" button left its `readOnly` prop completely unused (it
+  existed only to gate that button). Lint flagged it immediately when
+  the button was removed; the prop was removed from both
+  `PhaseThreePanel`'s own type and its `SchedulingClient.tsx` call site
+  in the same edit rather than leaving an unused prop threaded through
+  for no reason — confirmed `isPastDate` (the value that had been
+  passed in) is still genuinely used elsewhere in `SchedulingClient.tsx`,
+  so this was a clean, complete removal, not a partial one.
+- Confirmed the small-helper duplication pattern already established in
+  this codebase (`peso`, `fmtDate`, `todayManila`) wasn't violated by
+  today's new `scheduling/tanks.ts` — it's a single shared pure function
+  used by both `TripCard.tsx` and `PhaseThreePanel.tsx` specifically
+  *because* the two previously had their own independently-wrong tally
+  computations that disagreed with each other; consolidating this one
+  was the fix, not a deviation from the duplication precedent (which
+  still applies to trivial one-line formatters like `peso`).
+- **One known, deliberately-accepted gap found and left undone, not
+  silently dropped**: the live app's schedule preview shows a "Crew:"
+  line (comma-joined crew member names) alongside "Captain" for own-boat
+  trips. This rebuild's `boats` table has no crew-list column at all
+  (only `captain`), and building one wasn't asked for — the preview
+  rewrite correctly omits the Crew line rather than fabricating data for
+  a field that doesn't exist. Recorded in Known Gaps below so a future
+  session doesn't assume this was an oversight.
+- Test dive center (`Feedback Test DC` — owner, 3 divers, staff, boat,
+  2 dive sites, a signed registration, 2 future-dated groups) and its
+  `auth.users` row deleted after verification, confirmed via direct
+  query that the user's own real `Demo Dive Center` was never touched.
+  Database confirmed back to just the two real accounts and one real
+  `dive_centers` row at session end.
+
+**Nothing found that needed a code fix beyond the already-caught
+`readOnly` prop** (see above) — the rest of the audit came back clean.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
