@@ -50,6 +50,173 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-07-30 session, continued yet again — on-brand dialogs, package-pricing correctness, Scheduling visual mirror)
+
+A fourth same-day pass. Three pieces of feedback: native browser popups
+look off-brand, Diver Form's Apply Charges is wrong for package-mode
+pricing (with a concrete real-business example — a "Shark Diving"
+package composed of "Kimud, Kimud, Monad"), and Scheduling "doesn't
+really look like the live scheduling." Researched `diver-form.html`/
+`scheduling.html`/`settings.html`'s real package-matching mechanism and
+`scheduling.html`'s real CSS/layout before any code changed, went
+through `EnterPlanMode` given the size (comparable to a full visual
+redesign). No schema migration was planned for the package-pricing
+fix — but live verification surfaced a real, previously-hidden schema
+bug that did need one (migration 019, see below).
+
+- **On-brand confirm/alert dialogs.** Inventoried all 10 `window.confirm`/
+  `window.alert` call sites across 7 files — no shared dialog/toast
+  component existed anywhere; every "Modal" file hand-rolled an
+  identical `bg-black/40` overlay shape independently. Built two small
+  reusable primitives in the new `src/components/ui/`:
+  `ConfirmDialog.tsx` (`ConfirmProvider` + promise-based `useConfirm()`
+  — `const ok = await confirm(message, { danger })`, styled with this
+  app's real modal chrome and brand tokens) and `Toast.tsx`
+  (`ToastProvider` + `useToast()` — `showToast(message, variant)`,
+  auto-dismissing top-right, replacing `window.alert` since a blocking
+  modal was never the right shape for "Copied."). Both mounted once via
+  a new `UIProviders.tsx` client wrapper in `(app)/layout.tsx`. Replaced
+  all 10 call sites; also switched `WarningsBanner.tsx`'s plain
+  `bg-amber-100` boxes to this app's own `orange`/`orange-light` tokens
+  for the same on-brand reason. Verified live: the styled `ConfirmDialog`
+  renders (not a native popup, which would have hung the automated
+  browser per this project's own documented caution), Cancel truly
+  cancels, the danger-styled Confirm truly proceeds, and the `Toast`
+  renders with correct text/on-brand teal styling (took ~2.7s to appear
+  on a slow multi-fetch path — an early too-short polling window made
+  this look broken at first; see retrospective-style note below).
+- **Diver Form's package-mode Apply Charges, fixed to match the live
+  app's real mechanism.** Confirmed from `settings.html`/`diver-form.html`/
+  `scheduling.html`: a package's `dive_site` field (already a real column,
+  `packages.dive_site text`, `001_schema_and_rls.sql` — Settings >
+  Pricing & Rates > Packages already has full CRUD for it, no schema or
+  UI change needed there) is a free-text, ordered, **repeatable** list of
+  every real site visit the package covers (e.g. `"Kimud, Kimud, Monad"`
+  for "Shark Diving") — matched against the *whole trip's* site
+  combination, normalized (split/trim/lowercase/sort/join) the same way
+  on both sides, exactly like the live app's real
+  `normalizePackageSites()`/`findPackageBySiteKey()`. The rebuild's
+  `pricing.ts` was instead resolving package price via
+  `dive_sites.linked_package_id` (a per-site FK, only the first
+  comma-token, 1 site → 1 package) — a fundamentally different, wrong
+  model that could never represent a repeated-site package. Fixed:
+  `pricing.ts` gained `normalizeSiteKey`/`resolvePackageBySiteCombo`;
+  `autoPricePackageMode` now matches on this instead
+  (`resolveSite`/`otherChargesForSite`, the fuel/marine/shark lookup,
+  are unrelated and stay unchanged). `linked_package_id` itself is
+  untouched — confirmed the live app also keeps its site→package FK as a
+  pure Settings-UI cross-reference label, never read for pricing.
+  `scheduling/actions.ts`'s `markBoatReturned` had no package-mode branch
+  at all — it always wrote the live app's *tier*-mode shape (one
+  `activities` row per site per diver). Added a real branch: package
+  mode now writes **one combined row per diver for the whole trip**
+  (`dive_site = sites.join(", ")`), matching the live app's real
+  `boatReturnPackage`; per-dive nitrox/15L flags aggregate across all of
+  that diver's site indices onto the one row ("nitrox on *any* dive in
+  this package trip"). Diver Form's `applyChargesToVisit`/
+  `autoPriceActivityRow` needed no changes — they already branch on
+  `pricing_mode` and call `autoPricePackageMode(..., row.dive_site)`,
+  which now receives the correct combined string.
+  - **Real, previously-hidden schema bug found during this fix's own
+    live verification, not part of the original plan**: `schedule_sites`
+    had `unique(schedule_id, dive_site_id)` — which makes it *impossible*
+    to save a trip that revisits one site twice (exactly what a package
+    like "Kimud, Kimud, Monad" requires). `TripCard.tsx`'s
+    `replaceScheduleSites` does one bulk insert of every site slot in a
+    single call, so picking "Kimud" for both Dive 1 and Dive 2 made the
+    *entire* insert fail the unique constraint — silently, since that
+    insert never checked `.error` — leaving `schedule_sites` completely
+    empty for the trip (confirmed via direct SQL: 0 rows), and
+    downstream `markBoatReturned`'s `siteNames` list empty too (the
+    combined activity row came back with `dive_site: null` instead of
+    the expected string). **Migration 019**
+    (`database/019_schedule_sites_allow_repeat.sql`) drops that
+    constraint and replaces it with `unique(schedule_id, sort_order)` —
+    the real invariant (each *slot* is unique, not each site value).
+    Also fixed `replaceScheduleSites` to actually check and surface
+    `.error` (per this project's standing "always check `.error`"
+    lesson — this insert had silently swallowed failures since it was
+    first written, in an earlier session, well before today).
+  - **Verified end-to-end against a real seeded package-mode dive
+    center**: two sites (Kimud, Monad), one package (`"Shark Diving"`,
+    `dive_site: "Kimud, Kimud, Monad"`, ₱5,500). Before the migration
+    19 fix, saving the trip silently produced zero `schedule_sites` rows
+    and a null-site activity row after Boat Return. After the fix:
+    `schedule_sites` correctly has 3 rows (Kimud sort_order 0, Kimud
+    sort_order 1, Monad sort_order 2), Boat Return correctly produced
+    **exactly one** `activities` row with
+    `dive_site = "Kimud, Kimud, Monad"`, and Diver Form's Apply Charges
+    correctly resolved `dive_rate = 5500.00` — the exact configured
+    package price, matched purely by the normalized site-combo string.
+- **Scheduling visual mirror.** Confirmed via a direct CSS diff against
+  `scheduling.html` that colors/fonts were *already* correct (same
+  navy/teal/red hex values, same DM Serif Display/DM Sans) — the
+  "doesn't look like the live app" gap was chrome/density/structure, not
+  brand identity. Built two more shared primitives,
+  `src/components/ui/Button.tsx` (variant/size scale matching the live
+  app's real `.btn`/`.btn-sm` — confirmed the rebuild's buttons had all
+  been sized like the live app's smallest variant everywhere) and
+  `SectionBox.tsx` (a bordered, uppercase-labeled sub-box, matching
+  `.section-block`), then applied them:
+  - `TripCard.tsx`: a solid navy header band (title/sub + collapse
+    toggle + Delete, matching the live app's real trip-card header,
+    including its real collapsible behavior — a saved trip now defaults
+    collapsed to a one-line summary, a brand-new one starts expanded);
+    the body restructured into `SectionBox`es (Trip Details, Dive Crew,
+    Dive Sites, Notes, Team Assignment, Other Divers Joining This Boat)
+    instead of one flat form; team cards gained a cyclable left-accent
+    color per team index (navy/teal/orange/green, repeating — this
+    app's palette has no purple, unlike the live app's own `.c1`-`.c6`);
+    the tank tally became a navy strip instead of three neutral gray
+    pills; card radius switched from `rounded-2xl` to `rounded-lg`
+    (~8px, matching the live app's tighter radius system).
+  - `PhaseTabs.tsx`: filled pill tabs (navy when active) with real
+    sub-labels ("Prepare divers" / "Build trips" / "Final schedule"),
+    replacing a plain underline-tab idiom — confirmed the live app's
+    three-phase concept itself was already correct from an earlier
+    session, only its tab *style* wasn't.
+  - `PhaseThreePanel.tsx`/`PhaseTwoPanel.tsx`/`SchedulingClient.tsx`:
+    matching navy-header-card treatment on `TripSummaryCard`, the same
+    navy tank-tally strip, `Button`/`SectionBox` swapped in for the
+    remaining ad hoc buttons and card radius, page-chrome header
+    boxed to match — without changing any already-correct behavior
+    (sticky Phase 1 diver sidebar, preview/crew-token logic, Boat
+    Return flow all unchanged).
+  - Verified live via DOM/computed-style queries (screenshots don't
+    composite in this sandbox, per this project's standing note): active
+    phase tab confirmed `rgb(26, 60, 94)` (`#1a3c5e`, real navy) fill;
+    `SectionBox` labels ("TRIP DETAILS," "DIVE SITES," etc.) render
+    correctly; collapsed/expanded trip-card states both confirmed.
+
+**Testing-technique note, not a code defect**: the toast-appearance
+check above looked broken on the first two attempts (empty container
+after up to 3s of polling) — not a real bug. `copyAllPreview`'s
+`Promise.all` over every saved trip's `getTripDetail`/
+`getScheduleDivers`/`getStaffDiveTanks` (three server actions per trip)
+took ~2.7s end-to-end before `showToast` ever ran; the first test
+windows were simply shorter than that. Widening the poll window (and,
+separately, confirming via `performance.getEntriesByType('navigation')`
+that a suspected `window.location.reload()` override had silently
+failed rather than actually blocking the reload) resolved the
+confusion. Same family as this project's other documented "don't trust
+the first read in this environment" quirks (items 14, 19, 21, 35, 39 in
+the retrospective section) — a new specific trap (async-completion
+timing, not a DOM-query trap), worth remembering: **give an async
+action's own real completion time (checked via `read_network_requests`
+if unsure) before concluding a UI effect didn't fire.**
+
+**Verification approach**: a fresh **package-mode** test dive center
+(`Package Test DC` — deliberately package mode, not tier, to actually
+exercise this session's fix) seeded via the established raw-SQL fixture
+pattern — owner, one boat, two dive sites (Kimud, Monad), one package
+(Shark Diving), one diver — exercised through the real browser UI for
+the full Scheduling → package-price Apply Charges flow, plus every
+replaced confirm/alert call site. Database confirmed back to just the
+two real accounts and the one real `dive_centers` row at session end
+(`schedules.created_by` nulled in its own committed statement first,
+per the established cleanup-ordering lesson). Both repos uncommitted as
+of this write-up — check `git status` before assuming otherwise.
+
 ## Current state (as of 2026-07-30 session, continued — Diver Form Apply Charges + Scheduling captain/crew/UI feedback pass)
 
 A third same-day feedback pass, immediately following the Signed
@@ -1608,7 +1775,7 @@ each committed at the end:
   Scheduling diver-card/Delete-Move-Exclude UI polish, Diver Form's
   Signed Documents print scope fixed, Reports Overview chart fixes,
   Sidebar scrollbar removed.
-- **2026-07-30 (two sessions, same day)**: first, Signed Documents
+- **2026-07-30 (four sessions, same day)**: first, Signed Documents
   identity snapshot (a real legal-record fix, not cosmetic), Group
   Management's date filter removed, and a six-part Scheduling overhaul
   — clip-exclude bug, 3-slot dive sites, auto-generating crew token,
@@ -1620,21 +1787,30 @@ each committed at the end:
   eight-part Scheduling pass — captain/crew capture (migration 018),
   fuel moved to Phase 2, departure-time dropdowns, a sticky Phase 1
   diver sidebar, a horizontal dive-site grid, join-riders moved to the
-  bottom, and Captain/Crew added to the preview and `/crew`.
+  bottom, and Captain/Crew added to the preview and `/crew`. Then,
+  on-brand confirm/alert dialogs (two new shared UI primitives,
+  replacing all 10 native-popup call sites app-wide), a real
+  package-mode Apply Charges fix (matching the live app's real
+  site-combination package matching — surfaced and fixed a genuine
+  hidden schema bug along the way, migration 019, that silently
+  prevented a trip from ever revisiting the same dive site twice), and
+  a Scheduling visual mirror pass (navy trip-card headers, collapsible
+  cards, section-boxed forms, filled pill phase tabs, a shared
+  Button/SectionBox component pair).
 
 **Check `git status` in both repos before assuming either is clean** —
-the first 2026-07-30 session's code was committed before the second
-started; the second session's changes (this document's most recent
-write-up) were still uncommitted as of this writing, pending the user's
-go-ahead.
+each of the four same-day sessions committed its own work before the
+next started, except the most recent (this document's latest write-up)
+— still uncommitted as of this writing, pending the user's go-ahead.
 
 **Nothing is currently known to be broken or half-finished.** The one
 genuinely open item from a prior session is retrospective #38 (the
 first-time password-set flow failing against a raw-SQL-seeded test
 user) — unresolved, not yet known whether it's a real product bug or a
 testing-fixture gap; investigate if a future session hits it again or
-needs to exercise that flow. Today's session closed cleanly with its own
-dead-code audit (see that section above) — nothing left dangling.
+needs to exercise that flow. Today's sessions each closed cleanly with
+their own dead-code audit (see those sections above) — nothing left
+dangling.
 
 Whatever comes next is most likely more of the same: the user brings
 direct feedback from actual use, research the real behavior before
@@ -3818,6 +3994,42 @@ instead of being replaced in place.
 The one real pre-existing rough edge found (freelancer name reverting
 to "Unassigned" on reload) is flagged, not fixed — it wasn't part of
 what the user asked for this session and predates these changes.
+
+## Dead-code audit (2026-07-30 session, continued yet again — on-brand dialogs, package-pricing correctness, Scheduling visual mirror)
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run after every
+  part and again fresh at the end.
+- Grepped the whole `src/` tree for `window.confirm`/`window.alert`/
+  `window.prompt` — zero remaining real call sites (one harmless hit is
+  this session's own code comment referencing `window.alert()` by name
+  to explain what it replaced, not a live call).
+- Grepped for `linkedPackageId`/`linked_package_id` across `diver-form/`
+  — the only remaining references are in `pricing.ts`'s own explanatory
+  comments; the dead `SiteMeta.linkedPackageId` field and its now-unused
+  `dive_sites.linked_package_id` select column were removed together,
+  not left half-stripped. `dive_sites.linked_package_id` itself (the
+  column, and Settings > Dive Sites' own read/write of it) is untouched
+  and confirmed still genuinely used there — a deliberate, correct
+  Settings-UI-only survivor, not a stale reference.
+- Usage-count pass on every new exported symbol this session
+  (`useConfirm`, `ConfirmProvider`, `useToast`, `ToastProvider`,
+  `UIProviders`, `Button`, `SectionBox`, `normalizeSiteKey`,
+  `resolvePackageBySiteCombo`) — all resolve to 2+ files (definition
+  plus real call sites across the 7+ components each was wired into).
+- Confirmed `replaceScheduleSites`'s new `{ error?: string }` return
+  value is actually read at both call sites (`createTrip`/`updateTrip`)
+  — not a return value that's computed but silently discarded, the
+  exact class of bug this fix was closing.
+- Test dive center (`Package Test DC` — owner, boat, 2 dive sites, 1
+  package, 1 diver) and its `auth.users` row deleted after verification,
+  confirmed via direct query that the user's own real `Demo Dive
+  Center` was never touched. Database confirmed back to just the two
+  real accounts and one real `dive_centers` row at session end.
+
+**Nothing found that needed fixing beyond what's already documented in
+the session write-up above** (the `schedule_sites` unique-constraint
+bug, found and fixed via migration 019 during this session's own live
+verification, not left for a future pass).
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
