@@ -50,6 +50,112 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-07-31 session — Equipment Management/Group Management/Inventory rename, Scheduling clip-merge + turnaround-time conflict detection, Move-diver fix + app-wide font/color pass)
+
+Four itemized feedback passes in one day, all committed:
+
+**Pass one** (`aquadesk-app@a5612d3`) — Scheduling group-name kicker,
+Equipment Management own-gear display + inventory tally, Group
+Management UX, Settings > Inventory rename:
+- Scheduling Phase 1 diver cards now show group name as a kicker line
+  above the name (matching `scheduling.html`'s real `.group-kicker`),
+  applied consistently to both the Loose Divers grid and clip-member
+  rows — previously inconsistent (a suffix line on one, nothing on the
+  other).
+- Equipment Management: a diver who registered with their own gear now
+  shows "Own" in every gear column (was blank/inconsistent); all
+  checkmarks removed per the user's ask (requested items show their
+  size/kg value or "Requested"); print preview no longer silently drops
+  the Remarks column; added a new gear-shortage cross-check against
+  Settings > Inventory stock counts (a genuinely new, rebuild-only
+  feature, confirmed no live-app precedent).
+- Group Management cards got a permanent distinguishing background and
+  an explicit Expand/Collapse button (previously relied on clicking the
+  name, no visual cue it was clickable).
+- Settings > Inventory's "Rental Gear" section renamed to "Gear
+  Inventory" to stop it being confused with the separate Equipment
+  Rental (pricing) tab.
+
+**Pass two** (`aquadesk-app@b4af44d`, root repo migration 025
+`@0104820`) — fixed a real Scheduling bug (clipping the same staff
+member into two clips left them split across both instead of merging,
+matching the live app's real auto-merge behavior — see retrospective
+below for a similar but distinct Move-button bug found in pass three)
+and added real turnaround-time conflict detection:
+- `createClip`/`updateClipStaff` now check for an existing clip for
+  that staff on the same date and merge into it (matching
+  `scheduling.html`'s real `findExistingStaffClip`/`confirmClipMerge`)
+  instead of creating a duplicate.
+- Added the shared 1:4 ratio badge to Phase 1 clip cards and the live
+  app's literal "over the 1:4 ratio" warning text to Phase 3.
+- **Migration 025** (`database/025_trip_types.sql`): a new
+  `trip_types` table (name + travel-out/travel-back/dive/surface-
+  interval minutes per type) and `schedules.trip_type_id`. Ports the
+  live app's real `tripWindow()`/`overlaps()` turnaround-conflict math
+  (confirmed genuinely present in `scheduling.html`, contrary to this
+  file's own earlier "date-level only" documentation of the rebuild's
+  limitation) — but since the live app's own trip-type names/durations
+  are hardcoded to one dive center's geography, the user chose (via
+  `AskUserQuestion`) to recreate Trip Types as a real per-dive-center
+  Settings list (new section in Settings > Dive Sites) instead of a
+  fixed constant, a flat default, or per-site travel time. New shared
+  `scheduling/tripWindow.ts` (`computeTripWindow`/`windowsOverlap`) is
+  the single source of truth for window math, used by `WarningsBanner`
+  to gate every diver/staff/**and boat** double-booking flag on real
+  time overlap instead of same-date-only — falls back to the old
+  always-flag behavior only when either trip lacks a departure time.
+- Verified end-to-end with a real 7am/9am scenario matching the user's
+  own example: two short ("Local" trip-type) trips correctly did NOT
+  warn (no overlap); switching one to a long ("Offshore") type made the
+  windows genuinely overlap and all three warnings (diver/staff/boat)
+  correctly fired.
+
+**Pass three** (`aquadesk-app@8312afa`) — a real Move-diver bug fix
+plus an app-wide (not just Scheduling) typography/color pass, scoped
+to app-wide after confirming with the user that the same patterns
+recur in ~20 files including shared primitives:
+- **Root cause of "Move diver not working"**: the destination picker
+  only ever showed `allClips` minus the current clip, with no fallback
+  — when just one clip exists for the day (an easily-reproduced case),
+  the picker opened with nothing but "Cancel," indistinguishable from
+  the button doing nothing. The live app's real Move modal always
+  offers "Create new team" too. Added the same escape hatch: a new
+  `moveDiverToNewClip` action (deletes from the old clip, then reuses
+  `createClip`'s existing merge-or-create logic) plus an inline
+  StaffPicker in the picker UI. Verified both the new "only one clip"
+  path and the original between-two-existing-clips path still work.
+- Two research passes inventoried every arbitrary sub-12px font class
+  (`text-[10px]`/`text-[11px]`/`text-[0.68rem]`) and every washed-out
+  badge/notice color (opacity-tinted saturated colors, or raw non-brand
+  Tailwind colors like `amber-100`, instead of this app's solid pastel
+  `-light` tokens) across the whole app. Bumped 23 text spots to
+  `text-xs` (one genuine uppercase micro-label kicker left alone,
+  confirmed to already match the live app's real 0.68rem floor) and
+  added `font-size: 15px` to `body` in `globals.css` (the live app's
+  real base size, confirmed identical across every reference HTML
+  file — the rebuild had no explicit body size at all before this).
+  Fixed 8 real color instances (the shared ratio-badge helper plus
+  seven individual badges/notices) to the established
+  `bg-{color}-light text-{color}` (or `text-teal-mid` for teal)
+  pairing, matching the live app's own consistent formula. Deliberately
+  left alone: modal scrims, translucent white-on-navy-header overlays,
+  and cosmetic border-opacity accents on already-correct fills — all
+  confirmed to match the live app's own intentional patterns.
+
+**Pass four** (`aquadesk-app@34c713f`) — end-of-session dead-code audit
+(see the dedicated entry further down) found and fixed one real
+duplication from pass one: `EquipmentManagementTab.tsx`'s
+`findRequestedItem` and `cellValue` independently implemented the same
+match predicate; `cellValue` now calls `findRequestedItem` instead of
+re-deriving it inline.
+
+All four passes verified live against seeded test dive centers (this
+session's own isolated-dev-server + raw-SQL-fixture pattern — see the
+new Working Practices entries below for two real environment gotchas
+hit while setting this up). Database confirmed back to just the real
+accounts and one real `dive_centers` row at session end. Both repos
+clean as of this write-up.
+
 ## Current state (as of 2026-07-30 session, continued a fifth and sixth time — Scheduling Phase 1/cert-labels/nitrox-UX/preview/boat-return, then a real `/crew` login bug + Diver Form table cleanup, Boat Manifest, Reports, Scheduling Spare Tanks)
 
 Two more same-day passes, both fully committed and pushed by session end
@@ -2164,6 +2270,25 @@ center could actually fit.
   `001_schema_and_rls.sql` and later migrations before writing the
   insert, not after discovering it silently did nothing (see
   retrospective #23).
+- **Setting up this project's established isolated-verify-server
+  pattern** (copying the whole `aquadesk-app` tree to a scratch
+  directory to test against a real dev server without colliding with
+  another session's shared one): always run `robocopy` via the
+  **PowerShell** tool, never Bash (Git Bash/MSYS mangles single-slash
+  flags like `/E` into a path); treat `robocopy`'s exit code `1` as
+  success (one or more files copied), not a failure, regardless of what
+  the calling tool's status label says — verify via actual file counts
+  if unsure; always pass `NEXT_TELEMETRY_DISABLED=1` to the `next dev`
+  command proactively (a shared global telemetry-config file can crash
+  a second, fully isolated dev server with an `EXDEV` rename error
+  otherwise); and never retry a port that had *any* startup issue
+  earlier in the session — pick a fresh one (see retrospective #43-46).
+- **When writing short, ad hoc `javascript_tool` snippets in the
+  Browser pane, always wrap them in an IIFE** (`(() => { ... })();`)
+  rather than declaring top-level `const`/`let` — the execution context
+  persists declared variables across separate tool calls within the
+  same tab, so reusing a common name (`btn`, `select`) in two different
+  snippets throws a redeclaration error (see retrospective #47).
 
 ## Retrospective — mistakes made, so they aren't repeated
 
@@ -3101,6 +3226,111 @@ The point isn't the fix (already applied) — it's recognizing the
     parent directory itself refuses) is the specific signature of that
     cause, distinct from an external process actually holding a file
     handle.**
+
+### Session 2026-07-31 (Equipment/Group Management/Inventory rename, Scheduling clip-merge + turnaround-time, Move-diver + app-wide font/color)
+
+43. **A background-process tool's reported exit status can be
+    misleading in a way that costs real time if trusted at face
+    value.** `robocopy`'s exit code `1` means "one or more files were
+    copied successfully" — a genuinely successful run — but this
+    session's background-task harness surfaces any non-zero exit code
+    as `status: "failed"`. The very first isolated-verify-server setup
+    this session read that "failed" label, and momentarily treated a
+    completely successful directory copy as an error before checking
+    the actual file counts and confirming it had, in fact, fully
+    succeeded. **Lesson: for `robocopy` specifically (and any tool with
+    its own non-standard exit-code convention), don't trust a generic
+    "failed"/"succeeded" label from the calling layer — check the
+    tool's own documented exit-code meaning, or just verify the actual
+    result (file counts, file existence) directly.**
+
+44. **Running `robocopy` through the Bash tool (Git Bash/MSYS) mangles
+    Windows-style single-slash flags** — `/E` gets interpreted as a
+    path and rewritten to `E:/`, producing `ERROR : Invalid Parameter
+    #3 : "E:/"` instead of actually copying anything. This is an MSYS
+    path-conversion quirk, not a robocopy problem. **Lesson: always run
+    `robocopy` (and likely other native Windows tools using single-
+    slash flag syntax) via the PowerShell tool, never Bash — this
+    project's established isolated-verify-server setup already used
+    PowerShell for this in earlier sessions; re-confirmed here after
+    briefly forgetting and hitting the exact error a fresh account of
+    the pattern would have prevented.**
+
+45. **Next.js/Turbopack's dev server writes to one shared, global
+    telemetry config file (`%APPDATA%\nextjs-nodejs\Config\config.json`)
+    regardless of project directory or port** — starting a second,
+    fully isolated dev server (different directory, different port,
+    entirely separate `node_modules`) can still crash immediately after
+    printing "✓ Ready" with `Error: EXDEV: cross-device link not
+    permitted, rename '...config.json.<tmp>' -> '...config.json'`,
+    because both server instances' telemetry writers raced on the same
+    global file. Setting `NEXT_TELEMETRY_DISABLED=1` before starting the
+    server avoids the write entirely. **Lesson: for this project's
+    established isolated-verify-server pattern, set
+    `NEXT_TELEMETRY_DISABLED=1` proactively every time, not just after
+    hitting this crash once — it's a genuine race condition whenever
+    any other Next.js dev server might be running anywhere on the
+    machine, not a rare edge case.**
+
+46. **A port that had *any* startup issue earlier in the session — even
+    an unrelated one — can still be silently occupied by a lingering
+    process from that earlier attempt, causing the next server-start
+    attempt on the same port to fail with `EADDRINUSE`.** An earlier
+    malformed background-subshell launch attempt this session (using a
+    `(cmd &) ; echo done` pattern to try to detach a process) left a
+    real `node` process bound to a port that a later, properly-formed
+    server-start attempt then collided with. **Lesson: once a port has
+    had any kind of startup problem in a session, don't retry that same
+    port — pick a fresh one nobody has touched yet, and if a stray
+    process needs to be confirmed/killed, check `Get-NetTCPConnection`/
+    `Get-CimInstance Win32_Process` for the actual owning process before
+    assuming the port is simply free.**
+
+47. **The Browser pane's `javascript_tool` execution context persists
+    `const`/`let` declarations across separate tool calls within the
+    same tab** — declaring `const btn = ...` in one call and then
+    `const btn = ...` again in a later call throws `SyntaxError:
+    Identifier 'btn' has already been declared`, even though each call
+    looks like an independent script. This happened repeatedly this
+    session with short one-off ad hoc DOM-query snippets reusing common
+    variable names (`btn`, `select`, `b`). **Lesson: wrap every ad hoc
+    `javascript_tool` snippet in an IIFE — `(() => { ... })();` — rather
+    than declaring top-level `const`/`let`, so repeated short scripts
+    within the same browser tab session never collide with each other's
+    leftover scope.**
+
+48. **(Testing technique, not a code defect — reconfirms and adds to
+    the already-documented "don't trust the first read after a
+    mutation" family, items 15/19/21/35/39/41.)** Both today's clip
+    merges and trip saves in Scheduling repeatedly showed pre-mutation
+    state on the very next `get_page_text` read immediately after the
+    triggering action — even though direct SQL confirmed the write had
+    already committed correctly. Each time, either reloading the page
+    or switching Scheduling's phase tab and back made the correct state
+    appear. **Lesson: this pattern is now confirmed common enough in
+    Scheduling specifically (clip creation/merge, trip save) that it
+    should be the default expectation, not a surprise each time — verify
+    a suspected "didn't work" result against direct SQL before concluding
+    a fix is broken, and reload/switch-tabs before trusting a UI read
+    taken in the same tool call immediately after a mutation.**
+
+49. **Coordinate-based `computer` clicks and the `form_input` tool on
+    `<select>` elements are unreliable in this environment when the DOM
+    has just re-rendered or when React's `onChange` needs a real
+    `change` event** — several buttons (Sign In, "Add to Clip," "Create
+    Clip," clip-merge staff pickers) needed a `javascript_tool`
+    `document.querySelector`/`Array.find`-by-text `.click()` instead of
+    a coordinate click, and every `<select>` value change needed the
+    native-property-setter + `dispatchEvent(new Event('change', {
+    bubbles: true }))` pattern rather than the `form_input` tool, to
+    reliably reach React's handlers. **Lesson: this extends the
+    project's already-documented browser-pane quirks (coordinate clicks
+    unreliable, `.blur()` doesn't reach React) to `<select>` elements
+    specifically — when a `form_input` change on a `<select>` doesn't
+    seem to register (the picked option doesn't visibly take effect),
+    switch to the native-setter+dispatchEvent JS pattern rather than
+    retrying `form_input` or `computer` clicks at different
+    coordinates.**
 
 ## Dead-code audit (2026-07-23 session)
 
@@ -4355,6 +4585,59 @@ the session write-up above** — the `autoPriceActivityRow` removal and
 its one stale comment reference, and the second certification-label
 bug, were all caught and fixed during this session itself, not left for
 a future pass.
+
+## Dead-code audit (2026-07-31 session — Equipment/Group Management/Inventory rename, Scheduling clip-merge + turnaround-time, Move-diver + app-wide font/color)
+
+Requested explicitly by the user at session close, as its own separate
+step, covering all four passes from today.
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run after every
+  pass and again fresh at the end.
+- Usage-count pass (`grep -rl "\bsymbol\b" src | wc -l`) on every
+  exported symbol added across all four passes: `computeTripWindow`/
+  `windowsOverlap` (2 files each — definition + `WarningsBanner.tsx`'s
+  one consumer, correct), `TripTypeOption`/`loadTripTypeOptions`/
+  `saveTripType`/`deleteTripType`/`TripTypesSection` (2-4 files each,
+  all resolve to real definition-plus-consumer chains), `findMatchingClip`/
+  `moveDiverToNewClip` (2 files each, confirmed single real call site),
+  `ratioBadgeClass` (3 files — `constants.ts`, `WarningsBanner.tsx`,
+  `PhaseOnePanel.tsx`, matching the three call sites the shared helper
+  was built for), `loadGearInventoryCounts`/`getGearInventoryCounts` (2
+  files each). `FALLBACK_DURATION` and `findRequestedItem` both showed
+  "1 file" — checked closely per retrospective #25's standing warning
+  rather than trusting the count alone: both are correctly
+  module-private helpers genuinely used within their own defining file
+  (`tripWindow.ts`'s own fallback default; `EquipmentManagementTab.tsx`'s
+  own shortage tally), not orphaned exports — false positives of the
+  blunt heuristic, same pattern as several earlier sessions'
+  `StaffPageData`-style finds.
+- **One real duplication found and fixed**: `EquipmentManagementTab.tsx`
+  (written in pass one) had `findRequestedItem` and `cellValue`
+  independently implementing the identical "does this item match this
+  column" predicate in the same file — `findRequestedItem` was added
+  later for the new inventory-shortage tally, but `cellValue`'s own
+  original match logic was never refactored to reuse it, leaving two
+  copies of the same one-line rule that could silently drift if only
+  one were ever changed. Fixed by having `cellValue` call
+  `findRequestedItem` (committed as `aquadesk-app@34c713f`, pass four
+  above).
+- Grepped for `TODO`/`FIXME`/`XXX` across every file touched today
+  (`scheduling/`, `divers/components/{EquipmentManagementTab,
+  GroupManagementTab,DiverCard}.tsx`, `settings/dive-sites/`,
+  `settings/inventory/GearSection.tsx`, `settings/staff/components/
+  CertificationsSection.tsx`, `reports/StaffTab.tsx`, `staff/
+  StaffScheduleClient.tsx`, `globals.css`) — none found.
+- Database confirmed empty of test data at session end (three separate
+  test dive centers seeded and torn down across the day's passes,
+  `schedules.created_by` nulled in its own committed statement first
+  each time, per the established cleanup-ordering lesson) — only the
+  real accounts and the one real `dive_centers` row remain. Both repos'
+  `git status` clean as of this write-up.
+
+**One real dead-code item found and fixed** (the `findRequestedItem`/
+`cellValue` duplication above). Nothing else found — everything else
+built today was either a genuinely new symbol with a real, confirmed
+consumer, or module-private and correctly scoped to its own file.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
