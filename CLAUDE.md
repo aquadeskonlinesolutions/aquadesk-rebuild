@@ -50,6 +50,181 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-01 session, continued a second time — real AquaDesk logo incorporated, first Cloudflare Workers pre-prod deployment)
+
+The user has two separate Cloudflare accounts (live, pre-prod) — this
+session's deployment work targets **pre-prod only**, never touched the
+live account. Two asks: incorporate the live app's real logo (it was
+using a plain "A" placeholder everywhere), and get this rebuild running
+somewhere outside `next dev` for the first time to see how it actually
+behaves, as prep for later configuring Resend for real.
+
+**Logo**: `logo.png` (2000x2000, from this root's reference-file set —
+confirmed it's the live app's real asset, used as favicon + brand mark
+across every live-app page) copied into `aquadesk-app/public/`. Wired
+up at every spot the live app has it: `layout.tsx`'s `metadata.icons`
+(favicon), `Sidebar.tsx`'s brand square, `login/page.tsx`'s header, and
+both `StaffScheduleClient.tsx` screens (token-entry + schedule header)
+— the last of these had no logo image at all before, only bare
+"AquaDesk" text; added one to match `staff.html`'s real
+`entry-logo`/`header-logo`. Verified live via DOM queries (dimensions,
+`complete` flag, computed border-radius on the clipping wrapper) — this
+sandbox's screenshot tool doesn't composite frames, per this project's
+standing note.
+
+**Cloudflare Workers pre-prod deployment — the larger piece.** Decided
+early, confirmed with the user via `AskUserQuestion`: deploy via
+**OpenNext (`@opennextjs/cloudflare`) to Cloudflare Workers**, not
+classic Cloudflare Pages — Cloudflare's own current docs (fetched live,
+not assumed) recommend this for Next.js 16, and this app's Node-runtime
+Server Actions (the Supabase service-role admin client,
+`isomorphic-dompurify`'s jsdom dependency at the time) would likely
+break under Pages' edge-runtime-only adapter. Went through
+`EnterPlanMode` given the size — research findings, decisions, and the
+full plan are preserved at
+`C:\Users\MVRTN\.claude\plans\cozy-cuddling-tiger.md` if a future
+session wants the original reasoning in full.
+
+- **Pre-prod Cloudflare account**: Account ID
+  `a6d61b5f208adba70d0ddc0acfdff289` (email `quenaii1993@gmail.com`),
+  `workers.dev` subdomain `quenaii1993`. Worker name `aquadesk-preprod`
+  — **deployed URL: `https://aquadesk-preprod.quenaii1993.workers.dev`**.
+  Points at the **same rebuild Supabase project** (`vqwrluiikodconwlmwls`)
+  as local dev — the user's own explicit choice, not a separate preprod
+  DB. The API token used to deploy was **not persisted anywhere** (same
+  credential-hygiene standard as the Postgres pooler password) — ask
+  the user again if deploying in a future session. `wrangler` CLI
+  (v4.100+) is installed globally on this machine but not
+  authenticated by default; a scoped API token (Workers Scripts:Edit,
+  pre-prod account only) plus `CLOUDFLARE_ACCOUNT_ID` as session-only
+  env vars is the pattern — never `wrangler login` (this sandboxed
+  session can't do the interactive OAuth flow it needs).
+- **New files**: `wrangler.jsonc`, `open-next.config.ts` (both at the
+  `aquadesk-app` root). New `package.json` scripts: `cf:build`,
+  `cf:preview`, `cf:deploy`, `cf-typegen`. `.gitignore` gained
+  `.dev.vars`/`.dev.vars.*`/`/.open-next/`.
+- **Two real, non-hypothetical environment blockers hit and fixed, not
+  just anticipated**:
+  1. **Windows blocked the build's symlink step** (`EPERM` on
+     `fs.symlinkSync` for `jsdom`, back when the app still depended on
+     it) until the user enabled **Windows Developer Mode** (Settings →
+     Privacy & Security → For Developers) — a real Node-on-Windows
+     limitation, not Cloudflare-specific; OpenNext's own build output
+     warns Windows isn't fully supported and recommends WSL (not
+     installed on this machine).
+  2. **Next.js 16's `proxy.ts` isn't supported by the installed
+     OpenNext adapter version at all** — build fails outright with
+     "Node.js middleware is not currently supported." Confirmed via
+     the actual GitHub issue tracker (not assumed) that a real fix
+     exists as an open, unmerged PR
+     (`opennextjs/opennextjs-cloudflare#1309`) — not shippable yet.
+     **Workaround, verified safe before using it**: temporarily rename
+     `src/proxy.ts` out of the way for just the `cf:build` step,
+     restore it immediately after — confirmed via a full code audit
+     that every protected route already does its own independent auth
+     check regardless of `proxy.ts` (`(app)/layout.tsx`'s
+     `getCurrentUser()`, `/office`'s `getCurrentPlatformAdmin()`,
+     `/account/password`'s `setPassword` action all `redirect()`
+     correctly on their own — `proxy.ts`'s own code comment already
+     says it's "optimistic," RLS/per-page checks are the real
+     boundary). Verified live post-deploy: a logged-out visit to
+     `/scheduling` on the deployed Worker still correctly redirects to
+     `/login` with `proxy.ts` absent from that specific build artifact.
+     Tracked in `aquadesk-app/KNOWN_GAPS.md` — this rename-dance needs
+     repeating on every future Cloudflare deploy until #1309 ships.
+- **A real bug found live-verifying the deployment, not part of the
+  original ask**: Settings → Waiver's **Save** action 500'd on
+  Cloudflare — `isomorphic-dompurify` needs `jsdom`, which fails
+  outright under the Workers runtime (confirmed exact error:
+  `"Failed to load external module jsdom...no such file or directory,
+  readAll '/browser/default-stylesheet.css'"`, matching the documented
+  upstream `cloudflare/workerd#5752`). Traced every other call site of
+  the same function before concluding the blast radius: `/register`'s
+  waiver display and the Settings editor's own live preview both call
+  it from **`"use client"` components**, so they run in the visitor's
+  real browser (native DOM, not jsdom) — confirmed unaffected by
+  clicking through `/register` live with no crash. Only the actual
+  database-save Server Action was broken. **Fixed by splitting the
+  sanitizer in two**: new `src/lib/sanitizeWaiverHtmlServer.ts`
+  (`sanitize-html` + `htmlparser2`, no jsdom) for the one real
+  server-side call site (`settings/waiver/actions.ts`); the existing
+  `src/lib/sanitizeWaiverHtml.ts` now uses plain `dompurify` (not
+  `isomorphic-dompurify`) for the two client-only call sites. Both use
+  the identical allow-list (9 plain tags — `p, br, b, strong, i, em,
+  ul, ol, li` — zero attributes on any of them). Verified the new
+  server sanitizer's behavior with 10 targeted test inputs (script
+  tags fully stripped including content, disallowed tags/attributes
+  stripped correctly, case-insensitive tag matching, nested tags
+  preserved) before ever deploying it.
+  - **A second, related problem this fix organically solved**:
+    `isomorphic-dompurify`'s `jsdom` dependency (11MB) was already
+    being traced into the server bundle by Next's SSR module tracing
+    — reachable via the two client components' import graph, even
+    though jsdom itself was never actually executed for those two call
+    sites. This had the very first deploy's gzipped size
+    (3004 KiB) already right at Cloudflare's free-tier 3MiB
+    (3072 KiB) limit. Adding `sanitize-html` on top pushed it over
+    (`"Your Worker exceeded the size limit"`) — removing
+    `isomorphic-dompurify`/jsdom **entirely**, not just routing around
+    it, dropped the deployed bundle to 1788 KiB gzipped, with real
+    headroom now.
+  - **A third, smaller thing found in the same pass**: `npm run lint`
+    OOM-crashed (`FATAL ERROR: ... JavaScript heap out of memory`) —
+    turned out ESLint was scanning the entire generated
+    `.open-next/` build output (tens of thousands of warnings from
+    minified/vendored code) since it wasn't excluded. Added
+    `.open-next/**` to `eslint.config.mjs`'s ignore list — fixes this
+    permanently for every future local Cloudflare build, not just this
+    session's.
+- **Verification approach**: seeded a disposable `Preprod Verify Test
+  DC` (owner + boat + dive site) directly against the shared rebuild
+  Supabase project (re-seeded a second time after the sanitizer fix,
+  to re-test Save Waiver specifically), exercised live against the
+  real deployed Worker with `wrangler tail` streaming in parallel for
+  real exception visibility — not just "it built." Confirmed working:
+  root `/` redirect, `/login` sign-in, protected-page access both
+  logged-in and logged-out (the `proxy.ts`-workaround safety check),
+  a normal Server Action (Scheduling Phase 1 load), the
+  service-role-admin-client Server Action (created a real secretary
+  login via Settings → Access), `/register` (public, waiver display),
+  `/staff` (public, invalid-token error path), and static assets
+  (`logo.png`). Test dive center and its two auth users fully deleted
+  afterward — confirmed via direct query only the real `Demo Dive
+  Center` remains. **While testing, noticed genuine, separate live
+  traffic in the `wrangler tail` stream** (a different UA/IP than my
+  own automated browser, hitting Dashboard/Scheduling/Diver Form
+  successfully) — very likely the user trying the freshly-shared URL
+  themselves in parallel; flagged this to them mid-session rather than
+  silently proceeding, since it could easily have been confused with
+  my own test traffic.
+
+Both repos committed and pushed:
+`aquadesk-app@6e5fb7f` (logo), `aquadesk-app@f320e78` (Cloudflare
+deploy support + sanitizer fix), `aquadesk-app@9d33486`
+(`KNOWN_GAPS.md` tracking entry). No root-repo changes this pass (no
+new migration).
+
+### Suggested next step
+
+Resend domain verification, explicitly deferred this session — needs a
+real DNS-controllable domain (a `*.workers.dev` URL can't be verified
+with Resend), and `aquadesk.online`'s DNS is managed in the **live**
+Cloudflare account per the user, not pre-prod. Plan going in (not yet
+executed): the user adds whatever DNS records Resend's dashboard asks
+for themselves in that account, rather than granting this session
+access to it — matching the same "never touch live" caution this
+project already applies everywhere else. Once a subdomain is verified,
+update `RESEND_FROM_EMAIL` (both `.env.local` for dev and the
+Cloudflare secret for pre-prod) — no code changes needed, per the
+already-existing `aquadesk-app/KNOWN_GAPS.md` entry on this from
+2026-07-26.
+
+Also worth a quick sanity check next time Cloudflare is touched:
+`opennextjs/opennextjs-cloudflare#1309` (Node.js middleware support)
+merging would let the `proxy.ts` rename-dance be removed from the
+deploy process — check its status before repeating the workaround by
+habit.
+
 ## Current state (as of 2026-08-01 session, continued — live-verified the freelancer-identity fix chain, found and fixed a real crew-view header-date bug)
 
 Picked up exactly where the prior same-day session's "Suggested next
