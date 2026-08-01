@@ -50,6 +50,108 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-02 session — /staff join-riders gap, Reports donut double-count, Expenses Paid By redesign)
+
+Itemized feedback, four items, researched via one Explore agent pass
+before any code changed. Two were real confirmed bugs, one was a
+genuine feature-redesign request (clarified mid-session), one turned
+out to already match the live app correctly.
+
+**`/staff` didn't show join riders** (guest divers from another dive
+center riding along). Root cause: `schedules.guest_divers_count`/
+`guest_dive_center_name`/`guest_notes` have existed since migration
+013 (2026-07-26), but no version of `get_crew_schedule` since then
+ever selected them — the data never left Postgres, this was never a
+rendering gap. The *other* direction ("we joined another boat",
+`is_joiner`/`joiner_boat_name`) was already correctly wired the whole
+time, which is presumably why this asymmetry went unnoticed until now.
+**Migration 030** (based on 029's actual latest body, per this file's
+own standing "grep for the chronologically latest `create or replace
+function`" rule) adds the three fields to the RPC's per-trip jsonb.
+`StaffScheduleClient.tsx` gained a "Join Rides" section matching the
+live app's real `staff.html` layout (🔗 icon, "+N divers from X",
+notes line). Verified live: `/staff` now correctly shows "🔗 +3 divers
+from Neighbor Dive Shop" with the notes line, for a schedule seeded
+with those three columns set.
+
+**Reports: "Open Diver Bills" showed two different numbers** (33k in
+the Not Yet Settled list, 66k in the Money Snapshot donut). There was
+never a second divergent query — `openDiverBills` is computed exactly
+once (`reports/data.ts`) and both places read that same value.
+The real bug: `notYetSettled` already includes `openDiverBills` as one
+of its own addends, but `OverviewTab.tsx`'s donut total/center-label
+formula added `openDiverBills` a second time on top of it, inflating
+the shown total and skewing the orange arc's proportion. **Confirmed
+this exact bug exists in the live app too** (`reports.html` has the
+identical double-count formula) — fixed it in the rebuild anyway,
+deliberately diverging from faithful live-app parity here, per this
+project's own standing "never show an owner an incorrect number" rule
+from the 2026-08-01 accuracy audit. Verified live with a seeded
+₱1,000 open bill and nothing else in `notYetSettled`: donut total now
+correctly shows ₱1,000 instead of ₱2,000.
+
+**Expenses "Paid By" redesigned**, after the user's own clarification
+mid-session (their first message was ambiguous about which of two
+readings — who paid vs. how it was paid — was intended; they confirmed
+"log who paid it and how was it paid, not an input field," i.e. both,
+not either/or). Split into two real things:
+- **Who recorded it** — turns out `expenses.created_by` already
+  existed (`001_schema_and_rls.sql`) and was already being written on
+  every save, just never selected or displayed anywhere. No migration
+  needed for this half — just added the batch-join-to-a-`Map` pattern
+  this codebase already uses for diver notes' author and Settlement's
+  "Closed By" (`reports/data.ts`'s `loadExpensesData`), and removed the
+  free-text input from the form entirely.
+  - **Found and fixed a related bug while wiring this up**:
+    `created_by` was being overwritten on every *edit*, not just the
+    initial insert — `saveExpenseRecord` unconditionally included it
+    in the payload for both insert and update. Now only set on insert,
+    matching the immutable "who first recorded this" semantic diver
+    notes already use, not "who most recently touched it."
+- **How it was paid** — a real dropdown, via **migration 031**
+  (`expenses.payment_method`, reusing the existing `public.payment_method`
+  enum already used by `deposits.method` — confirmed with the user via
+  `AskUserQuestion` whether to reuse it (cash/card/online) or add a
+  dedicated cash/online-only enum; they chose reusing it). The old
+  `paid_by text` column is dropped outright, not left dangling — it
+  held free-text "who/what funded it" data (confirmed via `reports.html`
+  this was the live app's actual field semantic, byte-for-byte matching
+  the rebuild's pre-existing field — not a rebuild bug at all until the
+  user asked for something better than what the live app itself does).
+  Confirmed zero live-app precedent for a payment-method field on
+  expenses anywhere (grepped `reports.html`) — a deliberate improvement,
+  not a parity fix. Verified live: added a real expense, "Payment
+  Method" correctly showed "Online" (dropdown-selected), "Recorded By"
+  correctly showed the logged-in test owner's name with no manual input.
+
+**Diver Form surcharges — confirmed not a bug, no changes made.** The
+user's own hedge in their report ("if this meant how this was paid...")
+was the correct read once traced: card/online surcharges are applied
+correctly at the payment-recording step (`BillSummary.tsx`/`billing.ts`,
+sourced from Settings > Exchange Rates), not at activity pricing
+(`pricing.ts`) — matching the live app's real architecture exactly,
+confirmed via `diver-form.html`. One small, genuine parity gap found
+along the way and explicitly **not** built (user declined): the live
+app lets a secretary override the surcharge rate for one specific bill
+(a one-off negotiated rate); the rebuild always uses the fixed Settings
+value with no override field.
+
+Test data (`Feedback Verify Test DC`) seeded and cleaned up twice
+(once per verification round) — confirmed via direct query only the
+real `Demo Dive Center` remains. `tsc`/lint clean throughout. Both
+repos committed and pushed: `aquadesk-app@4b2c513` (join riders),
+`aquadesk-app@736f6cf` (donut fix), `aquadesk-app@2b38a83` (Expenses
+redesign), root repo `@84175fd` (migration 030), `@fc627e1`
+(migration 031).
+
+### Suggested next step
+
+Nothing flagged from this pass beyond what's already noted. Whatever
+comes next is most likely more of the same feedback-response pattern —
+the user brings concrete feedback from actual use, research the real
+behavior (live app + rebuild code) before changing anything, verify
+live against seeded test data, commit/push when confirmed working.
+
 ## Current state (as of 2026-08-01 session, continued a second time — real AquaDesk logo incorporated, first Cloudflare Workers pre-prod deployment)
 
 The user has two separate Cloudflare accounts (live, pre-prod) — this
