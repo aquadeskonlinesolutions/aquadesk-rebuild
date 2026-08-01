@@ -50,6 +50,71 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-01 session, continued — live-verified the freelancer-identity fix chain, found and fixed a real crew-view header-date bug)
+
+Picked up exactly where the prior same-day session's "Suggested next
+step" left off: live-verified migrations 026-028 (freelancer identity
++ per-schedule-date crew tokens) in a real browser against a disposable
+test dive center (`Freelancer Verify Test DC`), since that chain had
+only been checked by `tsc`/lint before.
+
+**All four flagged checkpoints passed**: a freelancer-led team ("DM
+Casey Freelance") correctly survives a full page reload in Phase 2
+instead of reverting to "Unassigned"; Phase 3 correctly groups by the
+freelancer's name (not a shared "Unassigned" bucket) and fires the
+mixed-certification warning; `/staff` (the public crew-token view —
+see the folder-layout correction below) correctly renders the
+freelancer's name as the group header; and migration 028's actual
+business scenario — generating a token while viewing a schedule built
+*ahead* (e.g. tomorrow), then loading it via `/staff` while real
+calendar-today hasn't caught up yet — works exactly as retrospective
+#51 corrected it to.
+
+**Route-name correction to this file's own history**: `/staff` is the
+current, real path for the public crew-token view (`src/app/staff/`,
+confirmed via `proxy.ts`'s `PUBLIC_ROUTES` and the file tree) — several
+earlier entries in this file call it `/crew`, which was true only
+briefly around the 2026-07-26 nav rebuild before something later
+renamed it back. Not worth rewriting every historical mention, but
+future sessions should trust `/staff` as current, not `/crew`.
+
+**Real bug found and fixed while verifying migration 028, not part of
+the original ask**: `get_crew_schedule` (028's version) correctly
+*filters* trips by the matched token's own stored date, but never
+*returned* that date to the caller — `StaffScheduleClient.tsx`'s
+header called a bare `new Date()`, so it always displayed the real
+browser/server "today" regardless of which schedule the token actually
+pointed to. Confirmed concretely: loading the tomorrow-built schedule's
+token showed the correct boat/captain/divers but a header reading
+"Saturday, August 1" (real today) instead of "Sunday, August 2" (the
+schedule's actual date) — exactly the kind of quietly-wrong display a
+real secretary could easily miss. **Migration 029**
+(`database/029_crew_schedule_return_date.sql`, based on 028's actual
+latest body per this file's own standing "grep for the chronologically
+latest `create or replace function`" rule) adds `schedule_date` to the
+RPC's returned jsonb. `fmtHeaderDate()` now takes that date string
+(parsed as local via `${dateStr}T00:00:00`, not a bare
+`new Date(dateStr)`, to avoid the UTC-shift class of bug already
+documented elsewhere in this file) instead of reading the client clock.
+Verified live — the same tomorrow-token now correctly shows "Sunday,
+August 2, 2026."
+
+Test dive center and its `auth.users` row fully deleted afterward
+(`schedules.created_by` nulled in its own committed statement first,
+per the established cleanup-ordering lesson) — confirmed via direct
+query only the real `Demo Dive Center` remains. `tsc --noEmit`/
+`npm run lint` clean. Both repos committed and pushed:
+`aquadesk-app@65c8346`, root repo `@36b9954`.
+
+### Suggested next step
+
+Nothing else flagged from this pass — the freelancer-identity chain is
+now fully live-verified, not just type-checked, and the one new bug
+found along the way is fixed and verified too. Whatever comes next is
+most likely more of the same feedback-response pattern: the user brings
+concrete feedback from actual use, research the real behavior before
+changing anything, verify live, commit/push only when asked.
+
 ## Current state (as of 2026-08-01 session — freelancer identity fixes, per-schedule-date crew tokens, Reports Manila-boundary bug, dashboard alert lookback, Add Team multi-select, app-wide number-input fix)
 
 A single long session, itemized feedback across Scheduling, Diver Form,
