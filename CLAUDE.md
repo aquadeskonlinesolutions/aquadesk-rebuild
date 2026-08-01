@@ -50,6 +50,227 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-01 session — freelancer identity fixes, per-schedule-date crew tokens, Reports Manila-boundary bug, dashboard alert lookback, Add Team multi-select, app-wide number-input fix)
+
+A single long session, itemized feedback across Scheduling, Diver Form,
+and Reports, plus a real accuracy audit the user explicitly framed as
+high-stakes ("owners would want to subscribe because DCs in Malapascua
+keep changing secretaries over manipulated/lost paperwork — don't ever
+show an owner an incorrect number"). Everything below is committed and
+pushed (`aquadesk-app@def07eb`, root repo `@d66dab6`).
+
+**Dashboard**: the govt-fees-not-logged and both Join Ride alerts
+(crew-hitched-a-ride / someone-joined-our-boat) now look back 3 days
+instead of only checking today, and list each missing date with its own
+diver count (e.g. `Jul 29 (8 divers), Jul 30 (12 divers)`) instead of a
+generic one-line nudge. Previously a missed log from yesterday silently
+vanished from alerts the moment today started — these three were the
+only alerts scoped to `eq("date", todayStr)` instead of a range.
+
+**Scheduling — Trip Types seeded, boat/captain/fuel in one line**: the
+four real turnaround-time values from the live app's `scheduling.html`
+(`tripTypeDurations`) were confirmed and added to the real Demo Dive
+Center via direct SQL (owner's own explicit choice, not a test
+center): Local Dive 20/20/60/60, Shark Dive 60/60/60/60, Gato
+60/60/60/60, Outside Malapascua 180/180/60/60 (travel-out/travel-back/
+dive/surface-interval minutes) — these now drive real turnaround-time
+conflict detection (migration 025, built in the 2026-07-31 session)
+instead of sitting empty. `TripCard.tsx`'s "Which Boat"/"Boat Captain"/
+"Fuel Consumption" fields are now one row of three columns instead of
+boat name alone above the other two.
+
+**Scheduling — freelancer identity, the session's main thread.** A
+freelancer clip/team's typed name was getting silently lost every time
+it passed through a phase boundary, ending up displayed as "Unassigned"
+— confirmed via research this was one single root cause surfacing in
+three different places the user reported separately:
+- **Migration 026** (`database/026_schedule_divers_staff_name.sql`):
+  `schedule_divers` gains a real `staff_name` column. `saveTripTeams`
+  (Phase 2's save action) now writes it for every team, freelancer or
+  named staff — previously only `staff_id` was written, which is null
+  by design for a freelancer, so there was nowhere to recover the name
+  from on reload.
+  - `TripCard.tsx`'s own Build-phase reload effect now reads this
+    column directly instead of resolving every team's name via a
+    `staffOptions` lookup by id (which always returned "Unassigned" for
+    a null `staffId`) — falls back to the old lookup only for rows
+    saved before this migration existed.
+  - `PhaseThreePanel.tsx`'s `groupByStaff` now keys by
+    `staffId ?? staffName ?? "__unassigned__"` instead of collapsing
+    every freelancer into one shared `"__unassigned__"` bucket
+    (previously this also *merged* unrelated freelancers' divers
+    together, not just mislabeled them).
+- **Migration 027** (`database/027_crew_schedule_freelancer_name.sql`):
+  the `get_crew_schedule` RPC — powering `src/app/staff/` (the public
+  crew-token view) — had the exact same bug independently, since it's a
+  separate SQL consumer of `schedule_divers` a TypeScript-only grep
+  would never catch. Fixed to `coalesce(st.first_name || ' ' ||
+  st.last_name, sd.staff_name)`. **This migration's first version was
+  wrong and caused a real production crash** — see retrospective #50,
+  a new mistake worth reading before touching any SQL function again.
+- **`WarningsBanner.tsx`'s ratio badge + mixed-certification/mixed-air
+  checks were explicitly skipping every freelancer-led group**
+  (`if (staffId === "__unassigned__") continue;`) — a freelancer's team
+  got zero ratio badge and zero mixed-cert/mixed-nitrox warnings while a
+  named-staff team got both. Fixed by grouping on
+  `staffId ?? staffName` instead of skipping the fallback bucket
+  entirely — matches the user's explicit ask ("make sure each staff AND
+  its clips gets the warning").
+- **Phase 1's `ClipCard` had no mixed-warning of any kind before this
+  session** (only the existing 1:4 ratio count) — added a mixed-
+  certification-level check plus a mixed-Nitrox-*certification* check
+  (the closest available signal at this stage, since actual per-dive
+  tank choice isn't picked until Phase 2). Phase 3's per-team box got
+  the same two warnings added alongside its existing "over 1:4 ratio"
+  line.
+- Verified live end-to-end afterward — see the Reports section below
+  for how; this fix wasn't separately re-verified in a browser this
+  session beyond `tsc`/lint, since the later live-verification pass
+  focused on the Reports boundary bug specifically. Worth a quick
+  click-through next time Scheduling is touched.
+
+**Scheduling — Add Team is now multi-select.** Confirmed from
+`scheduling.html`'s real `openAssignTeamModal`/`confirmAssignTeamsToTrip`:
+every available clip gets a checkbox, one "Assign on this Trip" button
+adds all checked clips in one go — the rebuild's old version required
+opening the modal, picking one clip, closing, reopening, for every
+additional team. `AddTeamModal`'s `onAdd` now takes `Team[]` instead of
+a single `Team`.
+
+**Scheduling — a new trip had no way to discard itself before saving.**
+The header's Delete button and the footer's Cancel Trip button are both
+gated on a real `scheduleId` — a brand-new, unsaved trip card has
+neither, so changing your mind before the first Save meant a full page
+refresh was the only way out. Added a "Discard" button, shown only when
+`!scheduleId`, that just removes the local placeholder (nothing was
+ever saved to actually cancel/delete server-side).
+
+**Scheduling — crew token scope, corrected after the user pushed back
+on my first (wrong) explanation.** Real business workflow: a dive
+center builds tomorrow's schedule before closing up today, specifically
+so staff can check it that same evening — the rebuild's token system
+only considered a token valid if its stored date matched real calendar
+today, so a schedule built ahead was structurally unreachable by any
+token until the next day actually arrived. Confirmed against the live
+app's actual mechanism (`scheduling.html`'s `generateToken()`/
+`refreshStaffToken()`, `staff.html`'s `submitToken()`): the token's date
+is whichever schedule date is currently selected when the token is
+(re)generated, not `localTodayStr()` unconditionally — and the crew
+view's own token lookup doesn't compare against real today at all, it
+just trusts whatever date is stored alongside the matched token.
+**Migration 028** (`database/028_crew_token_per_schedule_date.sql`):
+`generate_daily_staff_token` now takes the caller's currently-viewed
+schedule date as a required parameter instead of hardcoding Manila-
+today (old 1-parameter overload dropped, not left dangling);
+`get_crew_schedule` drops the `staff_token_date = v_today` comparison
+entirely and uses the matched row's own `staff_token_date` as the date
+to filter schedules by. `PhaseThreePanel.tsx` gained a `scheduleDate`
+prop (threaded from `SchedulingClient.tsx`'s already-existing `date`
+state) and `getCrewTokenForDate(scheduleDate)`/`generateCrewToken
+(scheduleDate)` replace the old today-only `getCrewTokenToday`/
+`generateCrewToken()`. See retrospective #51 for the wrong first answer
+this corrected.
+
+**Diver Form / Boat Return**: `markBoatReturned` resolved a diver's
+staff name for the activity row purely via a `staff.id` lookup — always
+null for a freelancer (no `staff_id` to look up), even though the same
+freelancer's name was sitting right there once migration 026 landed.
+Now falls back to `row.staff_name` when there's no real `staff_id`.
+Package-mode activities now log just the matched package's own name
+(e.g. "Shark Diving") instead of the raw joined dive-site list —
+resolved via the same normalized site-combination matching
+`diver-form/[id]/pricing.ts`'s `autoPricePackageMode` already uses
+(duplicated locally in `scheduling/actions.ts` as `normalizeSiteKey`,
+matching this codebase's established per-page small-helper-duplication
+precedent), falling back to the joined site list only if no package
+configured for that combination matches.
+
+**App-wide: every number input now selects its value on focus.** The
+"I have to delete the leading 0 before I can type" complaint — 57
+number inputs across 29 files, fixed mechanically with a one-off Node
+script (`onFocus={(e) => e.currentTarget.select()}` inserted after
+every `type="number"` line), scoped to "everywhere" per the user's own
+explicit choice via `AskUserQuestion` given the size.
+
+**Reports — a real, previously-undiscovered Manila-timezone boundary
+bug, found during the accuracy audit the user asked for.** Overview's
+`paymentsInRange` query and Settlement's single-date query both
+compared `payments.paid_at` (a real `timestamptz`) against literal
+UTC-midnight string boundaries (`${dateFrom}T00:00:00.000Z` etc.)
+instead of Manila-midnight ones — the same bug class already fixed on
+Dashboard (`manilaDayBoundsUtcIso`) but never applied to Reports.
+**Proved concretely, twice, with a disposable rolled-back SQL fixture
+before touching any real data**: a payment made at 12:30 AM Manila time
+on August 1st was, under the old code, invisible from an August-1st
+report and **silently counted under July 31st's total instead** —
+exactly the kind of misattribution that could trigger a real dispute
+with an owner reconciling cash. Fixed by adding a local
+`manilaDayBoundsUtcIso` helper (duplicated from `dashboard/data.ts`'s
+own, matching precedent) to `reports/data.ts` and using it at both call
+sites; Settlement's per-row displayed date also switched from slicing
+`paid_at`'s raw UTC string to just using the page's own selected
+`date` directly (every row returned is now guaranteed to belong to that
+exact Manila day, so there's no need to re-derive it from a timestamp
+that could show the wrong side of the boundary).
+- **Read through every other Reports tab's calculation logic hunting
+  specifically for duplicate-counting/fan-out-join bugs** (the other
+  half of the user's "no duplicates, no multipliers" ask) — found none.
+  Every other date filter in Reports (`activities.date`, `expenses.date`,
+  `govt_fees.date`, `staff_commission_records.activity_date`,
+  `deposits.deposit_date`) is a plain `date` column with no timezone
+  ambiguity to begin with; only the two `timestamptz`-based payment
+  queries had the bug.
+- **Live-verified end-to-end**, not just in isolated SQL: seeded a
+  temporary "Boundary Verify Test DC" (owner login, one diver, three
+  payments — one at 2pm Manila Jul 31, one at 12:30am Manila Aug 1, one
+  at 2pm Manila Aug 1), logged in via the real browser, confirmed
+  Overview's Jul-31-only range shows exactly ₱300 (correctly excluding
+  the boundary payment), Aug-1-only shows exactly ₱1,500 (correctly
+  including both Aug-1 payments), and Settlement shows the boundary
+  payment correctly dated "Aug 1, 2026" in both the row-count and the
+  per-row displayed date. Test dive center, owner login, and every
+  seeded row fully deleted afterward — confirmed via direct query that
+  only the real `Demo Dive Center` remains.
+
+**Dead-code audit run at session end** (see the dedicated entry further
+down, done *before* this file was updated, per the user's explicit
+ask) — nothing new found: every symbol added today resolves to a real
+consumer, every symbol removed/renamed today has zero stale references
+left anywhere in `src/`.
+
+**Both repos committed and pushed**: `aquadesk-app@def07eb` (37 files —
+everything above except the migrations), root repo `@d66dab6`
+(migrations 026-028). `git status` clean in both except
+`aquadesk-app/.claude/launch.json` (untracked, harmless dev-server
+preview config, no secrets — not part of this session's asked-for
+commits, left alone).
+
+### Not yet built / known gaps as of this session
+
+Nothing new opened this session. Everything already tracked in
+`aquadesk-app/KNOWN_GAPS.md` and the running "known, documented gaps"
+list further down this file is still accurate and still non-blocking —
+see that list rather than duplicating it here. One item from an earlier
+session's dead-code audit is now **resolved**, not just tracked: the
+"freelancer team name reverts to Unassigned on reload" rough edge
+(first noted 2026-07-30, explicitly flagged then as *not* fixed because
+it wasn't part of that day's ask) is fixed for real this session —
+migrations 026/027 plus the `TripCard.tsx`/`PhaseThreePanel.tsx`
+changes above.
+
+### Suggested next step
+
+The freelancer-identity fix chain was verified by `tsc`/lint only, not
+re-clicked-through in a real browser this session (the live-verification
+budget went to the Reports boundary bug instead, given the user's
+explicit stakes framing). Worth a quick live pass next time Scheduling
+is touched: build a trip with a freelancer-led team, confirm the name
+survives a page reload in Phase 2 and shows correctly in Phase 3, and
+confirm `/staff` renders it too. Otherwise, whatever comes next is most
+likely more of the same feedback-response pattern this project has been
+in since 2026-07-25 — no new page or feature is implied by anything
+above.
+
 ## Current state (as of 2026-07-31 session — Equipment Management/Group Management/Inventory rename, Scheduling clip-merge + turnaround-time conflict detection, Move-diver fix + app-wide font/color pass)
 
 Four itemized feedback passes in one day, all committed:
@@ -2289,6 +2510,26 @@ center could actually fit.
   persists declared variables across separate tool calls within the
   same tab, so reusing a common name (`btn`, `select`) in two different
   snippets throws a redeclaration error (see retrospective #47).
+- **Before using `create or replace function` to change an existing SQL
+  function, grep `database/*.sql` for every prior `create or replace
+  function` of that same name and base the edit on the chronologically
+  latest one** — never reconstruct the body from memory or from an
+  earlier migration's write-up in this very file, even one quoted
+  verbatim. A later migration can have added fields the remembered
+  version doesn't know about, and `create or replace` silently drops
+  them with no warning. This is the same root cause as the older
+  "check for later migrations against the same *table*" rule below, just
+  for a function instead of a column list — and it caused a real
+  production crash the one time it was skipped (see retrospective #50).
+- **When a user says a piece of rebuilt behavior is wrong and asks to
+  check how the live app actually behaves, check the live app's real
+  source before re-explaining the rebuild's current behavior as if it
+  were the intended design.** "This is what the code currently does" is
+  not the same claim as "this is what it's supposed to do" — only the
+  reference HTML/JS files can settle the second one, and they're
+  sitting right there in this repo. Don't let a plausible-sounding
+  explanation of current behavior substitute for actually opening the
+  reference file (see retrospective #51).
 
 ## Retrospective — mistakes made, so they aren't repeated
 
@@ -3331,6 +3572,72 @@ The point isn't the fix (already applied) — it's recognizing the
     switch to the native-setter+dispatchEvent JS pattern rather than
     retrying `form_input` or `computer` clicks at different
     coordinates.**
+
+### Session 2026-08-01 (freelancer identity fixes, per-schedule-date crew tokens, Reports Manila-boundary bug)
+
+50. **Modifying an existing SQL function with `create or replace`
+    against a *remembered* or *documented* version of its body, instead
+    of the actual latest-applied one, silently reverts every change a
+    later migration made to it — and this happened for real this
+    session, causing a genuine production crash.** Fixing
+    `get_crew_schedule`'s freelancer-name bug (migration 027) meant
+    changing one `case when ... else null end` expression into a
+    `coalesce(...)`. The function body used as the base for that edit
+    was the version quoted in this file's own session-018 write-up —
+    but migrations 022 (per-dive tank detail, `staff_dive_tanks`,
+    `spare_tanks`, `course_name`) and 023 (`dive_center_name`) had both
+    landed *after* 018 and changed the function further. The first
+    version of migration 027 silently dropped all of that, and the very
+    next thing the user did was hit `/staff` and get a real crash
+    (`Cannot read properties of undefined (reading 'forEach')` on
+    `trip.staff_dive_tanks`) — not a hypothetical, an actual regression
+    shipped straight to the real shared rebuild database (the one
+    serving the real Demo Dive Center's `/staff` page) before the
+    user's own report caught it.
+    Root cause confirmed by diffing 018's, 022's, and 023's bodies side
+    by side — 023 was the real latest. Fixed by rewriting 027 against
+    023's actual body with only the one intended change layered on top,
+    and re-applying. **Lesson: this is the exact same root cause as the
+    long-standing "check for later migrations against the same table
+    before trusting the base schema file" rule already in this file
+    (the `govt_fees` incident, item 13) — just for a SQL *function*
+    instead of a table's column list. Before using `create or replace
+    function` to change an existing function, grep `database/*.sql` for
+    every prior `create or replace function` of that same name and use
+    the chronologically-latest one as the base — never reconstruct from
+    a remembered or documented version, even one quoted verbatim
+    elsewhere in this very file, since this file's own historical
+    write-ups can themselves go stale the moment a later migration
+    changes something they described.**
+
+51. **Gave a confident, wrong "this is expected behavior, not a bug"
+    answer about the crew-token system without first checking the live
+    app's actual source for it — even though the reference file was
+    open the entire session and the fix, once found, took one grep.**
+    Asked whether a crew token generated "today" should also work for a
+    schedule built ahead for tomorrow, the first answer was that the
+    token is correctly scoped to real calendar-today and tomorrow's
+    schedule is correctly unreachable until tomorrow arrives — this
+    accurately described the *rebuild's own current code*, but was
+    asserted as if it were the deliberate, correct design without ever
+    checking whether that matched the live app's real behavior. It
+    didn't: `scheduling.html`'s actual `generateToken()`/
+    `refreshStaffToken()` key the token off whichever schedule date is
+    currently selected, not real today, and `staff.html`'s token lookup
+    never compares against today at all — it trusts whatever date is
+    stored alongside the matched token. The user had to push back
+    explicitly ("no... check how the live app behaves") and explain the
+    real business workflow (schedules built ahead, at closing time,
+    specifically so staff can check tomorrow's plan that same evening)
+    before the live app's source actually got checked. **Lesson: when a
+    user says a piece of rebuilt behavior is wrong and this project's
+    own reference files exist for exactly this feature, check those
+    files *before* re-explaining the rebuild's current behavior as if
+    it were the intended design — "this is what the code currently
+    does" is not the same claim as "this is what it's supposed to do,"
+    and only the live app's actual source can settle the second one.
+    Don't let a plausible-sounding explanation of current behavior
+    substitute for actually checking the reference.**
 
 ## Dead-code audit (2026-07-23 session)
 
@@ -4638,6 +4945,63 @@ step, covering all four passes from today.
 `cellValue` duplication above). Nothing else found — everything else
 built today was either a genuinely new symbol with a real, confirmed
 consumer, or module-private and correctly scoped to its own file.
+
+## Dead-code audit (2026-08-01 session — freelancer identity fixes, per-schedule-date crew tokens, Reports Manila-boundary bug)
+
+Requested explicitly by the user at session close, as its own separate
+step, and explicitly asked to be checked *before* writing this file's
+own update — done in that order.
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run fresh at the
+  very end (not just trusted from mid-session runs).
+- Grepped the whole `src/` tree for every symbol removed or renamed
+  today: `todayManila` (removed from `scheduling/actions.ts` only —
+  confirmed zero remaining references there; every other hit across the
+  codebase is a different file's own already-established duplicate copy
+  of the same small helper, unrelated to this session's removal, not a
+  stale reference to it) and `getCrewTokenToday`/`govtFeesToday`/
+  `completedToday`/`joinedBoatSchedules`/`guestDiverSchedules` (the old
+  today-only alert-query variable names) — zero remaining references to
+  any of them; `dashboard/data.ts`'s alert rewrite fully replaced the
+  old single-day blocks rather than leaving them duplicated alongside
+  the new 3-day-lookback ones.
+- Usage-count pass on every new/changed symbol added today:
+  `manilaDayBoundsUtcIso` (`reports/data.ts`'s own duplicate copy — 3
+  real occurrences: definition, Overview's query, Settlement's query,
+  matching the established per-page small-helper-duplication precedent
+  rather than importing Dashboard's copy across a page boundary),
+  `ScheduleDiverRow.staffName`/`Team.staffName`/`Assignment.staffName`
+  (22 occurrences across 5 files — `actions.ts`, `PhaseOnePanel.tsx`,
+  `PhaseThreePanel.tsx`, `TripCard.tsx`, `WarningsBanner.tsx`, all real
+  consumers), `mixedGroupWarnings`/`clipWarnings`/`activeMembers`
+  (each rendered at its one real call site), `discardNew`/`AddTeamModal`'s
+  new `Team[]`-typed `onAdd` (both wired to real UI), `normalizeSiteKey`/
+  `packageActivityName` (`scheduling/actions.ts`'s own duplicate of
+  `pricing.ts`'s helper, both genuinely used), `getCrewTokenForDate`/
+  `generateCrewToken(scheduleDate)` (the renamed/re-signatured pair,
+  confirmed as the *only* call site anywhere in `src/`), and the
+  `generate_daily_staff_token` RPC's new two-argument call (confirmed
+  the only call site references the new signature — the dropped
+  1-parameter SQL overload has no orphaned TypeScript caller left
+  expecting it).
+- The one real regression found this session (migration 027's stale-base
+  mistake, retrospective #50) was a SQL-function content bug, not a
+  dead-code issue in the usual sense — already caught, root-caused, and
+  corrected in place during the session itself (a second, corrected
+  027 file was written and re-applied), not left for this audit to find
+  fresh. Confirmed via direct query against the live database that the
+  currently-applied `get_crew_schedule` matches the corrected file on
+  disk (both include `staff_dive_tanks`/`dive_tanks`/`course_name`/
+  `dive_center_name` plus the freelancer-name coalesce).
+- Test dive centers this session (`Boundary Verify Test DC` for the
+  live-verification pass) fully deleted — confirmed via direct query
+  that only the real `Demo Dive Center` remains in `dive_centers`, and
+  the disposable SQL-only fixture used to first prove the boundary bug
+  (rolled back, never committed) left zero residual rows.
+
+**Nothing new found needing a fix.** Everything added today resolves to
+a real, confirmed consumer; everything removed/renamed today has zero
+stale references remaining.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
