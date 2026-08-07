@@ -232,7 +232,7 @@ const staff = (rows) =>
       email: r.email,
       phone: r.phone,
       whatsapp: r.whatsapp,
-      position: r.access_level, // NOT r.role — access_level is the real field, see mapping doc
+      position: r.access_level || "crew", // NOT r.role — access_level is the real field, see mapping doc; NOT NULL on target with a default, coalesce defensively
       employment_status: employment || null,
       date_hired: r.date_hired,
       daily_rate: r.daily_rate,
@@ -481,56 +481,86 @@ const divers = (rows) =>
 // last_dive_date, identity snapshot) — those are backfilled here from the
 // linked `divers` row's *current* value, which is a reconstructed
 // approximation, not a true historical snapshot (see mapping doc's
-// dedicated caveat). `diversById` is a Map of already-transformed new
-// divers rows, keyed by id, built by the caller before this runs.
+// dedicated caveat).
+function buildRegistrationRow(id, r, diver) {
+  return {
+    id,
+    created_at: r.created_at,
+    diver_id: r.diver_id ?? r.id,
+    dive_center_id: r.dive_center_id,
+    waiver_signed: r.waiver_signed ?? false, // NOT NULL with a default on target — never send null explicitly
+    waiver_date: r.waiver_date,
+    waiver_signature_url: r.waiver_signature_url, // base64 data URI, large — expected
+    waiver_content_snapshot: r.waiver_content_snapshot,
+    medical_flag: r.medical_flag ?? false, // NOT NULL with a default on target — never send null explicitly
+    medical_answers: r.medical_answers,
+    medical_answers_snapshot: r.medical_answers_snapshot ?? null,
+    privacy_notice_snapshot: r.privacy_notice_snapshot,
+    privacy_consent_at: r.privacy_consent_at,
+    arrival_date: r.arrival_date,
+    departure_date: r.departure_date,
+    certification_level: mapCertificationLevel(r.certification_level) || "none",
+    equipment_requested: r.equipment_requested,
+    group_id: r.group_id,
+    needs_equipment: r.needs_equipment ?? false,
+    equipment_preference: r.equipment_preference,
+    // backfilled-from-divers, reconstructed not historical — flagged per mapping doc
+    accommodation: diver?.accommodation ?? null,
+    emergency_contact_name: diver?.emergency_contact_name ?? null,
+    emergency_contact_phone: diver?.emergency_contact_phone ?? null,
+    emergency_contact_whatsapp: diver?.emergency_contact_whatsapp ?? null,
+    emergency_contact_email: diver?.emergency_contact_email ?? null,
+    emergency_contact_relationship: diver?.emergency_contact_relationship ?? null,
+    last_dive_date: diver?.last_dive_date ?? null,
+    food_allergies: diver?.food_allergies ?? null,
+    has_dive_insurance: diver?.has_dive_insurance ?? null,
+    insurance_provider: diver?.insurance_provider ?? null,
+    insurance_policy_number: diver?.insurance_policy_number ?? null,
+    wants_insurance_referral: null, // nullable on target, no old source at all — fine to leave null
+    waiver_opened: false, // NOT NULL with a default on target — no old source, use the default rather than sending null
+    duplicate_email_flag: false, // same — NOT NULL with a default
+    first_name: diver?.first_name ?? null,
+    last_name: diver?.last_name ?? null,
+    birthday: diver?.birthday ?? null,
+    nationality: diver?.nationality ?? null,
+    email: diver?.email ?? null,
+    phone: diver?.phone ?? null,
+    whatsapp: diver?.whatsapp ?? null,
+  };
+}
+
+// `diversById` is a Map of already-transformed new divers rows, keyed by
+// id, built by the caller before this runs.
 const diverRegistrations = (rows, diversById) =>
-  mapDirect(rows, (r) => {
-    const diver = diversById.get(r.diver_id);
-    return {
-      id: r.id,
-      created_at: r.created_at,
-      diver_id: r.diver_id,
-      dive_center_id: r.dive_center_id,
-      waiver_signed: r.waiver_signed,
-      waiver_date: r.waiver_date,
-      waiver_signature_url: r.waiver_signature_url, // base64 data URI, large — expected
-      waiver_content_snapshot: r.waiver_content_snapshot,
-      medical_flag: r.medical_flag ?? false, // NOT NULL with a default on target — never send null explicitly
-      medical_answers: r.medical_answers,
-      medical_answers_snapshot: r.medical_answers_snapshot ?? null, // old registration insert never wrote this — see mapping doc
-      privacy_notice_snapshot: r.privacy_notice_snapshot,
-      privacy_consent_at: r.privacy_consent_at,
-      arrival_date: r.arrival_date,
-      departure_date: r.departure_date,
-      certification_level: mapCertificationLevel(r.certification_level) || "none",
-      equipment_requested: r.equipment_requested,
-      group_id: r.group_id,
-      needs_equipment: r.needs_equipment ?? false,
-      equipment_preference: r.equipment_preference,
-      // backfilled-from-divers, reconstructed not historical — flagged per mapping doc
-      accommodation: diver?.accommodation ?? null,
-      emergency_contact_name: diver?.emergency_contact_name ?? null,
-      emergency_contact_phone: diver?.emergency_contact_phone ?? null,
-      emergency_contact_whatsapp: diver?.emergency_contact_whatsapp ?? null,
-      emergency_contact_email: diver?.emergency_contact_email ?? null,
-      emergency_contact_relationship: diver?.emergency_contact_relationship ?? null,
-      last_dive_date: diver?.last_dive_date ?? null,
-      food_allergies: diver?.food_allergies ?? null,
-      has_dive_insurance: diver?.has_dive_insurance ?? null,
-      insurance_provider: diver?.insurance_provider ?? null,
-      insurance_policy_number: diver?.insurance_policy_number ?? null,
-      wants_insurance_referral: null, // nullable on target, no old source at all — fine to leave null
-      waiver_opened: false, // NOT NULL with a default on target — no old source, use the default rather than sending null
-      duplicate_email_flag: false, // same — NOT NULL with a default
-      first_name: diver?.first_name ?? null,
-      last_name: diver?.last_name ?? null,
-      birthday: diver?.birthday ?? null,
-      nationality: diver?.nationality ?? null,
-      email: diver?.email ?? null,
-      phone: diver?.phone ?? null,
-      whatsapp: diver?.whatsapp ?? null,
-    };
-  });
+  mapDirect(rows, (r) => buildRegistrationRow(r.id, r, diversById.get(r.diver_id)));
+
+// Real, confirmed finding (2026-08-07 live investigation): the vast
+// majority of real divers in this app's actual historical data have NO
+// diver_registrations row at all, despite carrying a full registration-
+// equivalent record (arrival_date, waiver, medical answers, equipment
+// request) directly on their OLD `divers` row — the old app has (at
+// least) one diver-creation path that writes rich data onto `divers`
+// without ever inserting into `diver_registrations`. The new schema
+// deliberately dropped arrival_date/waiver/medical/etc. from `divers`
+// entirely (they live only on `diver_registrations` now), so without
+// this synthesis step, that data — and anything reading it, like
+// Reports' Equipment Management page, which the live app drives off
+// `divers.arrival_date` directly — silently has nothing to show for
+// these divers. `rawOldDivers` is scoped to rows whose id is NOT in
+// `existingRegistrationDiverIds` (already-migrated real registrations,
+// don't duplicate) and that show a real signal of registration-equivalent
+// data (arrival_date set) — a bare walk-in profile with no such field
+// set gets no synthetic row, there's nothing to synthesize.
+function synthesizeMissingRegistrations(rawOldDivers, existingRegistrationDiverIds) {
+  const { randomUUID } = require("crypto");
+  const rows = [];
+  for (const r of rawOldDivers || []) {
+    if (existingRegistrationDiverIds.has(r.id)) continue;
+    if (!r.arrival_date) continue;
+    rows.push(buildRegistrationRow(randomUUID(), { ...r, diver_id: r.id }, r));
+  }
+  return rows;
+}
 
 const diverStaffDefaults = (rows) =>
   mapDirect(rows, (r) => ({
@@ -767,67 +797,74 @@ function schedulesAndChildren(rows) {
   return { schedules, scheduleSites, scheduleCrew, skipped };
 }
 
-// schedule_divers + their per-dive tank rows, built from the OLD
-// `schedule_divers` table (real relational rows, not the blob) plus each
-// row's own per-diver `notes` JSON (a *second*, different JSON blob —
-// see LIVE_DATA_MIGRATION_MAPPING.md section 6).
-function scheduleDivers(rows) {
+// NOTE: an earlier version of this file had a `scheduleDivers(rows)`
+// function here that built schedule_divers from the OLD relational
+// `schedule_divers` table. Removed 2026-08-07 — confirmed via live
+// investigation that table's rows are stale/orphaned in real data (0%
+// matched any currently-existing schedule in the first real migration
+// batch), which silently dropped every diver-schedule assignment until
+// the user's own live comparison against the real app caught a missing
+// diver. Do not resurrect this approach — see scheduleDiversFromBlob()
+// below, and CLAUDE.md's retrospective entry for this session for the
+// full account of why the blob, not the table, is the real source.
+
+// schedule_divers, derived from the schedule's OWN notes blob
+// (meta.staffGroups[].diverIds/nitrox/tank15l/is15l) — NOT from the old
+// relational `schedule_divers` table. Confirmed via live investigation
+// (2026-08-07): the old table's rows are stale/orphaned (0% match any
+// currently-existing schedule in real data), while the current,
+// authoritative diver-assignment data lives in each schedule's own
+// blob, same place staffDiveTanks() already reads staff-level nitrox
+// from. `staffIdByName` is a Map<"first last" lowercase, staff.id>
+// built by the caller from the already-migrated staff batch.
+function scheduleDiversFromBlob(scheduleRows, staffIdByName, experienceTypeByDiverId = new Map()) {
   const divers = [];
   const diveTanks = [];
-  const skipped = [];
 
-  for (const r of rows || []) {
-    try {
-      const newId = r.id; // preserve id
-      divers.push({
-        id: newId,
-        created_at: r.created_at,
-        dive_center_id: r.dive_center_id,
-        schedule_id: r.schedule_id,
-        diver_id: r.diver_id,
-        staff_id: r.staff_id,
-        experience_type: r.experience_type || null, // real column old-side but confirmed rarely/never populated — see mapping doc
-        is_15l: r.is_15l ?? false,
-        is_diving_tomorrow: r.is_diving_tomorrow ?? true,
-        nitrox_requested: r.nitrox_requested ?? false,
-        notes: null, // the old per-diver notes JSON is reshaped into tank rows below, not copied verbatim
-        source_clip_id: null, // no old equivalent
-        staff_name: null, // filled in by etl.js from a staff_id lookup where possible
-        // is_group_leader: confirmed no new-schema equivalent — dropped, see mapping doc
-      });
-
-      if (r.notes) {
-        let parsed;
-        try {
-          parsed = JSON.parse(r.notes);
-        } catch {
-          parsed = null;
+  for (const r of scheduleRows || []) {
+    const meta = parseScheduleBlob(r.notes);
+    for (const g of meta.staffGroups || []) {
+      const staffId = g.isFreelancer ? null : staffIdByName.get((g.name || "").trim().toLowerCase()) ?? null;
+      const excluded = new Set(g.excludedDiverIds || []);
+      for (const diverId of g.diverIds || []) {
+        if (excluded.has(diverId)) continue;
+        const newId = randomUUID();
+        const nitroxIdx = g.nitrox?.[diverId] || [];
+        const tank15lIdx = g.tank15l?.[diverId] || (g.is15l?.[diverId] ? [] : []);
+        divers.push({
+          id: newId,
+          created_at: r.created_at,
+          dive_center_id: r.dive_center_id,
+          schedule_id: r.id,
+          diver_id: diverId,
+          staff_id: staffId,
+          // no reliable old-schema source for this column (see mapping
+          // doc) — best-effort backfill from the diver's own migrated
+          // visits, defaulting to fun_diving (the overwhelmingly common
+          // case, and required for Reports' "Leading Our Dives" query,
+          // which filters on this exact column)
+          experience_type: experienceTypeByDiverId.get(diverId) || "fun_diving",
+          is_15l: !!(tank15lIdx.length || g.is15l?.[diverId]),
+          is_diving_tomorrow: true,
+          nitrox_requested: !!nitroxIdx.length,
+          notes: null,
+          source_clip_id: null,
+          staff_name: g.name || null,
+        });
+        const seen = new Set();
+        for (const i of nitroxIdx) {
+          seen.add(i);
+          diveTanks.push({ dive_center_id: r.dive_center_id, schedule_diver_id: newId, site_index: i, tank_type: "nitrox" });
         }
-        if (parsed) {
-          const nitroxIdx = parsed.nitrox_dive_indexes || [];
-          const tank15lIdx =
-            parsed.tank_15l_dive_indexes || parsed.fifteen_l_dive_indexes || [];
-          const seen = new Set();
-          for (const i of nitroxIdx) {
-            const key = `${i}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            diveTanks.push({ dive_center_id: r.dive_center_id, schedule_diver_id: newId, site_index: i, tank_type: "nitrox" });
-          }
-          for (const i of tank15lIdx) {
-            const key = `${i}`;
-            if (seen.has(key)) continue; // nitrox wins on conflict, per mapping doc's dedup rule
-            seen.add(key);
-            diveTanks.push({ dive_center_id: r.dive_center_id, schedule_diver_id: newId, site_index: i, tank_type: "air_15l" });
-          }
+        for (const i of tank15lIdx) {
+          if (seen.has(i)) continue;
+          diveTanks.push({ dive_center_id: r.dive_center_id, schedule_diver_id: newId, site_index: i, tank_type: "air_15l" });
         }
       }
-    } catch (e) {
-      skipped.push({ row: r, reason: e.message });
     }
   }
 
-  return { divers, diveTanks, skipped };
+  return { divers, diveTanks };
 }
 
 // schedule_staff_dive_tanks — sourced from the schedule's own notes blob
@@ -838,7 +875,7 @@ function staffDiveTanks(scheduleRows) {
     const meta = parseScheduleBlob(r.notes);
     for (const g of meta.staffGroups || []) {
       for (const i of g.staffNitrox || []) {
-        out.push({ dive_center_id: r.dive_center_id, schedule_id: r.id, staff_name: g.name, site_index: i });
+        out.push({ dive_center_id: r.dive_center_id, schedule_id: r.id, staff_name: g.name || "Unassigned Staff", site_index: i }); // NOT NULL on target — found via preflight.js
       }
     }
   }
@@ -853,7 +890,7 @@ const scheduleTeamClips = (rows) =>
     dive_center_id: r.dive_center_id,
     schedule_date: r.schedule_date,
     staff_id: r.staff_id,
-    staff_name: r.staff_name,
+    staff_name: r.staff_name || "Unassigned Staff", // NOT NULL on target — found via preflight.js, not confirmed hit in real data yet
     is_freelancer: r.is_freelancer ?? false,
     source: r.source || "manual",
     created_by: r.created_by,
@@ -1022,7 +1059,7 @@ const staffCommissionRecords = (rows, diversByName) =>
       created_at: r.created_at,
       dive_center_id: r.dive_center_id,
       activity_date: r.date, // renamed from `date`; period_month dropped entirely (purely derived old-side)
-      staff_name: r.staff_name,
+      staff_name: r.staff_name || "Unassigned Staff", // NOT NULL on target — found via preflight.js
       commission_group: r.commission_group,
       title: r.title,
       diver_id: diverId,
@@ -1074,6 +1111,7 @@ module.exports = {
   groups,
   divers,
   diverRegistrations,
+  synthesizeMissingRegistrations,
   diverStaffDefaults,
   visits,
   activities,
@@ -1083,7 +1121,7 @@ module.exports = {
   visitRateSelections,
   diverNotes,
   schedulesAndChildren,
-  scheduleDivers,
+  scheduleDiversFromBlob,
   staffDiveTanks,
   scheduleTeamClips,
   scheduleTeamClipDivers,

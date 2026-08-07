@@ -50,6 +50,258 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-07 session — go-live planning, live-data migration tooling built, first real batch migrated + fixed, paused before touching Dive Nation)
+
+**The rebuild itself is being treated as feature-complete as of this
+session** — the user's own framing: further work on `aquadesk-app` is
+bug/gap-driven from here, not new-page work. This session's entire focus
+was turning the finished rebuild into the real, live AquaDesk: planning
+the go-live sequence, building real ETL tooling, and migrating the first
+real batch of live data into the rebuild's production Supabase project.
+**No `aquadesk-app` source files were touched this session at all** —
+everything below is either planning docs, new migration tooling in
+`database/migration/` (a new subfolder of the **root** repo, not
+`aquadesk-app`), or real data movement.
+
+### The plan
+
+Asked what it would take to go live and migrate real data in. Landed on:
+migrate per-dive-center (the schema is already multi-tenant/RLS-scoped,
+so this is natural), lowest-stakes accounts first as pipeline proof,
+domain (`aquadesk.online`) stays pointed at the **old** live app until
+the rebuild is fully proven — the domain move happens exactly once, not
+per-tenant. Full plan (8 phases, A through I) is saved at
+`C:\Users\MVRTN\.claude\plans\tranquil-snuggling-iverson.md` — **not a
+one-session plan, expected to span many future sessions**, so that file
+(not just this one) is worth reading at the start of any future
+go-live-continuation session.
+
+**The 6 dive centers on the live project, and what happens to each**
+(confirmed with the user from a direct query they ran themselves):
+
+| Name | id | Plan |
+|---|---|---|
+| Test Dive Center | `720ac8bb-ca1f-4da8-93bd-38270d32336e` | migrate first (done) — user's own bug-testing account |
+| Package Test Dive Center | `5e1a7e2b-7ca8-47d3-aa2d-6dfd5543b291` | migrate first (done), alongside Test Dive Center |
+| Atlas Divers Malapascua | `e7227551-a7d1-4daa-98cc-1e78ddd2b933` | **on hold** — real prospect, exploring, not yet operational |
+| Divergems Diving Center | `04ea0a3d-79e6-4876-843c-ee54c1966e07` | **on hold**, alongside Atlas |
+| Dive Nation Malapascua | `6ac592ff-c612-42df-b243-0f24aea9f226` | **on hold, migrates last** — the real, actively-operating paying client |
+| Demo Dive Center | `a6aaa2ba-5a7a-4e01-b4ff-29a8bafb828c` | excluded — discontinued explore-demo account, do not migrate |
+
+**Standing rule decided this session, applies to every future
+continuation**: `aquadesk.online`'s DNS is one all-tenants switch, not
+per-dive-center — any real dive center migrated now keeps operating on
+the *old* app until the actual cutover, and anything they do there in
+the interim (new divers, bookings, payments) won't be in the copy
+already moved, since there's no incremental/delta-sync mechanism built.
+The user explicitly chose to **hold off on migrating Atlas, Divergems,
+and Dive Nation Malapascua entirely** until the live Cloudflare
+deployment and Resend domain verification (Phases F/G — code-only, no
+tenant data, safe to do anytime) are both done, so all three real dive
+centers can be migrated and DNS can flip in one tight, close-together
+pass — not staggered with an early migration sitting stale for an
+unknown number of days/weeks. **Do not start Phase D (Atlas/Divergems)
+or Phase E (Dive Nation) just because the tooling is proven — check with
+the user that Phase F/G are actually done and a cutover is imminent
+first.**
+
+### Research: two schema-reference docs now live at the repo root
+
+- **`LIVE_DATA_MIGRATION_MAPPING.md`** — field-level mapping from the
+  old app's schema to the rebuild's, built by four parallel research
+  agents reading the old app's JS (never the live database directly —
+  that's still absolutely off-limits). Covers every in-scope table,
+  every enum/value transform needed, and the reasoning behind every
+  drop/backfill/synthesis decision.
+- **`LIVE_APP_SCHEMA_SNAPSHOT.md`** — the **old/source** schema's real
+  ground truth (the user ran read-only `information_schema`/
+  `pg_constraint` queries themselves against the live project and pasted
+  the results back — this is how live-side facts get into a session
+  without ever connecting to live directly). Reconciled against the
+  JS-only mapping above via a follow-up research pass; most discrepancies
+  turned out to be dead/legacy columns, which simplified rather than
+  complicated the picture. One correction that mattered: `fee_15l`
+  (dead) vs. `fifteen_l_fee` (real) on `activities`, and `staff_id`
+  (dead) vs. `staff_name` (real) — old, superseded columns sitting
+  alongside the real ones, easy to pick the wrong one without this doc.
+- **`REBUILD_TARGET_SCHEMA_SNAPSHOT.md`** (new this session) — the
+  mirror image for the **target/rebuild** schema: every generated
+  column, NOT NULL column, enum label set, and check constraint the ETL
+  needs to respect. Generated by the new `database/migration/
+  preflight.js` tool (see below) — **re-run this before adjusting
+  `transforms.js` for each future batch**, don't trust the saved
+  snapshot as still-current without re-checking.
+
+### Built: real ETL tooling at `database/migration/`
+
+`transforms.js` (one function per table, implementing every transform
+from the mapping doc), `etl.js` (driver — loads exported JSON, runs
+transforms in dependency order, `--dry-run` mode validates without
+touching any database), `verify.js` (post-migration row-count + spot-
+check verification, parameterized by dive-center id), `preflight.js`
+(new — dumps the target schema's real constraints, see above).
+
+**Extraction technique, worth reusing verbatim for Atlas/Divergems/Dive
+Nation**: since the user doesn't write code themselves, a single
+consolidated SQL query — `select '<table>', jsonb_agg(row_to_json(t))
+from <table> t where dive_center_id in (...)`, unioned across every
+in-scope table — lets them do the entire export in one paste-run-
+download-CSV cycle in the live project's Supabase SQL Editor, instead of
+40+ individual per-table queries. `migration_exports/parse_export.js`
+turns the resulting CSV into one JSON file per table.
+`migration_exports/` itself is gitignored (real, if low-stakes, exported
+data shouldn't sit in git history) but `database/migration/`'s actual
+code is tracked.
+
+### The first real migration: Test Dive Center + Package Test Dive Center
+
+Migrated for real into the rebuild's production Supabase project
+(`vqwrluiikodconwlmwls`) — 1,176 rows across every table with real data,
+as of the final state after today's fixes (started at 974, grew twice as
+real gaps were found and backfilled, see below). **Root repo committed
+and pushed**: `aquadesk-rebuild@15f244c` (the mapping docs +
+`database/migration/` as it stood after the initial migration — several
+further fixes made later the same session, listed below, are **not**
+committed yet, see the flag at the very end of this write-up).
+
+Getting from a clean dry-run to a real committed migration took roughly
+a dozen rollback-and-fix cycles against the real target schema — every
+failure rolled back with zero partial writes (the whole run is one
+transaction), which is what made iterating this way safe. Real issues
+found this way: two GENERATED columns that can't be inserted into
+directly (`auth.users.confirmed_at`, `auth.identities.email`);
+`dive_centers.waiver_content_updated_by` needing a two-phase insert
+(references `users`, which loads after `dive_centers` in build order);
+eight tables the mapping doc assumed had `created_at` that the real
+target doesn't (`dive_sites`, `payment_surcharges`, `exchange_rates`,
+`medical_questions`, `tanks`, `invoice_emails`, `visit_rate_selections`,
+`schedule_team_clip_divers`); the real target's `manifests` table never
+got a lock/unlock mechanism built at all (only `district`/`port`/
+`last_edited_at` exist); a wrong table-insert order put `activities`
+before `schedules` (activities.schedule_id references it); several NOT
+NULL-with-a-default columns silently rejected an explicit `null` sent on
+purpose (`diver_registrations.medical_flag`/`waiver_opened`/
+`duplicate_email_flag`, `exchange_rates.updated_at`); `certification_level`
+needed a real display-string-to-enum map (and surfaced a genuine
+"Advance" typo/shorthand value in real data, not just the clean 6-label
+set); `expenses` surfaced an undocumented `"Food & Beverages"` category
+and `other_charges` surfaced an undocumented `"fixed"` charge_type —
+both handled with a graceful fallback (`other`/`per_day`) instead of
+dropping real money data; and real orphaned FK references exist in the
+live data itself (a diver's deleted `group_id`, a
+`join_ride_records.statement_id` pointing at nothing) — handled by
+nulling nullable references, never by dropping a row unless the FK was
+genuinely required.
+
+### Two real, confirmed migration bugs found by the user's own live comparison — not by any of this session's own testing
+
+After the first migration and a pre-prod Cloudflare redeploy, the user
+logged into `packagetest@gmail.com` on the deployed pre-prod app and
+directly compared it against the real live app. Found real gaps:
+
+1. **A diver + their whole schedule assignment was missing (Aug 3).**
+   Root cause: `schedule_divers` (the old app's separate relational
+   table) is **100% stale in real data** — 0 of 43 rows in the first
+   batch matched any schedule that still exists. The real, current
+   source for "who's assigned to this trip" is each schedule's own
+   `notes` JSON blob (`meta.staffGroups[].diverIds`) — which this
+   session's own *original* mapping-doc research had already correctly
+   identified, but the actual `transforms.js` implementation used the
+   old table anyway. Fixed: new `scheduleDiversFromBlob()` replaces the
+   old table-based approach entirely (old function deleted, not left
+   dangling — see this session's dead-code audit entry). Also fixed a
+   downstream consequence: `schedule_divers.experience_type` (needed by
+   Reports' "Leading Our Dives" auto-compute query) had no reliable old
+   source, backfilled from each diver's own most recent migrated visit,
+   defaulting to `fun_diving`. This same root cause was *also* why
+   **Staff Activity Summary showed nothing for July** — confirmed fixed,
+   Staff Three now correctly shows July 20/21/22, Staff One shows
+   July 22, matching the live app exactly.
+2. **Equipment Management showed nothing for a date the live app had a
+   real diver on.** Root cause, confirmed against the live app's actual
+   source (`divers.html`'s `renderEquipmentMode()` filters
+   `divers.arrival_date` directly): the **vast majority** of real
+   historical divers (44 of 45 in the first batch) have full
+   registration-equivalent data (arrival date, waiver, medical answers)
+   sitting directly on their `divers` row, but **no corresponding
+   `diver_registrations` row at all** in the old database — the old app
+   has a diver-creation path that writes rich data onto `divers` without
+   ever inserting into `diver_registrations`. This isn't a migration bug
+   so much as a real fact about the old app's own data that the original
+   mapping doc's research had *also* already anticipated ("a synthetic
+   `diver_registrations` row must be fabricated...") but the first real
+   `transforms.js` implementation never actually built. Fixed at the
+   **migration level, not the app level** — confirmed with the user via
+   `AskUserQuestion` this was the right call over editing
+   `divers/data.ts`, since the rebuild's schema deliberately doesn't
+   store `arrival_date` on `divers` at all (only `diver_registrations`
+   does), so an app-code fix would have needed its own schema change.
+   `synthesizeMissingRegistrations()` builds a real `diver_registrations`
+   row from each such diver's own profile data. Zero `aquadesk-app`
+   code was touched.
+
+Both fixes were backfilled into the already-migrated batch (not just
+baked into the tooling for next time) and verified directly: Diver A
+now correctly shows up in Equipment Management on Aug 1 with their real
+equipment request; the Aug 3 schedule now correctly shows its diver.
+
+**One confirmed non-bug, a real and deliberate business-logic
+difference**: Reports Overview's Net Profit differed by exactly ₱120,
+traced to one payment's ₱120 online surcharge — the live app's
+`paymentAmount()` (in `reports.html`) prefers `total_paid` (excludes
+surcharges from revenue), the rebuild's `getPaidAmount()` prefers
+`total_collected` (includes them). Presented to the user via
+`AskUserQuestion`; they chose to **keep the rebuild as-is** (surcharges
+count as revenue) — no code change made, this is now a confirmed,
+deliberate divergence from the live app, not a bug to fix.
+
+### Full reconciliation sweep — 100% clean
+
+Requested by the user as a final check before deciding whether to trust
+this batch. Computed, for Package Test Dive Center: row-count and sum
+fidelity across every financial table (divers, activities, payments,
+expenses, govt fees, rentals, join rides, staff commissions — all
+matched exactly, raw export vs. migrated target), a full diver-schedule-
+assignment audit (64 blob-derived assignments, 64 in target, exact
+match), and the real Reports Overview headline numbers computed both
+ways (rebuild formula vs. live-app formula) — the only difference was
+exactly the already-confirmed surcharge amount, nothing unexplained.
+
+### This session's own dead-code audit (see the dedicated entry further down for full detail)
+
+Found and removed one real dead function (the old table-based
+`scheduleDivers()`, superseded by the blob-based one above) and, via the
+new `preflight.js` tool, found and fixed **four more latent NOT NULL
+gaps** that hadn't failed yet only because the first batch's data
+happened to have no nulls in those specific fields
+(`schedule_team_clips.staff_name`, `staff_commission_records.staff_name`,
+`schedule_staff_dive_tanks.staff_name`, `staff.position`) — all four
+fixed with explicit fallback defaults before a future batch could hit
+them.
+
+### Suggested next step
+
+**Not** Atlas/Divergems/Dive Nation — see the standing rule above. Next
+actionable work is **Phase F/G**: deploying to the **live** Cloudflare
+account (separate from the already-proven pre-prod one) and Resend
+domain verification against `aquadesk.online`'s real DNS — both
+code-only, no tenant data, safe to start anytime. Only once those are
+done should the remaining three real dive centers be migrated and DNS
+cut over, all in one close pass.
+
+**Not yet committed as of this session's end** — check `git status` in
+the root repo before assuming otherwise: everything from the "two real,
+confirmed migration bugs" section above (`scheduleDiversFromBlob`,
+`synthesizeMissingRegistrations`, the `buildRegistrationRow` refactor),
+this session's dead-code-audit fixes (removing the old `scheduleDivers`,
+the four NOT-NULL-fallback fixes), and the two new files
+(`database/migration/preflight.js`,
+`REBUILD_TARGET_SCHEMA_SNAPSHOT.md`) are all sitting in the working tree
+uncommitted, on top of the already-pushed `@15f244c`. The user didn't
+ask for a commit this session past the first one — confirm before
+committing in a future session, per this project's own standing
+never-commit-unless-asked rule.
+
 ## Current state (as of 2026-08-02 session — /staff join-riders gap, Reports donut double-count, Expenses Paid By redesign)
 
 Itemized feedback, four items, researched via one Explore agent pass
@@ -4089,6 +4341,110 @@ The point isn't the fix (already applied) — it's recognizing the
     column looks enum-like but is actually a plain `text` with a
     `check (col = any(array[...]))` constraint.**
 
+### Session 2026-08-07 (go-live planning, live-data migration tooling, first real batch migrated)
+
+56. **A correctly-documented research finding didn't make it into the
+    actual implementation, and it shipped that way into the real
+    production database — twice, in the same session, for the same root
+    cause.** The very first migration-mapping research pass (four
+    parallel agents, before any ETL code existed) correctly identified
+    that the old app's `schedules.notes` JSON blob's `meta.staffGroups`
+    is the real, current source for "which divers are assigned to this
+    trip" — and separately, correctly flagged that a diver with real
+    waiver/medical/arrival data set directly on their `divers` row but no
+    matching `diver_registrations` row needs a **synthesized** history
+    row, not a skipped one. Both of these were written down accurately.
+    When `transforms.js` actually got built, both were built wrong
+    anyway: `schedule_divers` was sourced from the old *separate
+    relational table* instead of the blob (which turned out to be 100%
+    stale in real data — 0 of 43 rows in the first batch matched any
+    schedule that still exists), and `diverRegistrations()` only migrated
+    rows that already existed in the old table, with no synthesis step
+    at all (44 of 45 divers in the first real batch needed one — the
+    *dominant* case, not an edge case). Both shipped into the real
+    production database and were only caught because the user did their
+    own live comparison against the real app and found a specific
+    missing diver and a specific diver missing from Equipment Management
+    — not by any of this session's own dry-run/verification passes,
+    since a dry-run only validates internal consistency of the transform
+    output, not whether the transform reads from the *right* old-schema
+    source in the first place. **Lesson: writing accurate research into
+    a mapping doc is not the same as implementing it — when actually
+    writing a transform function for a table, re-open and re-read that
+    table's own section of the mapping doc at the moment of writing the
+    code, don't rely on memory of research conclusions reached earlier in
+    the same effort, even (especially) when that research was thorough
+    and correct. A mapping doc's accuracy doesn't protect you from your
+    own implementation silently diverging from it.**
+
+57. **(Testing technique, not a code defect — but concrete enough to
+    cost real time twice.)** `pg` (node-postgres) returns SQL `date`
+    columns as JS `Date` objects by default, not strings — comparing one
+    directly against a plain `"YYYY-MM-DD"` string with `>=`/`<=` doesn't
+    throw, it silently produces a `NaN`-based comparison that always
+    evaluates `false`. This happened twice this session: first, a
+    diagnostic script's `console.log` of a `schedule_date`/`activity_date`
+    column displayed a date that looked shifted by a day (e.g.
+    `2026-07-31T16:00:00.000Z` for what was actually stored as
+    `2026-08-01`), which briefly looked like a real timezone bug in the
+    migrated data before `to_char(col, 'YYYY-MM-DD')` proved the
+    underlying value was correct all along — the *display* was
+    misleading, not the data. Second, and more seriously, a
+    reconciliation sweep script's own date-range filter
+    (`d >= dateFrom && d <= dateTo` comparing a `Date` object against
+    string bounds) silently filtered out every row, making a real
+    ₱19,900 "Money Out" figure compute as ₱0 on the first run — caught
+    only because the number looked implausible, not because anything
+    errored. **Lesson: any Node+`pg` script that reads a `date`/
+    `timestamptz` column and then compares or filters it against a plain
+    date string must first convert — either `to_char(...)` in the SQL
+    itself, or `.toISOString().slice(0,10)` client-side on the returned
+    value — never compare the raw driver-returned value against a string
+    directly. This is a distinct failure mode from this file's other
+    "don't trust the first read" lessons (items 15/19/21/35/39/41/48) —
+    those are about UI/React timing, this is a specific Node+`pg`
+    type-coercion trap.**
+
+58. **(Testing/tooling technique.)** Starting a local dev server via
+    `preview_start`, then immediately running a Cloudflare production
+    build (`npm run cf:build`) in the *same* project directory in the
+    same session, corrupted `.next/dev/types/routes.d.ts` and failed the
+    build with a confusing syntax error inside a generated file — not an
+    obviously-related "another server is running" message. This is a new
+    specific instance of this project's already-well-documented
+    concurrent-Next.js-process family (retrospective items 43-48), but
+    those were all about *another session's* dev server or a *separate*
+    verify-copy colliding — this was the same session's own dev server,
+    started moments earlier, clashing with its own subsequent build
+    attempt. **Lesson: stop any dev server running in the target
+    directory before running a production build there (`cf:build`,
+    `next build`), even one you started yourself earlier in the very same
+    session — then restart it afterward if still needed. Don't assume
+    "it's my own server, it won't conflict" just because there's no other
+    session involved.**
+
+59. **(Tooling/environment note, not a code defect.)** After several
+    rollback-and-fix cycles running the same `node etl.js` command
+    against the real production database (each fixing one newly-
+    discovered schema mismatch, per item 56's neighbors in the session
+    write-up), the auto-mode classifier blocked a retry of that same
+    command — most likely a caution heuristic on repeated writes to an
+    external database with credentials embedded in the command line, not
+    anything wrong with the command itself. Per the already-established
+    lesson (item 54, about the `proxy.ts` rename-dance), the correct
+    response was not to try to route around it — clearly explained to
+    the user what the command does and why it needed to run again, got
+    an explicit "go ahead" in chat, and the identical command then ran
+    successfully on retry. **Lesson: this is a distinct *trigger*
+    (repeated writes to an external DB) from item 54's (a file
+    rename/move), but the same *response* applies — explain and ask,
+    don't try a different tool or tactic to bypass the block. Unlike item
+    54's file-rename case, this one *did* resolve on a plain retry after
+    the user's explicit chat approval — the classifier isn't
+    deterministically blocking every instance of a pattern, so a
+    clearly-explained retry is worth trying before assuming a tool
+    workaround is needed.**
+
 ## Dead-code audit (2026-07-23 session)
 
 - `npm run lint` — clean, no unused-var/import warnings.
@@ -5503,6 +5859,70 @@ trusted from the individual checks already done after each change.
 to a real, confirmed consumer; everything removed/renamed today
 (`isomorphic-dompurify`, the old `paid_by` free-text field, the old
 zero-arg `fmtHeaderDate()`) has zero stale references remaining.
+
+## Dead-code audit (2026-08-07 session — go-live migration tooling, first real batch)
+
+Requested explicitly by the user before pausing for the session, as its
+own separate step alongside a CLAUDE.md update and retrospective.
+
+- Usage-count pass (`grep -c "T\.symbol\b" etl.js`) on every exported
+  symbol in `database/migration/transforms.js` — found one real dead
+  export: `scheduleDivers(rows)`, the **old**, table-based diver-
+  assignment transform, confirmed wrong via live investigation this same
+  session (see retrospective item 56) and superseded by
+  `scheduleDiversFromBlob()` — but the old function was still defined and
+  exported, with zero remaining callers anywhere. **Removed entirely**
+  (not left commented out) — replaced with a short code comment at the
+  same spot explaining why it's gone and pointing at the retrospective
+  entry, so a future session doesn't wonder why the "obvious" table-based
+  approach isn't used. Its only caller's now-unused input
+  (`rawScheduleDivers = load("schedule_divers")` in `etl.js`) was dead
+  too — removed, with an explanatory comment left in its place for the
+  same reason (this project's own "don't just delete, document why" norm
+  for a deliberately-avoided approach, distinct from routine unused-code
+  removal).
+- `sanitizeWaiver` showed 0 external (`T.`-qualified) callers in `etl.js`
+  — checked closely rather than assumed dead, per this file's own
+  standing usage-count-heuristic warning (retrospective #25): confirmed
+  it's genuinely used, just internally within `transforms.js` itself
+  (inside `diveCenters()`), not externally — a false positive of the
+  blunt grep, same pattern as several earlier sessions' finds.
+- **Built new permanent tooling as a direct result of this audit**,
+  not just fixed what was found: `database/migration/preflight.js`
+  consolidates four separate ad hoc diagnostic scripts written and then
+  deleted earlier in this same session (a schema-column diff, a NOT NULL
+  check, a generated-column check, an enum-label dump) into one reusable
+  script, plus a saved snapshot of its output at
+  `REBUILD_TARGET_SCHEMA_SNAPSHOT.md`. Running it surfaced **four more
+  real latent NOT-NULL gaps** beyond what had already been found and
+  fixed by hand during the first batch's migration —
+  `schedule_team_clips.staff_name`, `staff_commission_records.staff_name`,
+  `schedule_staff_dive_tanks.staff_name`, and `staff.position` (sourced
+  from `access_level`) — none had actually failed yet (the first real
+  batch's data happened to have no nulls in any of these fields), but all
+  four would have caused the exact same rollback-and-fix cycle the very
+  next time a batch's data did have a null there. All four fixed with
+  explicit fallback defaults before this session ended, not left for
+  Atlas/Divergems/Dive Nation to discover the hard way.
+- Confirmed no `aquadesk-app` (the Next.js rebuild itself) source files
+  were touched this session — the Equipment Management fix (see
+  session write-up) was deliberately done at the migration/data level
+  instead, per the user's own explicit choice — so no dead-code risk
+  there this session; `git status` in that repo is clean except the
+  already-known harmless untracked `.claude/`.
+- `database/migration/` directory confirmed to contain only the 6
+  intended files (`transforms.js`, `etl.js`, `verify.js`, `preflight.js`,
+  `package.json`, `package-lock.json`) plus `node_modules/` — every
+  ad hoc diagnostic script created during today's live-debugging cycles
+  (roughly a dozen: `_diff_schema.js`, `_check_nulls.js`, `_show_enum.js`,
+  `_investigate*.js`, `_backfill_*.js`, `_sweep.js`, etc.) was deleted
+  immediately after use, confirmed via repeated `ls -la` checks
+  throughout the session, not just at the end.
+
+**One real dead-code item found and removed** (the old `scheduleDivers`
+table-based function), **four real latent bugs found and fixed** via the
+new permanent `preflight.js` tooling before they could affect a future
+batch. Nothing else found.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 

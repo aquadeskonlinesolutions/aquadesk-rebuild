@@ -72,7 +72,10 @@ async function main() {
   const rawVisitRateSelections = load("visit_rate_selections");
   const rawDiverNotes = load("diver_notes");
   const rawSchedules = load("schedules");
-  const rawScheduleDivers = load("schedule_divers");
+  // deliberately NOT loading "schedule_divers" — that table's rows are
+  // stale/orphaned in real data, confirmed 2026-08-07; schedule_divers is
+  // derived from each schedule's own notes blob instead, see
+  // T.scheduleDiversFromBlob() and transforms.js's comment at that spot
   const rawScheduleTeamClips = load("schedule_team_clips");
   const rawScheduleTeamClipDivers = load("schedule_team_clip_divers");
   const rawScheduleDayDiverExclusions = load("schedule_day_diver_exclusions");
@@ -163,9 +166,15 @@ async function main() {
     diversRows.map((d) => [`${d.first_name || ""} ${d.last_name || ""}`.trim().toLowerCase(), d.id])
   );
   {
-    const regRows = step("diver_registrations", "diver_registrations", T.diverRegistrations(rawDiverRegistrations, diversById));
+    const realRegRows = T.diverRegistrations(rawDiverRegistrations, diversById).rows;
+    const existingRegistrationDiverIds = new Set(rawDiverRegistrations.map((r) => r.diver_id));
+    const syntheticRegRows = T.synthesizeMissingRegistrations(rawDivers, existingRegistrationDiverIds);
+    if (syntheticRegRows.length) {
+      console.log(`  diver_registrations: +${syntheticRegRows.length} synthesized row(s) for divers with real registration-equivalent data but no old diver_registrations row (see transforms.js)`);
+    }
+    let regRows = [...realRegRows, ...syntheticRegRows];
     let danglingCount = 0;
-    const sanitized = regRows.map((r) => {
+    regRows = regRows.map((r) => {
       if (r.group_id && !validGroupIds.has(r.group_id)) {
         danglingCount++;
         return { ...r, group_id: null };
@@ -174,8 +183,9 @@ async function main() {
     });
     if (danglingCount) {
       warnings.push(`diver_registrations: ${danglingCount} row(s) referenced a group_id not present in the exported groups — nulled out`);
-      plan[plan.length - 1].rows = sanitized;
     }
+    console.log(`  diver_registrations: ${regRows.length} row(s)`);
+    plan.push({ table: "diver_registrations", rows: regRows });
   }
   step("diver_staff_defaults", "diver_staff_defaults", T.diverStaffDefaults(rawDiverStaffDefaults));
 
@@ -215,17 +225,21 @@ async function main() {
   console.log(`  schedule_crew: ${validScheduleCrew.length} row(s)`);
   plan.push({ table: "schedule_crew", rows: validScheduleCrew });
 
-  const { divers: schedDiversRaw, diveTanks: diveTanksRaw, skipped: schedDiversSkipped } = T.scheduleDivers(rawScheduleDivers);
-  reportSkips("schedule_divers", schedDiversSkipped);
-  const schedDivers = schedDiversRaw.filter((d) => validScheduleIds.has(d.schedule_id));
-  if (schedDivers.length !== schedDiversRaw.length) warnings.push(`schedule_divers: ${schedDiversRaw.length - schedDivers.length} row(s) referenced a missing schedule — skipped`);
-  const validSchedDiverIds = new Set(schedDivers.map((d) => d.id));
-  const diveTanks = diveTanksRaw.filter((t) => validSchedDiverIds.has(t.schedule_diver_id));
-  const staffNameById = new Map(staffRows.map((s) => [s.id, `${s.first_name || ""} ${s.last_name || ""}`.trim()]));
-  for (const sd of schedDivers) {
-    if (sd.staff_id && staffNameById.has(sd.staff_id)) sd.staff_name = staffNameById.get(sd.staff_id);
-  }
-  console.log(`  schedule_divers: ${schedDivers.length} row(s)`);
+  // Derived from each schedule's OWN notes blob (staffGroups[].diverIds),
+  // NOT the old relational schedule_divers table — confirmed via live
+  // investigation (2026-08-07) that table's rows are stale/orphaned in
+  // real data (0% match any currently-existing schedule). See
+  // scheduleDiversFromBlob()'s own comment in transforms.js.
+  const staffIdByName = new Map(
+    staffRows.map((s) => [`${s.first_name || ""} ${s.last_name || ""}`.trim().toLowerCase(), s.id])
+  );
+  // best-effort experience_type backfill: each diver's most recent visit
+  const experienceTypeByDiverId = new Map();
+  [...rawVisits].sort((a, b) => (a.visit_start || "").localeCompare(b.visit_start || "")).forEach((v) => {
+    if (v.diver_id && v.experience_type) experienceTypeByDiverId.set(v.diver_id, v.experience_type);
+  });
+  const { divers: schedDivers, diveTanks } = T.scheduleDiversFromBlob(rawSchedules, staffIdByName, experienceTypeByDiverId);
+  console.log(`  schedule_divers: ${schedDivers.length} row(s) (derived from schedule notes, not the stale old table)`);
   plan.push({ table: "schedule_divers", rows: schedDivers });
   console.log(`  schedule_diver_dive_tanks: ${diveTanks.length} row(s)`);
   plan.push({ table: "schedule_diver_dive_tanks", rows: diveTanks });

@@ -13,3 +13,6 @@ migration_exports/
 
 # node_modules for the migration ETL tooling — regenerates via `npm install`
 database/migration/node_modules/
+
+# Wrangler CLI local cache/state — machine-specific, regenerates on use
+.wrangler/
