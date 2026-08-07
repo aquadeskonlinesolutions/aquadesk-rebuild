@@ -6,3 +6,10 @@ supabase/.temp/
 
 # Claude Code local permission state — machine-specific
 .claude/settings.local.json
+
+# Raw exports of real live-app data pulled for the go-live migration —
+# never committed, even test-account data shouldn't sit in git history
+migration_exports/
+
+# node_modules for the migration ETL tooling — regenerates via `npm install`
+database/migration/node_modules/

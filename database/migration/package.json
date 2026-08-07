@@ -1,0 +1,16 @@
+{
+  "name": "aquadesk-live-data-migration",
+  "private": true,
+  "version": "1.0.0",
+  "description": "One-time ETL tooling: old AquaDesk live-app schema -> rebuild schema. See LIVE_DATA_MIGRATION_MAPPING.md and LIVE_APP_SCHEMA_SNAPSHOT.md at the repo root.",
+  "main": "etl.js",
+  "scripts": {
+    "dry-run": "node etl.js --dry-run",
+    "migrate": "node etl.js",
+    "verify": "node verify.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.0",
+    "sanitize-html": "^2.13.0"
+  }
+}
