@@ -50,6 +50,280 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-08 session — full go-live: Atlas/Divergems/Dive Nation migrated, live Cloudflare deploy, real Resend domain, aquadesk.online cut over to the rebuild)
+
+**The rebuild is now the real, live AquaDesk — `aquadesk.online` (and
+`www.`) serve the rebuilt Next.js app, not the old HTML/JS app.** This
+closes out the go-live arc started in the 2026-08-07 session. Read this
+whole entry before touching go-live/migration work again — several
+things the prior entry described as "not yet done" are now done, and
+the six-dive-center table below supersedes the one in that entry.
+
+### Session shape: three separate asks, handled in sequence
+
+1. A user-requested comparison pass between the live app and the
+   already-migrated Test Dive Center + Package Test Dive Center batch
+   (checking "the same exact match of every information" — divers,
+   dive counts, staff summary, profit, revenue, rental, join ride).
+2. Once that came back clean (with one real gap found and fixed), the
+   user asked to go live *tonight*: migrate the three remaining real
+   dive centers and cut `aquadesk.online` over to the live Cloudflare
+   account, with as little disruption as possible given Dive Nation is
+   actively operating.
+3. Mid-execution, a live-vs-rebuild data-integrity concern surfaced
+   again for Dive Nation specifically (the user has no login for that
+   tenant, so couldn't spot-check it themselves) — **explicitly
+   deferred to the next session**, see "Suggested next step" below.
+
+### Part 1 — Full comparison sweep, Test Dive Center + Package Test Dive Center
+
+Live-side ground truth came from the **raw export CSV/JSON still sitting
+on disk** from the 2026-08-07 migration (`migration_exports/
+batch1_test_accounts/tables/`) — not a live DB connection, not a browser
+login to the live app. This is the correct pattern going forward: that
+raw export is a legitimate, already-obtained snapshot of live data, safe
+to keep re-deriving figures from without ever touching live again.
+
+Computed and diffed, for both dive centers: diver counts, activity/
+completed-dive counts, full payment-row fidelity (cash/card/online/
+total_paid/total_collected/balance), revenue under both the `total_paid`
+and `total_collected` formulas, rental gear and join ride income/expense/
+outstanding balances, staff commission paid/unpaid totals, net profit.
+**Every figure matched exactly**, including one diver who genuinely has
+two separate payment rows (both present correctly on both sides — an
+early apparent "mismatch" turned out to be a bug in the comparison
+script itself, which deduped by `diver_id` and dropped one of the two
+rows; not a migration bug). Also re-derived the schedule-diver
+assignment count from each schedule's `notes` blob directly (bypassing
+an earlier, wrong `notes.meta.staffGroups` path — the real key is
+`notes.staffGroups`, no `.meta` — and confirmed Test Dive Center's
+apparent "50 vs 52" shortfall was correct, not a bug: the 2 missing
+were divers legitimately marked excluded for that trip in the source
+data).
+
+**One real gap found**: a diver ("Cert Test", Package Test Dive Center)
+had a real, *existing* `diver_registrations` row in the old data, but
+it was nearly empty (only `waiver_signed` set — `arrival_date`/
+`certification_level`/`medical_answers` all null), while the diver's own
+`divers` row had full, correct data. `synthesizeMissingRegistrations()`
+only fires when a diver has **zero** registration rows, so this
+existing-but-sparse one was migrated as-is — meaning this one diver
+wouldn't show up correctly in Equipment Management, the same failure
+mode as the two bugs fixed in the 2026-08-07 session, just triggered by
+a narrower condition (sparse, not absent). Fixed two ways:
+- `buildRegistrationRow()` (`transforms.js`) now falls back to the
+  linked diver's own profile value for every field that's null on the
+  registration side (`pick(regVal, diverVal)`), not just the
+  already-existing unconditional backfill for accommodation/emergency-
+  contact/etc. — **the fallback source must be the RAW old diver row,
+  not the already-transformed one**, since `divers()`'s own transform
+  deliberately drops arrival_date/waiver_*/medical_*/equipment_* (they
+  live only on `diver_registrations` in the new schema) — `etl.js` was
+  changed to pass a `rawDiversById` map built from `rawDivers`, not the
+  post-transform `diversById`, into `diverRegistrations()`.
+  - The already-migrated "Cert Test" row itself was backfilled directly
+    via SQL — but `diver_registrations` has a real DB-level immutability
+    trigger (`enforce_registration_immutability`, fires `BEFORE UPDATE`
+    when `waiver_signed = true`) that blocked a plain `UPDATE`. Confirmed
+    the trigger only guards `UPDATE`, not `DELETE`, and no FK references
+    `diver_registrations.id` anywhere — fixed via `DELETE` + re-`INSERT`
+    with the same row `id`, inside one transaction, using the now-fixed
+    transform function to compute the correct values (not hand-typed).
+- Re-verified all 45 divers across both dive centers field-by-field
+  (name, arrival date, accommodation, certification level, medical
+  answers) after the fix — zero mismatches.
+
+### Part 2 — Go-live execution
+
+**Credentials used this session** (per this project's standing hygiene
+rule, none of the actual secret values are persisted here — ask again
+next session): the rebuild project's Postgres pooler password; a
+scoped Cloudflare API token + account ID for the **live** Cloudflare
+account (`4ec5d01b30db05b278baa0630e421340`, "Aquadeskonline@gmail.com's
+Account" — confirmed via the API this is a genuinely different account
+from the already-known pre-prod one); a fresh Resend API key for the
+account that already owns `aquadesk.online`'s real, DNS-verified
+sending domain.
+
+**Reusable tooling built this session, worth reusing verbatim for any
+future dive-center migration**: `database/migration/
+export_query_template.sql` (tracked, unlike the actual data exports) —
+a copy-paste-ready version of the consolidated export query, with a
+placeholder `dive_center_id` list and the current known-id table in its
+own header comment. Swap in a new id, paste into the live Supabase SQL
+Editor, export as CSV. This removes the need to regenerate the query
+by hand each time.
+
+**Two more real, previously-latent transform bugs found and fixed
+migrating Atlas + Divergems** (both are config-only dive centers — zero
+divers/activities/payments/schedules, confirmed from the export before
+migrating, so genuinely low-risk to iterate on directly against the
+real target DB):
+- `users.full_name` is NOT NULL on target, but a real owner account
+  created directly (not through a signup flow that asks for a display
+  name) had it null — `fallbackFullName()` derives from the email's
+  local-part when `full_name` is null, used by both `users()` and
+  `platformAdmins()`.
+- `equipment_rental_rates.charge_type` hit the exact same undocumented
+  `"fixed"` value already handled for `other_charges` in the
+  2026-08-07 session (a `"Food"` rental-rate item) — but the fallback
+  had only been applied to `otherCharges()`, not
+  `equipmentRentalRates()`, since nobody had checked whether the same
+  raw value could show up in a second table. Pulled the mapping into a
+  shared `fallbackChargeType()` helper, applied to both.
+
+**Dive Nation Malapascua — the real, actively-operating paying
+client.** Real, substantial data confirmed from the export before
+migrating (28 divers, 27 payments/invoices, 147 expenses, 35
+activities, 331 `schedule_team_clips`/629 `schedule_team_clip_divers`
+rows) — genuinely more scheduling complexity than the first batch's two
+clean test accounts. Planned as two passes (a no-pressure "rehearsal"
+export while Dive Nation was still live on the old app, then a
+freeze-window final export) specifically to keep any real freeze window
+short, given every batch so far has found at least one new transform
+issue on first contact with a dive center's real data. **The rehearsal
+export turned out clean on the first real attempt** — dry-run had zero
+errors beyond one already-handled orphaned FK
+(`join_ride_records.statement_id`, same pattern as 2026-08-07), and the
+real committed migration succeeded with no new constraint issues. Given
+that, and confirming with the user that nothing had been entered into
+the old app in the few minutes since the export (they'd already told
+Dive Nation's staff migration was happening, and it was 9pm local with
+no active users), **the rehearsal export was treated as the final one**
+— no second freeze-window re-export was needed.
+
+Full reconciliation against the raw export (same method as Part 1):
+divers (28/28), diver_registrations (28, all synthesized — Dive Nation
+had zero existing registration rows, unlike "Cert Test"), activities
+(35/35), completed dives (35/35), payments (27/27), collected revenue
+(₱351,594.00 both sides), expenses (₱305,314.00 both sides), govt fees
+(₱15,000.00 both sides) — **all exact matches**. Also spot-checked a
+real diver's visit/activity chain and a real trip's schedule/sites/
+crew, and confirmed the real `Demo Dive Center` was never touched.
+
+**Live Cloudflare deployment** (separate from the already-proven
+pre-prod one): new `aquadesk-app/wrangler.live.jsonc` (worker name
+`aquadesk`, otherwise mirrors the pre-prod config), deployed via the
+same `opennextjs-cloudflare build`/`deploy` pipeline and the same
+`proxy.ts` rename-workaround as pre-prod (still needed —
+`opennextjs-cloudflare#1309` hasn't merged). **Live URL (workers.dev,
+pre-cutover verification target):
+`https://aquadesk.aquadeskonline.workers.dev`** — that account's
+`workers.dev` subdomain is `aquadeskonline`. Bundle: 1803.62 KiB
+gzipped, well under Cloudflare's 3 MiB limit (the 2026-08-01/02
+session's `isomorphic-dompurify` removal is what keeps this healthy).
+Points at the **same rebuild Supabase project** as pre-prod and local
+dev — same architecture decision as before, not a separate prod DB.
+Runtime secrets (`SUPABASE_SECRET_KEY`, `RESEND_API_KEY`,
+`RESEND_FROM_EMAIL`) set via `wrangler secret put --config
+wrangler.live.jsonc`; `NEXT_PUBLIC_*` vars are build-time-inlined from
+`.env.local` as usual, no separate handling needed.
+
+**Real Resend domain, not the pre-prod sandbox sender.** `aquadesk.online`
+already had real, DNS-verified Resend records (`send.aquadesk.online`
+MX/SPF, `resend._domainkey.aquadesk.online` DKIM, `_dmarc`) — from the
+**old** live app's own, already-connected Resend account, confirmed via
+the DNS records themselves before touching anything. The user had lost
+that account's API key but still had login access — **a lost key
+doesn't require re-verifying the domain**, domain verification is
+per-account not per-key, so a fresh key generated in the same Resend
+account reuses the existing verification with zero new DNS work. New
+key set as the live Worker's `RESEND_API_KEY`; `RESEND_FROM_EMAIL`
+updated from the pre-prod sandbox address to a real one,
+`AquaDesk <invoices@aquadesk.online>`. Verified with a real send via
+Resend's API directly (not through the app) before trusting it.
+
+**DNS cutover.** The Workers *Custom Domains* API
+(`POST /accounts/{id}/workers/domains`) rejected the scoped API token
+with `"Method not allowed for this authentication scheme"` — the token's
+granted permissions (Workers Scripts/DNS/Workers Routes/SSL — all
+Edit) don't cover whatever Custom Domains actually needs. **Used
+Workers *Routes* instead** (`POST /zones/{zone}/workers/routes`,
+`{pattern: "aquadesk.online/*", script: "aquadesk"}` and the same for
+`www.`) — this works against an already-proxied DNS record (confirmed
+`aquadesk.online`/`www.` were already CNAMEs to `aquadesk.pages.dev`,
+proxied, on this same account) without needing to provision anything
+new. **Zero DNS records were changed** — Routes intercept matching
+requests ahead of whatever the record points to. This has a real,
+useful safety property: reverting the cutover, if ever needed, is just
+deleting the two Workers Routes (ids `7e103d0a8f70442f84459cff18d7c6f5`
+and `4fe626bbcf694acaba759b97e6ae42b9`) — the old app's Cloudflare Pages
+deployment (`aquadesk.pages.dev`) was never touched or deleted and is
+still there underneath. Verified post-cutover: root/`/login`/
+`www./login` all 200, a protected route (`/scheduling`) correctly
+307s to `/login` when logged out, static assets (`logo.png`) load, all
+serving the new Worker (`x-opennext: 1` header) not the old Pages app.
+`www.aquadesk.online` returned one transient `522` immediately after
+the route was created — resolved on retry a few seconds later, Route
+propagation lag, not a real problem.
+
+### The six dive centers — final status, supersedes the 2026-08-07 table
+
+| Name | id | Status |
+|---|---|---|
+| Test Dive Center | `720ac8bb-ca1f-4da8-93bd-38270d32336e` | migrated, re-verified this session |
+| Package Test Dive Center | `5e1a7e2b-7ca8-47d3-aa2d-6dfd5543b291` | migrated, re-verified this session (Cert Test fix applied) |
+| Atlas Divers Malapascua | `e7227551-a7d1-4daa-98cc-1e78ddd2b933` | **migrated** this session (config-only, zero tenant data) |
+| Divergems Diving Center | `04ea0a3d-79e6-4876-843c-ee54c1966e07` | **migrated** this session (config-only, zero tenant data) |
+| Dive Nation Malapascua | `6ac592ff-c612-42df-b243-0f24aea9f226` | **migrated** this session — the real, actively-operating client |
+| Demo Dive Center | `a6aaa2ba-5a7a-4e01-b4ff-29a8bafb828c` | excluded — discontinued, do not migrate |
+
+**All six are now resolved — nothing left "on hold."** The standing
+rule from 2026-08-07 ("don't start Phase D/E until F/G are actually
+done") is fully satisfied and no longer a live constraint.
+
+### Correction to the "Absolute rule" section above, given this session
+
+The old live Supabase project (`xaabndtaevwgicibzcqm`) is **still**
+absolutely off-limits to connect to or touch directly — that rule is
+unchanged and permanent. But **the *domain* `aquadesk.online` no longer
+points at the app that talks to it** — real end-user traffic now goes
+to the rebuilt app / the rebuild's own Supabase project
+(`vqwrluiikodconwlmwls`). The old live app's HTML/JS files in this root
+are still valid *behavioral reference* (their business logic hasn't
+changed), but they're no longer what real users are actually hitting —
+don't assume "the live app" and "what's reachable at aquadesk.online"
+mean the same thing in any future session from here on.
+
+### Not yet committed as of this session's end
+
+Check `git status` in **both** repos before assuming otherwise:
+- Root repo: `database/migration/etl.js` and `transforms.js` (the
+  registration-fallback fix, `users.full_name`/`charge_type` fallbacks),
+  new `database/migration/export_query_template.sql`. The four old
+  live-app reference HTML files (`diver-form.html`/`divers.html`/
+  `reports.html`/`settings.html`) are **still** sitting modified in the
+  working tree from before this session even started — see the
+  2026-08-08-earlier-in-the-day entry below (search "reports.html")
+  for why these were deliberately left out of the last commit; still
+  unresolved, still worth figuring out separately before either
+  committing or discarding them.
+- `aquadesk-app`: new `wrangler.live.jsonc` (untracked), plus the
+  already-known harmless untracked `.claude/`.
+
+### Suggested next step
+
+**Explicitly requested by the user, not yet done**: a deeper live-vs-
+rebuild comparison specifically for Dive Nation — divers, dive counts,
+staff assignments, and financial numbers — going beyond the aggregate
+reconciliation already run this session (which matched exactly, but was
+sum/count-level, not the full field-by-field diver-profile and
+schedule-assignment audit Part 1 above did for Test/Package Dive
+Center). The user has no login of their own for Dive Nation, so can't
+spot-check it live themselves the way they did for Package Test Dive
+Center in the 2026-08-07 session — this comparison is the substitute
+for that. Reuse the raw export at `migration_exports/
+batch3_dive_nation_rehearsal/tables/` (already parsed, on disk) as the
+live-side ground truth, same pattern as Part 1.
+
+Otherwise: monitor real traffic on `aquadesk.online` for anything
+unexpected now that it's live (the old app's Pages deployment is still
+there as an instant rollback path if needed, per above). Resend
+delivery is proven via a direct API test but not yet exercised through
+the actual app's invoice-sending flow against a real checkout — worth
+a real end-to-end check next time Diver Detail's Send Invoice is
+touched.
+
 ## Current state (as of 2026-08-07 session — go-live planning, live-data migration tooling built, first real batch migrated + fixed, paused before touching Dive Nation)
 
 **The rebuild itself is being treated as feature-complete as of this

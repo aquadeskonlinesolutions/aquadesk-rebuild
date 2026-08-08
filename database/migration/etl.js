@@ -165,8 +165,15 @@ async function main() {
   const diversByName = new Map(
     diversRows.map((d) => [`${d.first_name || ""} ${d.last_name || ""}`.trim().toLowerCase(), d.id])
   );
+  // Registration fallback data must come from the RAW old divers row, not
+  // the already-transformed one — divers() deliberately drops
+  // arrival_date/waiver_*/medical_*/certification_level(raw)/equipment_*
+  // since those live only on diver_registrations in the new schema, so a
+  // transformed diver has nothing left for buildRegistrationRow's
+  // sparse-row fallback to read (see the 2026-08-08 fix).
+  const rawDiversById = new Map(rawDivers.map((d) => [d.id, d]));
   {
-    const realRegRows = T.diverRegistrations(rawDiverRegistrations, diversById).rows;
+    const realRegRows = T.diverRegistrations(rawDiverRegistrations, rawDiversById).rows;
     const existingRegistrationDiverIds = new Set(rawDiverRegistrations.map((r) => r.diver_id));
     const syntheticRegRows = T.synthesizeMissingRegistrations(rawDivers, existingRegistrationDiverIds);
     if (syntheticRegRows.length) {

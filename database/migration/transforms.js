@@ -174,12 +174,20 @@ const diveCenters = (rows) =>
     join_ride_rate_per_diver_per_dive: 0,
   }));
 
+// full_name is NOT NULL on target but several real old users rows have it
+// null (e.g. an owner account created directly, never through a flow that
+// asks for a display name) — found migrating Atlas/Divergems, 2026-08-08.
+// Fall back to the email's local-part rather than failing the batch.
+function fallbackFullName(r) {
+  return r.full_name || (r.email ? r.email.split("@")[0] : "Unknown User");
+}
+
 const users = (rows) =>
   mapDirect(rows, (r) => ({
     id: r.id,
     created_at: r.created_at,
     dive_center_id: r.dive_center_id,
-    full_name: r.full_name,
+    full_name: fallbackFullName(r),
     email: r.email,
     role: r.role,
     is_active: r.is_active ?? true,
@@ -194,7 +202,7 @@ const platformAdmins = (rows) =>
     (rows || []).filter((r) => r.is_platform_admin),
     (r) => ({
       user_id: r.id,
-      full_name: r.full_name,
+      full_name: fallbackFullName(r),
       email: r.email,
       is_active: r.is_active ?? true,
     })
@@ -313,24 +321,28 @@ const packages = (rows) =>
     is_active: r.is_active ?? true,
   }));
 
+// Real data has surfaced a third charge_type value, "fixed" (a one-time
+// charge, e.g. "Night Surcharge" or an equipment_rental_rates "Food"
+// item), beyond the documented per_dive/per_day pair — map to per_day
+// (won't get multiplied per dive, the safer analog for a flat one-time
+// fee). First found in other_charges (2026-08-07 batch); recurred in
+// equipment_rental_rates migrating Atlas/Divergems (2026-08-08) — any
+// charge_type-bearing table needs this same fallback.
+function fallbackChargeType(chargeType) {
+  return chargeType === "fixed" ? "per_day" : chargeType;
+}
+
 const otherCharges = (rows) =>
-  mapDirect(rows, (r) => {
-    // real data has surfaced a third charge_type value, "fixed" (a
-    // one-time charge, e.g. "Night Surcharge"), beyond the documented
-    // per_dive/per_day pair — map to per_day (won't get multiplied per
-    // dive, the safer analog for a flat one-time fee)
-    const chargeType = r.charge_type === "fixed" ? "per_day" : r.charge_type;
-    return {
-      id: r.id,
-      created_at: r.created_at,
-      dive_center_id: r.dive_center_id,
-      charge_name: r.charge_name, // exact casing matters, downstream pricing string-matches on this
-      amount: r.amount,
-      charge_type: chargeType,
-      sub_type: r.sub_type,
-      is_active: r.is_active ?? true,
-    };
-  });
+  mapDirect(rows, (r) => ({
+    id: r.id,
+    created_at: r.created_at,
+    dive_center_id: r.dive_center_id,
+    charge_name: r.charge_name, // exact casing matters, downstream pricing string-matches on this
+    amount: r.amount,
+    charge_type: fallbackChargeType(r.charge_type),
+    sub_type: r.sub_type,
+    is_active: r.is_active ?? true,
+  }));
 
 const equipmentRentalRates = (rows) =>
   mapDirect(rows, (r) => ({
@@ -339,7 +351,7 @@ const equipmentRentalRates = (rows) =>
     dive_center_id: r.dive_center_id,
     item_name: r.item_name,
     rate: r.rate,
-    charge_type: r.charge_type,
+    charge_type: fallbackChargeType(r.charge_type),
     is_active: r.is_active ?? true,
   }));
 
@@ -482,28 +494,41 @@ const divers = (rows) =>
 // linked `divers` row's *current* value, which is a reconstructed
 // approximation, not a true historical snapshot (see mapping doc's
 // dedicated caveat).
+// `pick` backfills a null/missing registration-side value from the linked
+// diver's own current profile value — needed because a REAL (not just a
+// synthesized) old registration row can itself be sparse: some old
+// diver-creation paths wrote a registration row with only waiver_signed
+// set and left arrival_date/certification_level/medical_answers/etc.
+// null, while the linked `divers` row carries the real, full data (see
+// the 2026-08-08 comparison-session finding, "Cert Test" diver). Without
+// this fallback, an existing-but-sparse row was migrated as-is and the
+// diver silently dropped out of anything reading these fields (Equipment
+// Management, Signed Documents) — the same failure mode synthesis below
+// already fixes for divers with NO registration row at all, just
+// triggered by a different starting condition.
 function buildRegistrationRow(id, r, diver) {
+  const pick = (regVal, diverVal) => regVal ?? diverVal ?? null;
   return {
     id,
     created_at: r.created_at,
     diver_id: r.diver_id ?? r.id,
     dive_center_id: r.dive_center_id,
     waiver_signed: r.waiver_signed ?? false, // NOT NULL with a default on target — never send null explicitly
-    waiver_date: r.waiver_date,
-    waiver_signature_url: r.waiver_signature_url, // base64 data URI, large — expected
-    waiver_content_snapshot: r.waiver_content_snapshot,
-    medical_flag: r.medical_flag ?? false, // NOT NULL with a default on target — never send null explicitly
-    medical_answers: r.medical_answers,
-    medical_answers_snapshot: r.medical_answers_snapshot ?? null,
-    privacy_notice_snapshot: r.privacy_notice_snapshot,
-    privacy_consent_at: r.privacy_consent_at,
-    arrival_date: r.arrival_date,
-    departure_date: r.departure_date,
-    certification_level: mapCertificationLevel(r.certification_level) || "none",
-    equipment_requested: r.equipment_requested,
-    group_id: r.group_id,
-    needs_equipment: r.needs_equipment ?? false,
-    equipment_preference: r.equipment_preference,
+    waiver_date: pick(r.waiver_date, diver?.waiver_date),
+    waiver_signature_url: pick(r.waiver_signature_url, diver?.waiver_signature_url), // base64 data URI, large — expected
+    waiver_content_snapshot: pick(r.waiver_content_snapshot, diver?.waiver_content_snapshot),
+    medical_flag: r.medical_flag ?? diver?.medical_flag ?? false, // NOT NULL with a default on target — never send null explicitly
+    medical_answers: pick(r.medical_answers, diver?.medical_answers),
+    medical_answers_snapshot: pick(r.medical_answers_snapshot, diver?.medical_answers_snapshot),
+    privacy_notice_snapshot: pick(r.privacy_notice_snapshot, diver?.privacy_notice_snapshot),
+    privacy_consent_at: pick(r.privacy_consent_at, diver?.privacy_consent_at),
+    arrival_date: pick(r.arrival_date, diver?.arrival_date),
+    departure_date: pick(r.departure_date, diver?.departure_date),
+    certification_level: mapCertificationLevel(r.certification_level ?? diver?.certification_level) || "none",
+    equipment_requested: pick(r.equipment_requested, diver?.equipment_requested),
+    group_id: r.group_id ?? diver?.group_id ?? null,
+    needs_equipment: r.needs_equipment ?? diver?.needs_equipment ?? false,
+    equipment_preference: pick(r.equipment_preference, diver?.equipment_preference),
     // backfilled-from-divers, reconstructed not historical — flagged per mapping doc
     accommodation: diver?.accommodation ?? null,
     emergency_contact_name: diver?.emergency_contact_name ?? null,
