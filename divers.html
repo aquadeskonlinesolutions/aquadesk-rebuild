@@ -304,13 +304,26 @@ function canSendSelectedDiver(d){
 function groupMembers(id){return divers.filter(d=>d.group_id===id);}
 function groupById(id){return groups.find(g=>g.id===id)||null;}
 
-function groupIsVisible(g){
-  // Group folder visible if any member is visible, or group has no members but arrival is today/tomorrow/future
-  const members=groupMembers(g.id);
-  if(members.length) return members.some(isVisible);
+// A diver counts as "active" within group context if their own departure date
+// hasn't passed yet, OR it has passed but their bill isn't fully closed yet.
+// Unlike isVisible(), this has NO "1 day before arrival" gate — group folders
+// and their member lists are registration/billing tools, not scheduling tools,
+// so members must be visible as soon as they register, regardless of arrival date.
+function isVisibleInGroup(d){
   const today=todayStr();
-  if(!g.arrival_date) return true;
-  return shiftDate(g.arrival_date,-1)<=today && (!g.departure_date || g.departure_date>=today);
+  if(!d.departure_date || d.departure_date>=today) return true;
+  return !billIsFullyClosed(d.id);
+}
+
+function groupIsVisible(g){
+  // Group folders are visible from the moment they're created — the secretary needs
+  // to reach Copy Link / Review & Apply Charges and track registration progress
+  // well before arrival.
+  // A folder only stops showing once every member has departed AND has a fully
+  // closed bill (nothing left to register or bill for).
+  const members=groupMembers(g.id);
+  if(!members.length) return true;
+  return members.some(isVisibleInGroup);
 }
 
 function matches(obj){
@@ -458,7 +471,7 @@ function renderSelectedGroupMembers(){
   [...selectedGroups].forEach(gid=>{
     const g=groupById(gid);
     if(!g) return;
-    const mem=groupMembers(gid).filter(isVisible);
+    const mem=groupMembers(gid).filter(isVisibleInGroup);
     const gs=groupSummary(g);
     html+=`<div class="group-review">
       <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;margin-bottom:.8rem">
@@ -470,7 +483,7 @@ function renderSelectedGroupMembers(){
         </div>
       </div>
       <div class="member-list">`;
-    if(!mem.length) html+='<div class="empty">No visible members in this group.</div>';
+    if(!mem.length) html+='<div class="empty">No members registered in this group yet.</div>';
     mem.forEach(d=>html+=diverMiniCard(d,true,true));
     html+='</div></div>';
   });
@@ -1346,9 +1359,9 @@ function openBulkReview(groupId){
 function renderReviewBody(){
   if(!reviewGroupId)return;
   const range=reviewRange();
-  const members=groupMembers(reviewGroupId).filter(isVisible);
+  const members=groupMembers(reviewGroupId).filter(isVisibleInGroup);
   if(!members.length){
-    document.getElementById('reviewBody').innerHTML='<div class="empty">No visible members in this group.</div>';
+    document.getElementById('reviewBody').innerHTML='<div class="empty">No members in this group yet.</div>';
     document.getElementById('confirmBillsBtn').disabled=true;
     return;
   }
@@ -1395,7 +1408,7 @@ function renderReviewBody(){
 }
 async function confirmGroupBills(){
   const range=reviewRange();
-  const members=groupMembers(reviewGroupId).filter(isVisible);
+  const members=groupMembers(reviewGroupId).filter(isVisibleInGroup);
   const eligible=members.filter(d=>{
     const visit=activeVisitFor(d.id);
     return activities.some(a=>a.diver_id===d.id&&inReviewRange(a,range)&&!isCancelledActivity(a)&&(visit?(!a.visit_id||a.visit_id===visit.id):true));

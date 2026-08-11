@@ -1168,8 +1168,9 @@ input:checked+.toggle-slider:before{transform:translateX(20px)}
       <div class="form-row">
         <div class="form-group">
           <label class="field-label">Dive Site Combination <span class="req">*</span></label>
-          <input class="field-input" type="text" id="packageSite" placeholder="e.g. Kimud, Kimud, Monad">
-          <div style="font-size:0.76rem;color:var(--gray-500);margin-top:0.35rem;">List all dive sites for this package, comma-separated and in order. Example: Kimud, Kimud, Monad. This combination must exactly match what scheduling uses when Boat Return fires.</div>
+          <div id="packageSiteRows" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="addPackageSiteRow()" style="margin-top:0.6rem;">+ Add Dive Site</button>
+          <div style="font-size:0.76rem;color:var(--gray-500);margin-top:0.5rem;">Add one dropdown per dive on this trip, in order — add the same site again for multiple dives there (e.g. ATI, ATI, Monad). This combination must exactly match what scheduling uses when Boat Return fires.</div>
         </div>
         <div class="form-group">
           <label class="field-label">Package Price (PHP) <span class="req">*</span></label>
@@ -1891,13 +1892,42 @@ function renderPackages(){
     </div>`).join('');
 }
 
+function packageSiteOptionsHtml(selectedValue){
+  const sites=[...siteData].sort((a,b)=>String(a.site_name||'').localeCompare(String(b.site_name||'')));
+  const selNorm=String(selectedValue||'').trim().toLowerCase();
+  let opts='<option value="">Select dive site</option>';
+  opts+=sites.map(s=>{
+    const name=s.site_name||'';
+    const isSel=selNorm&&String(name).trim().toLowerCase()===selNorm;
+    return `<option value="${esc(name)}" ${s.is_active?'':'disabled'} ${isSel?'selected':''}>${esc(name)}${s.is_active?'':' (inactive)'}</option>`;
+  }).join('');
+  if(selectedValue){
+    const known=sites.some(s=>String(s.site_name||'').trim().toLowerCase()===selNorm);
+    if(!known)opts+=`<option value="${esc(selectedValue)}" selected>⚠ ${esc(selectedValue)} (not a configured site)</option>`;
+  }
+  return opts;
+}
+
+function addPackageSiteRow(value){
+  const box=document.getElementById('packageSiteRows');
+  if(!box)return;
+  const row=document.createElement('div');
+  row.className='package-site-row';
+  row.style.cssText='display:flex;gap:0.5rem;align-items:center';
+  row.innerHTML=`<select class="field-select">${packageSiteOptionsHtml(value)}</select><button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('.package-site-row').remove()" style="padding:0.5rem 0.7rem;flex-shrink:0">×</button>`;
+  box.appendChild(row);
+}
+
 function openPackageModal(id){
   editingPackageId=id||null;
   const pkg=id?packageData.find(p=>p.id===id):null;
   const title=document.getElementById('packageModalTitle');if(title)title.textContent=id?'Edit Package':'Add Package';
   document.getElementById('packageName').value=pkg?.package_name||'';
-  document.getElementById('packageSite').value=pkg?.dive_site||'';
   document.getElementById('packagePrice').value=pkg?.price||'';
+  const box=document.getElementById('packageSiteRows');
+  if(box)box.innerHTML='';
+  const sites=pkg?.dive_site?String(pkg.dive_site).split(',').map(s=>s.trim()).filter(Boolean):[];
+  if(sites.length){sites.forEach(s=>addPackageSiteRow(s));}else{addPackageSiteRow();}
   const equip=String(!!pkg?.equipment_included);
   document.querySelectorAll('input[name="packageEquip"]').forEach(r=>{r.checked=(r.value===equip);});
   if(!id){const noEquip=document.querySelector('input[name="packageEquip"][value="false"]');if(noEquip)noEquip.checked=true;}
@@ -1907,9 +1937,10 @@ function openPackageModal(id){
 async function savePackage(){
   const name=document.getElementById('packageName').value.trim();
   const price=parseFloat(document.getElementById('packagePrice').value)||0;
-  const site=document.getElementById('packageSite').value.trim();
   if(!name||!price){showToast('Package name and price are required','error');return;}
-  if(!site){showToast('Dive site combination is required','error');return;}
+  const sites=[...document.querySelectorAll('#packageSiteRows select')].map(s=>s.value.trim()).filter(Boolean);
+  if(!sites.length){showToast('Add at least one dive site','error');return;}
+  const site=sites.join(', ');
   const equipIncluded=document.querySelector('input[name="packageEquip"]:checked')?.value==='true';
   const payload={dive_center_id:diveCenterId,package_name:name,dive_site:site,price,equipment_included:equipIncluded,is_active:true};
   const result=editingPackageId?await client.from('packages').update(payload).eq('id',editingPackageId):await client.from('packages').insert(payload);

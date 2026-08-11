@@ -50,7 +50,7 @@ body{font-family:var(--font-body);background:var(--off-white);color:var(--dark);
 .summary-pending .summary-row{font-weight:800;color:var(--gray-600);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
 
 .metric-card{background:var(--white);border:1px solid var(--gray-200);border-radius:16px;padding:1rem;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}.metric-card::after{content:'';position:absolute;right:-22px;top:-22px;width:86px;height:86px;border-radius:50%;background:var(--teal-light);opacity:.75}.metric-card.orange::after{background:var(--orange-light)}.metric-card.green::after{background:var(--green-light)}.metric-card.purple::after{background:var(--purple-light)}.metric-card.blue::after{background:var(--blue-light)}.metric-label{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-500);position:relative;z-index:1}.metric-value{font-family:var(--font-display);font-size:1.72rem;color:var(--navy);margin:.35rem 0 .1rem;position:relative;z-index:1}.metric-note{font-size:.76rem;color:var(--gray-500);position:relative;z-index:1}
-.chart-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:1rem}.bar-list{display:grid;gap:.82rem}.bar-row{display:grid;grid-template-columns:130px minmax(0,1fr) 60px;gap:.8rem;align-items:center}.bar-name{font-size:.82rem;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:10px;background:var(--gray-100);border-radius:99px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--navy-mid));border-radius:99px;min-width:2px}.bar-val{font-size:.78rem;font-weight:800;color:var(--gray-600);text-align:right}.donut-wrap{display:flex;align-items:center;gap:1rem;justify-content:center;height:100%}.donut{width:150px;height:150px;border-radius:50%;background:conic-gradient(var(--teal) 0deg,var(--teal) var(--donut-a,180deg),var(--orange) var(--donut-a,180deg),var(--orange) var(--donut-b,260deg),var(--gray-200) var(--donut-b,260deg));display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(15,23,42,.05)}.donut-inner{width:92px;height:92px;background:var(--white);border-radius:50%;display:grid;place-items:center;text-align:center;font-weight:800;color:var(--navy);font-family:var(--font-display);font-size:1.3rem}.legend{display:grid;gap:.5rem}.legend-item{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--gray-600)}.dot{width:10px;height:10px;border-radius:50%;background:var(--teal)}.dot.orange{background:var(--orange)}.dot.gray{background:var(--gray-300)}
+.chart-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:1rem}.bar-list{display:grid;gap:.82rem}.bar-row{display:grid;grid-template-columns:130px minmax(0,1fr) 60px;gap:.8rem;align-items:center}.bar-name{font-size:.82rem;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:10px;background:var(--gray-100);border-radius:99px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--navy-mid));border-radius:99px;min-width:2px}.bar-val{font-size:.78rem;font-weight:800;color:var(--gray-600);text-align:right}.donut-wrap{display:flex;align-items:center;gap:1rem;justify-content:center;height:100%}.donut{width:150px;height:150px;border-radius:50%;background:conic-gradient(var(--teal) 0deg,var(--teal) var(--donut-a,90deg),var(--orange) var(--donut-a,90deg),var(--orange) var(--donut-b,180deg),var(--green) var(--donut-b,180deg),var(--green) var(--donut-c,270deg),var(--red) var(--donut-c,270deg),var(--red) 360deg);display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(15,23,42,.05)}.donut-inner{width:92px;height:92px;background:var(--white);border-radius:50%;display:grid;place-items:center;text-align:center;font-weight:800;color:var(--navy);font-family:var(--font-display);font-size:1.3rem}.legend{display:grid;gap:.5rem}.legend-item{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--gray-600)}.legend-label{flex:1}.legend-val{font-weight:800;color:var(--navy)}.dot{width:10px;height:10px;border-radius:50%;background:var(--teal);flex-shrink:0}.dot.orange{background:var(--orange)}.dot.green{background:var(--green)}.dot.red{background:var(--red)}.dot.gray{background:var(--gray-300)}
 .table-wrap{overflow:auto;border:1px solid var(--gray-200);border-radius:12px;background:var(--white)}table{width:100%;border-collapse:collapse;min-width:800px}th{background:var(--gray-50);padding:.72rem .85rem;text-align:left;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-500);font-weight:900;border-bottom:1px solid var(--gray-200)}td{padding:.72rem .85rem;border-bottom:1px solid var(--gray-100);font-size:.84rem;color:var(--gray-700);vertical-align:middle}tr:last-child td{border-bottom:none}.num{text-align:right;font-variant-numeric:tabular-nums}.muted{color:var(--gray-500)}.strong{font-weight:800;color:var(--navy)}.status{display:inline-flex;align-items:center;gap:.32rem;padding:.22rem .55rem;border-radius:999px;font-size:.72rem;font-weight:800}.status.collect{background:var(--orange-light);color:var(--orange)}.status.ok{background:var(--green-light);color:var(--green)}.status.pay{background:var(--purple-light);color:var(--purple)}.status.printed{background:var(--blue-light);color:var(--blue)}.status.unpaid{background:var(--orange-light);color:var(--orange)}.status.paid{background:var(--green-light);color:var(--green)}
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem}.form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.form-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}.field label{display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray-500);margin-bottom:.35rem}.input,.select,.textarea{width:100%;border:1.5px solid var(--gray-200);border-radius:10px;background:var(--white);padding:.66rem .8rem;font-family:var(--font-body);font-size:.88rem;color:var(--dark);outline:none}.input:focus,.select:focus,.textarea:focus{border-color:var(--teal)}.textarea{min-height:86px;resize:vertical}.inline-input{max-width:115px;text-align:right}.empty{padding:1.2rem;text-align:center;color:var(--gray-500);font-size:.9rem}.section-note{background:var(--teal-light);border:1px solid rgba(0,168,171,.18);border-radius:14px;padding:.9rem 1rem;color:var(--teal-mid);font-size:.86rem;line-height:1.5;margin-bottom:1rem}.warning{background:var(--orange-light);border:1px solid rgba(217,119,6,.2);color:var(--orange)}
 .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.54);z-index:300;display:none;align-items:center;justify-content:center;padding:1rem}.modal-overlay.show{display:flex}.modal{background:var(--white);border-radius:18px;box-shadow:0 24px 80px rgba(15,23,42,.28);width:min(760px,100%);max-height:92vh;overflow:auto}.modal.wide{width:min(980px,100%)}.modal-head{padding:1.15rem 1.25rem;border-bottom:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}.modal-title{font-family:var(--font-display);font-size:1.35rem;color:var(--navy)}.modal-sub{font-size:.84rem;color:var(--gray-500);margin-top:.15rem}.modal-body{padding:1.25rem}.modal-actions{display:flex;gap:.65rem;justify-content:flex-end;flex-wrap:wrap;padding:1rem 1.25rem;border-top:1px solid var(--gray-200);background:var(--gray-50)}.modal-x{border:none;background:var(--gray-100);width:32px;height:32px;border-radius:50%;cursor:pointer;color:var(--gray-600);font-weight:800}.toast{position:fixed;right:1.5rem;bottom:1.5rem;background:var(--navy);color:var(--white);padding:.9rem 1rem;border-radius:14px;box-shadow:var(--shadow-md);z-index:500;display:none;max-width:360px;font-size:.88rem}.toast.show{display:block}.toast.error{background:var(--red)}.toast.success{background:var(--green)}
@@ -165,21 +165,27 @@ body{font-family:var(--font-body);background:var(--off-white);color:var(--dark);
         </div>
       </div>
       <div class="chart-grid">
-        <div class="card"><div class="card-header"><div><div class="card-title">Dive Site Activity</div><div class="card-sub">Completed dives by site, highest to lowest.</div></div></div><div class="card-body"><div class="bar-list" id="siteBars"></div></div></div>
-        <div class="card"><div class="card-header"><div><div class="card-title">Money Snapshot</div><div class="card-sub">Collected, open, and pending money movement.</div></div></div><div class="card-body"><div class="donut-wrap"><div class="donut" id="moneyDonut"><div class="donut-inner" id="donutTotal">₱0</div></div><div class="legend"><div class="legend-item"><span class="dot"></span>Collected from divers</div><div class="legend-item"><span class="dot orange"></span>Open diver bills</div><div class="legend-item"><span class="dot gray"></span>Other pending money</div></div></div></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title">Monthly Revenue vs Expenses</div><div class="card-sub">Year-to-date, gross figures by month — independent of the date filter above.</div></div></div><div class="card-body"><div id="revExpChart"></div></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title">Fun Diving vs Dive Course Revenue</div><div class="card-sub">Year-to-date gross activity revenue by month.</div></div></div><div class="card-body"><div id="funCourseChart"></div></div></div>
       </div>
-      <div class="card">
-        <div class="card-header"><div><div class="card-title">Expense Breakdown</div><div class="card-sub">Where dive center spending went this period, by category.</div></div></div>
-        <div class="card-body"><div class="bar-list" id="overviewExpenseBars"></div></div>
+      <div class="chart-grid" style="grid-template-columns:minmax(0,1.3fr) minmax(260px,.7fr)">
+        <div class="card"><div class="card-header"><div><div class="card-title">Monthly Financial Trend</div><div class="card-sub">Revenue, Expenses, and Profit — year-to-date.</div></div></div><div class="card-body"><div id="trendChart"></div></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title">Top 5 Diver Nationalities</div><div class="card-sub">Year-to-date, divers served.</div></div></div><div class="card-body"><div class="donut-wrap"><div class="donut" id="natDonut" style="background:var(--gray-100)"><div class="donut-inner" id="natDonutTotal">0</div></div><div class="legend" id="natLegend"></div></div></div></div>
       </div>
     </div>
 
     <div class="tab-panel" id="tab-staff">
-      <div class="section-note">Staff Activity Summary is a reference for commissions. AquaDesk counts the work. Secretaries can enter rates and mark commission rows as paid.</div>
-      <div class="card"><div class="card-header"><div><div class="card-title">Selected Staff Details</div><div class="card-sub">Select a staff member to review their activity for the selected date range.</div></div></div><div class="card-body"><div class="form-grid form-grid-3"><div class="field"><label>Staff Type</label><select class="select" id="staffDetailType" onchange="renderStaffDetailControls()"><option value="guide">Divemaster / Dive Guide</option><option value="instructor">Instructor</option></select></div><div class="field"><label>Staff Member</label><select class="select" id="staffDetailName" onchange="renderSelectedStaffDetails()"></select></div></div><div id="staffDetailBody" style="margin-top:1rem"></div></div></div>
-      <div class="card"><div class="card-header"><div><div class="card-title">Our Dive Educators</div><div class="card-sub">Course count × rate = commission.</div></div></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Staff</th><th>Course Title</th><th class="num">Quantity</th><th class="num">Rate</th><th class="num">Commission</th><th>Status</th><th>Action</th></tr></thead><tbody id="educatorRows"></tbody></table></div></div></div>
-      <div class="card"><div class="card-header"><div><div class="card-title">Leading Our Dives</div><div class="card-sub">Completed dives × rate = commission.</div></div></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Staff</th><th class="num">Completed Dives</th><th class="num">Rate</th><th class="num">Commission</th><th>Status</th><th>Action</th></tr></thead><tbody id="leaderRows"></tbody></table></div></div></div>
+      <div class="section-note">Staff Activity Summary follows the date filter above and is independent of whether the diver's own bill is settled — you're paying staff for work done, not for AquaDesk's collections. Both dropdowns are built from actual dive records, not staff position, so freelancers and mixed-role staff always show up correctly.</div>
+      <div class="card"><div class="card-header"><div><div class="card-title">Our Dive Educators</div><div class="card-sub">Instructors &amp; freelancers — courses taught this period, one row per diver.</div></div></div><div class="card-body">
+        <div class="form-grid form-grid-3"><div class="field"><label>Staff Member</label><select class="select" id="educatorStaffName" onchange="renderCommissionRows()"></select></div></div>
+        <div class="table-wrap" style="margin-top:1rem"><table><thead><tr><th>Date</th><th>Diver Name</th><th>Activity</th><th class="num">Rate (Diver Paid)</th><th class="num">Commission</th><th class="num">Additional Rate</th><th class="num">Total</th><th>Status</th><th>Action</th></tr></thead><tbody id="educatorRows"></tbody></table></div>
+      </div></div>
+      <div class="card"><div class="card-header"><div><div class="card-title">Leading Our Dives</div><div class="card-sub">Divemasters &amp; freelancers — fun dives led this period, one row per session.</div></div></div><div class="card-body">
+        <div class="form-grid form-grid-3"><div class="field"><label>Staff Member</label><select class="select" id="leaderStaffName" onchange="renderCommissionRows()"></select></div></div>
+        <div class="table-wrap" style="margin-top:1rem"><table><thead><tr><th>Date</th><th>Activity</th><th class="num">Number of Divers</th><th class="num">Number of Dives</th><th class="num">Commission</th><th class="num">Additional Rate</th><th class="num">Total</th><th>Status</th><th>Action</th></tr></thead><tbody id="leaderRows"></tbody></table></div>
+      </div></div>
     </div>
+
 
     <div class="tab-panel" id="tab-join">
       <div class="section-note">Fixed Malapascua join ride rate: ₱500 per diver per dive. Records are saved per trip/day, then statements can be grouped by company and date range.</div>
@@ -308,7 +314,7 @@ body{font-family:var(--font-body);background:var(--off-white);color:var(--dark);
 
 <div class="modal-overlay" id="joinRecordModal"><div class="modal"><div class="modal-head"><div><div class="modal-title" id="joinModalTitle">Add Join Ride Record</div><div class="modal-sub">Save a report-side join ride record. This does not change Scheduling.</div></div><button class="modal-x" onclick="closeModal('joinRecordModal')">×</button></div><div class="modal-body"><div class="form-grid form-grid-3"><div class="field"><label>Date</label><input class="input" type="date" id="joinDate"></div><div class="field"><label>Company</label><input class="input" id="joinCompany" placeholder="Company name"></div><div class="field"><label>Status</label><select class="select" id="joinStatus"></select></div><div class="field"><label>Number of Divers</label><input class="input" type="number" min="0" id="joinDivers" value="0" oninput="updateJoinEstimate()"></div><div class="field"><label>Number of Dives</label><input class="input" type="number" min="0" id="joinDives" value="0" oninput="updateJoinEstimate()"></div><div class="field"><label>Total</label><input class="input" id="joinTotal" readonly></div></div><div class="field" style="margin-top:.85rem"><label>Dive Site(s)</label><input class="input" id="joinSites" placeholder="Kimud, Monad, Gato"></div><div class="field" style="margin-top:.85rem"><label>Remarks</label><textarea class="textarea" id="joinRemarks" placeholder="Optional notes"></textarea></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('joinRecordModal')">Cancel</button><button class="btn btn-teal" onclick="saveJoinRecord()">Save Record</button></div></div></div>
 
-<div class="modal-overlay" id="rentalModal"><div class="modal"><div class="modal-head"><div><div class="modal-title" id="rentalModalTitle">Add Rental Record</div><div class="modal-sub">Track gear, tank, and peripheral rentals with other companies.</div></div><button class="modal-x" onclick="closeModal('rentalModal')">×</button></div><div class="modal-body"><div class="form-grid form-grid-3"><div class="field"><label>Date</label><input class="input" type="date" id="rentalDate"></div><div class="field"><label>Equipment</label><select class="select" id="rentalEquipment"><option value="Air Tank 12L">Air Tank 12L</option><option value="Air Tank 15L">Air Tank 15L</option><option value="Nitrox Tank">Nitrox Tank</option><option value="BCD">BCD</option><option value="Regulator">Regulator</option><option value="Wetsuit">Wetsuit</option><option value="Fins">Fins</option><option value="Mask">Mask</option><option value="Computer">Computer</option><option value="Other">Other</option></select></div><div class="field"><label>Company</label><input class="input" id="rentalCompany" placeholder="Company name"></div><div class="field"><label>Quantity</label><input class="input" type="number" min="0" id="rentalQty" value="0" oninput="updateRentalEstimate()"></div><div class="field"><label>Rate</label><input class="input" type="number" min="0" id="rentalRate" value="0" oninput="updateRentalEstimate()"></div><div class="field"><label>Balance</label><input class="input" id="rentalTotal" readonly></div><div class="field"><label>Status</label><select class="select" id="rentalStatus"><option>To Collect</option><option>Collected</option><option>To Pay</option><option>Paid</option></select></div></div><div class="field" style="margin-top:.85rem"><label>Remarks</label><textarea class="textarea" id="rentalRemarks" placeholder="Optional notes"></textarea></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('rentalModal')">Cancel</button><button class="btn btn-teal" onclick="saveRentalRecord()">Save Record</button></div></div></div>
+<div class="modal-overlay" id="rentalModal"><div class="modal"><div class="modal-head"><div><div class="modal-title" id="rentalModalTitle">Add Rental Record</div><div class="modal-sub">Track gear, tank, and peripheral rentals with other companies.</div></div><button class="modal-x" onclick="closeModal('rentalModal')">×</button></div><div class="modal-body"><div class="form-grid form-grid-3"><div class="field"><label>Date</label><input class="input" type="date" id="rentalDate"></div><div class="field"><label>Equipment</label><select class="select" id="rentalEquipment"><option value="Air Tank 12L">Air Tank 12L</option><option value="Air Tank 15L">Air Tank 15L</option><option value="Nitrox Tank">Nitrox Tank</option><option value="BCD">BCD</option><option value="Regulator">Regulator</option><option value="Wetsuit">Wetsuit</option><option value="Fins">Fins</option><option value="Mask">Mask</option><option value="Computer">Computer</option><option value="Other">Other</option></select></div><div class="field"><label>Company</label><input class="input" id="rentalCompany" placeholder="Company name"></div><div class="field"><label>Quantity</label><input class="input" type="number" min="0" id="rentalQty" value="0" oninput="updateRentalEstimate()"></div><div class="field"><label>Rate</label><input class="input" type="number" min="0" id="rentalRate" value="0" oninput="updateRentalEstimate()"></div><div class="field"><label>Balance</label><input class="input" id="rentalTotal" readonly></div><div class="field"><label>Status</label><select class="select" id="rentalStatus"></select></div></div><div class="field" style="margin-top:.85rem"><label>Remarks</label><textarea class="textarea" id="rentalRemarks" placeholder="Optional notes"></textarea></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('rentalModal')">Cancel</button><button class="btn btn-teal" onclick="saveRentalRecord()">Save Record</button></div></div></div>
 
 <div class="modal-overlay" id="expenseModal"><div class="modal"><div class="modal-head"><div><div class="modal-title" id="expenseModalTitle">Add Expense</div><div class="modal-sub">Track dive center spending outside of diver fees.</div></div><button class="modal-x" onclick="closeModal('expenseModal')">×</button></div><div class="modal-body"><div class="form-grid form-grid-3"><div class="field"><label>Date</label><input class="input" type="date" id="expenseDate"></div><div class="field"><label>Category</label><select class="select" id="expenseCategory" onchange="toggleExpenseCustomCategory()"></select></div><div class="field" id="expenseCustomCategoryField" style="display:none"><label>Specify Category</label><input class="input" id="expenseCustomCategory" placeholder="e.g. Boat repaint"></div><div class="field"><label>Amount</label><input class="input" type="number" min="0" step="0.01" id="expenseAmount" value="0"></div><div class="field"><label>Paid By</label><input class="input" id="expensePaidBy" placeholder="e.g. Owner, Petty Cash"></div></div><div class="field" style="margin-top:.85rem"><label>Notes</label><textarea class="textarea" id="expenseNotes" placeholder="Optional notes"></textarea></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('expenseModal')">Cancel</button><button class="btn btn-teal" onclick="saveExpenseRecord()">Save Expense</button></div></div></div>
 
@@ -327,8 +333,9 @@ let activeTab='overview',joinDirection='joined_our_boat';
 let divers=[],groups=[],visits=[],activities=[],payments=[],schedules=[],staff=[],courseRates=[],joinRideRecords=[],joinRideStatements=[],rentalGearRecords=[],staffCommissionRecords=[];
 let expensesData=[];
 const EXPENSE_CATEGORIES=['Fuel','Boat Maintenance','Equipment Maintenance','Compressor / Fill Station','Staff Meals','Food Expenses','Office Supplies','Utilities','Licenses & Permits','Marketing','Repairs','Other','Uncategorized'];
-let guideSummary={},courseSummary={},courseTitleSummary={},openBills=[],closedBills=[],topSites=[],topStaff=null;
+let openBills=[],closedBills=[],topSites=[],topStaff=null;
 let govtFeesData=[];
+let ytdExpenses=[],ytdGovtFeesData=[];
 let editingJoinId=null,editingRentalId=null,editingExpenseId=null,statementRecordIds=[];
 let auditLoaded=false,auditInvoices=[],auditUnlocks=[],auditFlaggedVisits=[];
 
@@ -350,6 +357,15 @@ function staffNameFromActivity(a){if(a.staff_name)return a.staff_name;const s=st
 function activityTotal(a){return Number(a.total??0)||Number(a.dive_rate||0)+Number(a.fuel_surcharge||0)+Number(a.marine_tax||0)+Number(a.nitrox_fee||0)+Number(a.equipment_rental||0)+Number(a.addons||0)-Number(a.discount||0);}
 function normalizeStatus(s){return String(s||'').trim();}
 function isCompleted(a){return normalizeStatus(a.status).toLowerCase()==='completed';}
+// total_paid is always stored as cash_amount+card_amount+online_amount for a payment row.
+// Never add total_paid/amount AND the component fields together — pick one source only.
+function paymentAmount(p){
+  const totalPaid=Number(p.total_paid);
+  if(Number.isFinite(totalPaid)&&totalPaid>0) return totalPaid;
+  const amount=Number(p.amount);
+  if(Number.isFinite(amount)&&amount>0) return amount;
+  return Number(p.cash_amount||0)+Number(p.card_amount||0)+Number(p.online_amount||0);
+}
 function isCancelled(a){return normalizeStatus(a.status).toLowerCase()==='cancelled';}
 function lowerClean(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
 function normalizeCourseName(name){const x=lowerClean(name);if(!x)return 'Other';
@@ -406,6 +422,8 @@ function applyRoleVisibility(){
 async function loadAll(){
   try{
     const from=monthStart(),to=monthEnd();
+    const yearStart=new Date().getFullYear()+'-01-01';
+    const todayStr=new Date().toISOString().slice(0,10);
     const queries=[
       client.from('divers').select('*').eq('dive_center_id',diveCenterId),
       client.from('groups').select('*').eq('dive_center_id',diveCenterId),
@@ -419,12 +437,19 @@ async function loadAll(){
       client.from('join_ride_statements').select('*').eq('dive_center_id',diveCenterId),
       client.from('rental_gear_records').select('*').eq('dive_center_id',diveCenterId).order('date',{ascending:true}),
       client.from('expenses').select('*').eq('dive_center_id',diveCenterId).gte('date',from).lte('date',to).order('date',{ascending:false}),
-      client.from('staff_commission_records').select('*').eq('dive_center_id',diveCenterId).eq('period_month',ym()),
-      client.from('govt_fees').select('*').eq('dive_center_id',diveCenterId).gte('date',from).lte('date',to).order('date',{ascending:true})
+      // Loaded fully (not date-filtered) — same pattern as join_ride_records / rental_gear_records.
+      // Lets us look up any specific dive's commission row regardless of the date filter above,
+      // and compute both "this period" and "outstanding" figures client-side.
+      client.from('staff_commission_records').select('*').eq('dive_center_id',diveCenterId).order('date',{ascending:true}),
+      client.from('govt_fees').select('*').eq('dive_center_id',diveCenterId).gte('date',from).lte('date',to).order('date',{ascending:true}),
+      // Year-to-date data for the Overview trend charts — always the calendar year, independent of the date filter above.
+      client.from('expenses').select('*').eq('dive_center_id',diveCenterId).gte('date',yearStart).lte('date',todayStr),
+      client.from('govt_fees').select('*').eq('dive_center_id',diveCenterId).gte('date',yearStart).lte('date',todayStr)
     ];
-    const [d,g,v,a,p,sch,st,cr,jr,js,rg,ex,sc,gf]=await Promise.all(queries);
-    [d,g,v,a,p,sch,st,cr,jr,js,rg,ex,sc,gf].forEach(r=>{if(r.error)console.warn(r.error);});
+    const [d,g,v,a,p,sch,st,cr,jr,js,rg,ex,sc,gf,ytdEx,ytdGf]=await Promise.all(queries);
+    [d,g,v,a,p,sch,st,cr,jr,js,rg,ex,sc,gf,ytdEx,ytdGf].forEach(r=>{if(r.error)console.warn(r.error);});
     divers=d.data||[];groups=g.data||[];visits=v.data||[];activities=a.data||[];payments=p.data||[];schedules=sch.data||[];staff=st.data||[];courseRates=cr.data||[];joinRideRecords=jr.data||[];joinRideStatements=js.data||[];rentalGearRecords=rg.data||[];expensesData=ex.data||[];staffCommissionRecords=sc.data||[];govtFeesData=gf.data||[];
+    ytdExpenses=ytdEx.data||[];ytdGovtFeesData=ytdGf.data||[];
     buildSummaries();renderAll();
   }catch(err){console.error(err);showToast('Reports could not load. Check table access/RLS.','error');}
 }
@@ -524,7 +549,7 @@ async function saveAllGovtFees(){
   await loadGovtFees();
   renderOverview();
 }
-function confirmModal(message,onConfirm){
+function confirmModal(message,onConfirm,okLabel='Delete',okClass='btn-red'){
   let overlay=document.getElementById('govtConfirmOverlay');
   if(!overlay){
     overlay=document.createElement('div');
@@ -540,8 +565,10 @@ function confirmModal(message,onConfirm){
   const close=()=>overlay.classList.remove('show');
   const newOk=ok.cloneNode(true);ok.parentNode.replaceChild(newOk,ok);
   const newCancel=cancel.cloneNode(true);cancel.parentNode.replaceChild(newCancel,cancel);
-  document.getElementById('govtConfirmOk').addEventListener('click',()=>{close();onConfirm();});
-  document.getElementById('govtConfirmCancel').addEventListener('click',close);
+  newOk.textContent=okLabel;
+  newOk.className='btn '+okClass;
+  newOk.addEventListener('click',()=>{close();onConfirm();});
+  newCancel.addEventListener('click',close);
 }
 // ── END GOVERNMENT FEES ──────────────────────────────────────────────────────
 
@@ -609,12 +636,9 @@ function buildSummaries(){
   const monthly=buildActualActivitySummary(rangeActivities);
   topSites=monthly.topSites;
   topStaff=monthly.topStaff;
-  guideSummary=monthly.guideSummary;
-  courseSummary=monthly.courseSummary;
-  courseTitleSummary=monthly.courseTitleSummary;
   openBills=[];closedBills=[];
   visits.forEach(v=>{
-    const acts=activities.filter(a=>a.visit_id===v.id);const pays=payments.filter(p=>p.visit_id===v.id);const total=acts.filter(a=>normalizeStatus(a.status).toLowerCase()!=='cancelled').reduce((s,a)=>s+activityTotal(a),0);const paid=pays.reduce((s,p)=>s+Number(p.total_paid||p.amount||p.cash_amount||0)+Number(p.card_amount||0)+Number(p.online_amount||0),0);const diver=divers.find(d=>d.id===v.diver_id);const rec={visit:v,diver,total,paid,balance:Math.max(0,total-paid),lastActivity:acts.map(a=>a.date||a.created_at).sort().pop()};
+    const acts=activities.filter(a=>a.visit_id===v.id);const pays=payments.filter(p=>p.visit_id===v.id);const total=acts.filter(a=>normalizeStatus(a.status).toLowerCase()!=='cancelled').reduce((s,a)=>s+activityTotal(a),0);const paid=pays.reduce((s,p)=>s+paymentAmount(p),0);const diver=divers.find(d=>d.id===v.diver_id);const rec={visit:v,diver,total,paid,balance:Math.max(0,total-paid),lastActivity:acts.map(a=>a.date||a.created_at).sort().pop()};
     if(v.is_paid||v.visit_status==='closed')closedBills.push(rec);else if(v.is_active!==false)openBills.push(rec);
   });
 }
@@ -624,7 +648,7 @@ function renderOverview(){
   const sharkFeeTotal=govtFeesData.filter(r=>r.fee_type==='Shark Fee').reduce((s,r)=>s+Number(r.total||0),0);
   const govtFeesTotal=marineTaxTotal+sharkFeeTotal;
   const paidRange=payments.filter(p=>inRange(p.paid_at||p.created_at));
-  const collected=paidRange.reduce((s,p)=>s+Number(p.total_paid||p.amount||0)+Number(p.cash_amount||0)+Number(p.card_amount||0)+Number(p.online_amount||0),0);
+  const collected=paidRange.reduce((s,p)=>s+paymentAmount(p),0);
   const openBalance=openBills.reduce((s,b)=>s+b.balance,0);
   const completedDives=activities.filter(a=>inRange(a.date||a.created_at)&&isCompleted(a)).length;
   // Money already settled within the selected date range (period figures)
@@ -632,8 +656,8 @@ function renderOverview(){
   const rentalExpenseRange=rentalGearRecords.filter(r=>r.status==='Paid'&&inRange(r.date)).reduce((s,r)=>s+Number(r.total_amount||0),0);
   const jrIncomeRange=joinRideRecords.filter(r=>r.direction==='joined_our_boat'&&r.status==='Collected'&&inRange(r.date)).reduce((s,r)=>s+Number(r.total_amount||0),0);
   const jrExpenseRange=joinRideRecords.filter(r=>r.direction==='we_joined_another_boat'&&r.status==='Paid'&&inRange(r.date)).reduce((s,r)=>s+Number(r.total_amount||0),0);
-  const commPaid=staffCommissionRecords.filter(r=>r.status==='Paid').reduce((s,r)=>s+Number(r.commission_amount||0),0);
-  const commUnpaid=staffCommissionRecords.filter(r=>r.status!=='Paid').reduce((s,r)=>s+Number(r.commission_amount||0),0);
+  const commPaid=staffCommissionRecords.filter(r=>r.status==='Paid'&&inRange(r.date)).reduce((s,r)=>s+Number(r.total_amount||r.commission_amount||0),0);
+  const commUnpaid=staffCommissionRecords.filter(r=>r.status!=='Paid').reduce((s,r)=>s+Number(r.total_amount||r.commission_amount||0),0);
   const expenseTotal=expensesData.reduce((s,r)=>s+Number(r.amount||0),0);
   // Not-yet-settled: current outstanding balances, regardless of the selected date range
   const jrToCollect=joinRideRecords.filter(r=>r.direction==='joined_our_boat'&&r.status!=='Collected').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0);
@@ -641,16 +665,17 @@ function renderOverview(){
   const rentalToCollect=rentalGearRecords.filter(r=>r.status==='To Collect').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0);
   const rentalToPay=rentalGearRecords.filter(r=>r.status==='To Pay').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0);
   const diversServed=new Set(activities.filter(a=>inRange(a.date||a.created_at)&&isCompleted(a)&&a.diver_id).map(a=>a.diver_id)).size;
+  const scheduledDivers=new Set(activities.filter(a=>inRange(a.date||a.created_at)&&!isCompleted(a)&&!isCancelled(a)&&a.diver_id).map(a=>a.diver_id)).size;
 
   const moneyIn=collected+rentalIncomeRange+jrIncomeRange;
   const moneyOut=govtFeesTotal+expenseTotal+rentalExpenseRange+jrExpenseRange+commPaid;
   const netProfit=moneyIn-moneyOut;
-  const notYetSettled=openBalance+rentalToCollect+rentalToPay+jrToCollect+jrToPay+commUnpaid;
 
   const fromVal=document.getElementById('dateFrom')?.value||'';
   const toVal=document.getElementById('dateTo')?.value||'';
   document.getElementById('storyTitle').textContent=`${diveCenterName} — ${fmtDate(fromVal)} to ${fmtDate(toVal)}`;
-  document.getElementById('storyText').innerHTML=`You served <span class="story-highlight">${diversServed}</span> diver${diversServed!==1?'s':''} across <span class="story-highlight">${completedDives}</span> completed dive${completedDives!==1?'s':''}, and made <span class="story-highlight">${money(netProfit)}</span> net profit this period.`;
+  const scheduledNote=scheduledDivers>0?` (${scheduledDivers} scheduled, not yet completed)`:'';
+  document.getElementById('storyText').innerHTML=`You served <span class="story-highlight">${diversServed}</span> diver${diversServed!==1?'s':''} across <span class="story-highlight">${completedDives}</span> completed dive${completedDives!==1?'s':''}, and made <span class="story-highlight">${money(netProfit)}</span> net profit this period.${scheduledNote}`;
   document.getElementById('summaryRangeLabel').textContent=`${fmtDate(fromVal)} – ${fmtDate(toVal)}`;
 
   document.getElementById('sumMoneyIn').textContent=money(moneyIn);
@@ -676,12 +701,108 @@ function renderOverview(){
   document.getElementById('sumJoinToPay').textContent=money(jrToPay);
   document.getElementById('sumUnpaidCommissions').textContent=money(commUnpaid);
 
-  renderBars('siteBars',topSites.slice(0,8));
-  renderExpenseCategoryBars('overviewExpenseBars');
-  const pending=notYetSettled;const total=Math.max(1,collected+openBalance+pending);const a=(collected/total)*360;const b=((collected+openBalance)/total)*360;const donut=document.getElementById('moneyDonut');donut.style.setProperty('--donut-a',a+'deg');donut.style.setProperty('--donut-b',b+'deg');document.getElementById('donutTotal').textContent=money(collected+openBalance+pending);
+  renderOverviewTrendCharts();
 }
-function renderBars(id,items){const max=Math.max(1,...items.map(x=>x.count));document.getElementById(id).innerHTML=items.length?items.map(x=>`<div class="bar-row"><div class="bar-name">${esc(x.name)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(4,(x.count/max)*100)}%"></div></div><div class="bar-val">${x.count}</div></div>`).join(''):'<div class="empty">No completed data yet for this month.</div>';}
-
+// ── OVERVIEW YTD TREND CHARTS ────────────────────────────────────────────────
+// Independent of the dateFrom/dateTo filter above — always calendar-year-to-date, gross figures.
+function monthKeyOf(dateStr){return String(dateStr||'').slice(0,7);}
+function ytdMonthKeys(){
+  const now=new Date();const y=now.getFullYear(),curM=now.getMonth();
+  const keys=[];for(let m=0;m<=curM;m++)keys.push(`${y}-${String(m+1).padStart(2,'0')}`);
+  return keys;
+}
+function monthLabelOf(key){const [y,m]=key.split('-');return new Date(Number(y),Number(m)-1,1).toLocaleDateString(undefined,{month:'short'});}
+function moneyShort(n){const v=Number(n||0),abs=Math.abs(v);if(abs>=1000000)return '₱'+(v/1000000).toFixed(1)+'M';if(abs>=1000)return '₱'+(v/1000).toFixed(1)+'k';return '₱'+Math.round(v);}
+function computeMonthlyFinancials(){
+  const keys=ytdMonthKeys();
+  const idx={};const data=keys.map((k,i)=>{idx[k]=i;return {key:k,label:monthLabelOf(k),revenue:0,expenses:0,funRevenue:0,courseRevenue:0};});
+  payments.forEach(p=>{const k=monthKeyOf(p.paid_at||p.created_at);if(idx[k]!=null)data[idx[k]].revenue+=paymentAmount(p);});
+  rentalGearRecords.forEach(r=>{const k=monthKeyOf(r.date);if(idx[k]==null)return;if(r.status==='Collected')data[idx[k]].revenue+=Number(r.total_amount||0);if(r.status==='Paid')data[idx[k]].expenses+=Number(r.total_amount||0);});
+  joinRideRecords.forEach(r=>{const k=monthKeyOf(r.date);if(idx[k]==null)return;if(r.direction==='joined_our_boat'&&r.status==='Collected')data[idx[k]].revenue+=Number(r.total_amount||0);if(r.direction==='we_joined_another_boat'&&r.status==='Paid')data[idx[k]].expenses+=Number(r.total_amount||0);});
+  ytdGovtFeesData.forEach(r=>{const k=monthKeyOf(r.date);if(idx[k]==null)return;data[idx[k]].expenses+=Number(r.total||0);});
+  ytdExpenses.forEach(r=>{const k=monthKeyOf(r.date);if(idx[k]==null)return;data[idx[k]].expenses+=Number(r.amount||0);});
+  staffCommissionRecords.forEach(r=>{if(r.status!=='Paid')return;const k=monthKeyOf(r.date);if(idx[k]==null)return;data[idx[k]].expenses+=Number(r.total_amount||r.commission_amount||0);});
+  activities.forEach(a=>{if(!isCompleted(a))return;const k=monthKeyOf(a.date||a.created_at);if(idx[k]==null)return;const amt=activityTotal(a);if(isCourseActivity(a))data[idx[k]].courseRevenue+=amt;else data[idx[k]].funRevenue+=amt;});
+  data.forEach(d=>d.profit=d.revenue-d.expenses);
+  return data;
+}
+function computeTopNationalitiesYTD(){
+  const y=new Date().getFullYear();
+  const diverIds=new Set();
+  activities.forEach(a=>{if(!isCompleted(a)||!a.diver_id)return;const yr=Number(String(a.date||a.created_at||'').slice(0,4));if(yr===y)diverIds.add(a.diver_id);});
+  const counts={};
+  diverIds.forEach(id=>{const diver=divers.find(d=>d.id===id);const nat=(diver?.nationality||'').trim()||'Unspecified';counts[nat]=(counts[nat]||0)+1;});
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const result=sorted.slice(0,5).map(([name,count])=>({name,count}));
+  const otherTotal=sorted.slice(5).reduce((s,[,c])=>s+c,0);
+  if(otherTotal>0)result.push({name:'Other',count:otherTotal});
+  return result;
+}
+function renderGroupedBarChart(containerId,data,seriesKeys,seriesLabels,seriesColors){
+  const el=document.getElementById(containerId);
+  if(!data.length){el.innerHTML='<div class="empty">No data yet this year.</div>';return;}
+  const w=Math.max(360,data.length*70+40),h=220,padL=48,padB=30,padT=10,padR=10;
+  const plotW=w-padL-padR,plotH=h-padT-padB;
+  const maxVal=Math.max(1,...data.flatMap(d=>seriesKeys.map(k=>d[k]||0)));
+  const groupW=plotW/data.length;
+  const barW=Math.min(26,(groupW-16)/seriesKeys.length);
+  let gridLines='';const steps=4;
+  for(let i=0;i<=steps;i++){const y=padT+plotH-(plotH*i/steps),val=maxVal*i/steps;gridLines+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${w-padR}" y2="${y.toFixed(1)}" stroke="var(--gray-100)" stroke-width="1"/><text x="${padL-6}" y="${(y+4).toFixed(1)}" font-size="10" text-anchor="end" fill="var(--gray-400)">${moneyShort(val)}</text>`;}
+  let bars='';
+  data.forEach((d,i)=>{
+    const groupX=padL+i*groupW;
+    seriesKeys.forEach((k,si)=>{
+      const val=d[k]||0,barH=(val/maxVal)*plotH,x=groupX+(groupW-seriesKeys.length*barW)/2+si*barW,y=padT+plotH-barH;
+      bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1,barH).toFixed(1)}" fill="${seriesColors[si]}" rx="3"><title>${esc(d.label)} — ${esc(seriesLabels[si])}: ${money(val)}</title></rect>`;
+    });
+    bars+=`<text x="${(groupX+groupW/2).toFixed(1)}" y="${h-8}" font-size="10.5" text-anchor="middle" fill="var(--gray-500)">${esc(d.label)}</text>`;
+  });
+  const legend=seriesLabels.map((lab,i)=>`<span style="display:inline-flex;align-items:center;gap:.4rem"><span class="dot" style="background:${seriesColors[i]}"></span><span style="font-size:.8rem;color:var(--gray-600)">${esc(lab)}</span></span>`).join('');
+  el.innerHTML=`<div style="overflow-x:auto"><svg viewBox="0 0 ${w} ${h}" width="100%" style="min-width:${Math.min(w,520)}px;height:${h}px">${gridLines}${bars}</svg></div><div style="display:flex;gap:1.25rem;justify-content:center;margin-top:.6rem;flex-wrap:wrap">${legend}</div>`;
+}
+function renderTrendChart(containerId,data,seriesKeys,seriesLabels,seriesColors){
+  const el=document.getElementById(containerId);
+  if(!data.length){el.innerHTML='<div class="empty">No data yet this year.</div>';return;}
+  const w=Math.max(360,data.length*70+40),h=220,padL=48,padB=30,padT=10,padR=10;
+  const plotW=w-padL-padR,plotH=h-padT-padB;
+  const allVals=data.flatMap(d=>seriesKeys.map(k=>d[k]||0));
+  const maxVal=Math.max(1,...allVals),minVal=Math.min(0,...allVals),range=(maxVal-minVal)||1;
+  const stepX=data.length>1?plotW/(data.length-1):0;
+  const xFor=i=>padL+(data.length>1?i*stepX:plotW/2);
+  const yFor=v=>padT+plotH-((v-minVal)/range)*plotH;
+  let gridLines='';const steps=4;
+  for(let i=0;i<=steps;i++){const val=minVal+(range*i/steps),y=yFor(val);gridLines+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${w-padR}" y2="${y.toFixed(1)}" stroke="var(--gray-100)" stroke-width="1"/><text x="${padL-6}" y="${(y+4).toFixed(1)}" font-size="10" text-anchor="end" fill="var(--gray-400)">${moneyShort(val)}</text>`;}
+  let zeroLine='';
+  if(minVal<0){const y0=yFor(0);zeroLine=`<line x1="${padL}" y1="${y0.toFixed(1)}" x2="${w-padR}" y2="${y0.toFixed(1)}" stroke="var(--gray-300)" stroke-width="1" stroke-dasharray="3,3"/>`;}
+  let lines='';
+  seriesKeys.forEach((k,si)=>{
+    const pts=data.map((d,i)=>`${xFor(i).toFixed(1)},${yFor(d[k]||0).toFixed(1)}`).join(' ');
+    lines+=`<polyline points="${pts}" fill="none" stroke="${seriesColors[si]}" stroke-width="2.5"/>`;
+    data.forEach((d,i)=>{lines+=`<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(d[k]||0).toFixed(1)}" r="3.5" fill="${seriesColors[si]}"><title>${esc(d.label)} — ${esc(seriesLabels[si])}: ${money(d[k]||0)}</title></circle>`;});
+  });
+  let xLabels='';
+  data.forEach((d,i)=>{xLabels+=`<text x="${xFor(i).toFixed(1)}" y="${h-8}" font-size="10.5" text-anchor="middle" fill="var(--gray-500)">${esc(d.label)}</text>`;});
+  const legend=seriesLabels.map((lab,i)=>`<span style="display:inline-flex;align-items:center;gap:.4rem"><span class="dot" style="background:${seriesColors[i]}"></span><span style="font-size:.8rem;color:var(--gray-600)">${esc(lab)}</span></span>`).join('');
+  el.innerHTML=`<div style="overflow-x:auto"><svg viewBox="0 0 ${w} ${h}" width="100%" style="min-width:${Math.min(w,520)}px;height:${h}px">${gridLines}${zeroLine}${lines}${xLabels}</svg></div><div style="display:flex;gap:1.25rem;justify-content:center;margin-top:.6rem;flex-wrap:wrap">${legend}</div>`;
+}
+const PIE_COLORS=['var(--teal)','var(--orange)','var(--green)','var(--red)','var(--purple)','var(--gray-300)'];
+function renderNationalityPie(items){
+  const total=items.reduce((s,x)=>s+x.count,0);
+  const ring=document.getElementById('natDonut');
+  if(!total){ring.style.background='var(--gray-100)';document.getElementById('natDonutTotal').textContent='0';document.getElementById('natLegend').innerHTML='<div class="empty">No completed dives yet this year.</div>';return;}
+  let acc=0;const stops=[];
+  items.forEach((it,i)=>{const start=acc/total*360;acc+=it.count;const end=acc/total*360;stops.push(`${PIE_COLORS[i%PIE_COLORS.length]} ${start.toFixed(2)}deg ${end.toFixed(2)}deg`);});
+  ring.style.background=`conic-gradient(${stops.join(',')})`;
+  document.getElementById('natDonutTotal').textContent=total;
+  document.getElementById('natLegend').innerHTML=items.map((it,i)=>`<div class="legend-item"><span class="dot" style="background:${PIE_COLORS[i%PIE_COLORS.length]}"></span><span class="legend-label">${esc(it.name)}</span><span class="legend-val">${it.count}</span></div>`).join('');
+}
+function renderOverviewTrendCharts(){
+  const monthly=computeMonthlyFinancials();
+  renderGroupedBarChart('revExpChart',monthly,['revenue','expenses'],['Revenue','Expenses'],['var(--teal)','var(--orange)']);
+  renderGroupedBarChart('funCourseChart',monthly,['funRevenue','courseRevenue'],['Fun Diving','Dive Course'],['var(--teal)','var(--purple)']);
+  renderTrendChart('trendChart',monthly,['revenue','expenses','profit'],['Revenue','Expenses','Profit'],['var(--teal)','var(--orange)','var(--navy)']);
+  renderNationalityPie(computeTopNationalitiesYTD());
+}
 
 function nonGenericTitle(value){
   const raw=String(value||'').trim();
@@ -714,86 +835,263 @@ function isCourseActivity(a){
   return ['Open Water','Advanced Open Water','React Right','Stress & Rescue','Divemaster'].includes(normalizeCourseName(a.course_name||a.course_title||a.course||a.activity||a.activity_name||a.dive_site));
 }
 function activitiesInStaffPeriod(){return activities.filter(a=>{const d=String(a.date||a.created_at||'').slice(0,10);return d>=monthStart()&&d<=monthEnd()&&isCompleted(a);});}
-function staffNamesForDetail(type){
-  const names=activitiesInStaffPeriod().filter(a=>type==='instructor'?isCourseActivity(a):!isCourseActivity(a)).map(a=>staffNameFromActivity(a)||'Unassigned');
-  return [...new Set(names)].filter(Boolean).sort((a,b)=>a.localeCompare(b));
-}
-function renderStaffDetailControls(skipBody=false){
-  const typeEl=document.getElementById('staffDetailType'),nameEl=document.getElementById('staffDetailName');
-  if(!typeEl||!nameEl)return;
-  const type=typeEl.value||'guide';
-  const current=nameEl.value;
-  const names=staffNamesForDetail(type);
-  nameEl.innerHTML=names.length?names.map(n=>`<option value="${escAttr(n)}">${esc(n)}</option>`).join(''):'<option value="">No staff activity</option>';
-  if(names.includes(current))nameEl.value=current;
-  else if(names.length)nameEl.value=names[0];
-  if(!skipBody)renderSelectedStaffDetails();
-  else renderSelectedStaffDetails();
-}
-function renderSelectedStaffDetails(){
-  const body=document.getElementById('staffDetailBody'),typeEl=document.getElementById('staffDetailType'),nameEl=document.getElementById('staffDetailName');
-  if(!body||!typeEl||!nameEl)return;
-  const type=typeEl.value||'guide';
-  const name=nameEl.value;
-  if(!name){body.innerHTML='<div class="empty">No staff activity found for this period.</div>';return;}
-  const rows=activitiesInStaffPeriod().filter(a=>(type==='instructor'?isCourseActivity(a):!isCourseActivity(a))&&(staffNameFromActivity(a)||'Unassigned')===name).sort((a,b)=>String(a.date||a.created_at||'').localeCompare(String(b.date||b.created_at||'')));
-  if(!rows.length){body.innerHTML='<div class="empty">No records found for this staff member in the selected period.</div>';return;}
-  if(type==='instructor'){
-    const grouped={};
-    rows.forEach((a,i)=>{
-      const date=activityDateKey(a);
-      const course=courseTitleFromActivity(a);
-      const key=[date,course].join('|');
-      if(!grouped[key])grouped[key]={date,course,divers:new Set()};
-      grouped[key].divers.add(uniqueDiverKey(a,i));
-    });
-    const courseRows=Object.values(grouped).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.course).localeCompare(String(b.course)));
-    body.innerHTML=`<div class="table-wrap"><table style="min-width:620px"><thead><tr><th>Date</th><th class="num">Number of Divers</th><th>Course Conducted</th></tr></thead><tbody>${courseRows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="num strong">${r.divers.size||0}</td><td>${esc(r.course)}</td></tr>`).join('')}</tbody></table></div>`;
-    return;
-  }
-  const dateGroups={};
-  rows.forEach((a,i)=>{
-    const date=activityDateKey(a);
-    if(!dateGroups[date])dateGroups[date]={date,divers:new Set(),groups:{}};
-    dateGroups[date].divers.add(uniqueDiverKey(a,i));
-    const label=a.dive_site||a.activity_name||a.activity||'Unnamed';
-    const key=[a.schedule_id||a.schedule||'manual',label].join('|');
-    if(!dateGroups[date].groups[key])dateGroups[date].groups[key]={label,divers:new Set(),rows:[]};
-    dateGroups[date].groups[key].divers.add(uniqueDiverKey(a,i));
-    dateGroups[date].groups[key].rows.push(a);
-  });
-  const guideRows=Object.values(dateGroups).map(g=>{
-    let dives=0;
-    Object.values(g.groups).forEach(group=>{
-      const diverCount=Math.max(1,group.divers.size);
-      const rowBased=Math.max(1,Math.round(group.rows.length/diverCount));
-      const entryBased=Math.max(1,splitDiveSites(group.label).length);
-      dives+=Math.max(rowBased,entryBased);
-    });
-    return {date:g.date,dives,divers:g.divers.size};
-  }).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  body.innerHTML=`<div class="table-wrap"><table style="min-width:520px"><thead><tr><th>Date</th><th class="num">Number of Dives</th><th class="num">Number of Divers</th></tr></thead><tbody>${guideRows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="num strong">${r.dives}</td><td class="num">${r.divers}</td></tr>`).join('')}</tbody></table></div>`;
-}
 
-function renderStaff(){
-  renderStaffDetailControls(true);
-  renderCommissionRows();
+// ── STAFF ACTIVITY SUMMARY (per-diver course rows + per-session dive rows) ──
+// Both dropdowns are built purely from activity data — whoever actually appears
+// as staff on a course activity populates Our Dive Educators; whoever appears on
+// a fun-dive activity populates Leading Our Dives. No dependency on staff.role,
+// so freelancers (with or without a staff record) are always captured correctly.
+function buildStaffPools(){
+  const period=activitiesInStaffPeriod();
+  const instructorNames=new Set(),divemasterNames=new Set();
+  period.forEach(a=>{
+    const name=staffNameFromActivity(a)||'';
+    if(!name||name==='Unassigned')return;
+    if(isCourseActivity(a))instructorNames.add(name);else divemasterNames.add(name);
+  });
+  return {
+    instructors:[...instructorNames].sort((a,b)=>a.localeCompare(b)),
+    divemasters:[...divemasterNames].sort((a,b)=>a.localeCompare(b))
+  };
 }
-function findCommission(group,staffName,title,quantity){const exact=staffCommissionRecords.find(r=>r.commission_group===group&&r.staff_name===staffName&&r.title===title);if(exact)return {...exact,quantity};const legacyTitle=normalizeCourseName(title);const legacy=staffCommissionRecords.find(r=>r.commission_group===group&&r.staff_name===staffName&&r.title===legacyTitle);if(legacy)return {...legacy,title,quantity};return {staff_name:staffName,title,commission_group:group,quantity,rate:0,commission_amount:0,status:'Unpaid'};}
+// Our Dive Educators: one row per diver per course session — no blended counts.
+function buildEducatorDiverRows(){
+  const period=activitiesInStaffPeriod();
+  const groups={};
+  period.forEach(a=>{
+    if(!isCourseActivity(a))return;
+    const staffName=staffNameFromActivity(a)||'';
+    if(!staffName||staffName==='Unassigned')return;
+    const date=activityDateKey(a);
+    const title=courseTitleFromActivity(a);
+    const diver=divers.find(d=>d.id===a.diver_id);
+    const diverName=diver?fullName(diver):(a.diver_name||'Unknown Diver');
+    const key=[staffName,date,title,diverName].join('|');
+    if(!groups[key])groups[key]={staffName,date,activity:title,diverName,diverPaid:0};
+    groups[key].diverPaid+=activityTotal(a);
+  });
+  return Object.values(groups).sort((a,b)=>String(a.date).localeCompare(String(b.date))||a.diverName.localeCompare(b.diverName));
+}
+// Leading Our Dives: one row per staff+date+session. Boat Return logs a multi-dive
+// trip two different ways depending on Tier vs Package mode: Tier mode creates one
+// activity row per dive site (so row-count ÷ divers gives the real dive count), but
+// Package mode creates a single row per diver for the whole trip with the sites
+// joined into one field ("Kimud, Monad, Gato" = 3 dives in 1 row). Row-count alone
+// undercounts Package-mode trips, so we also read the site list and take whichever
+// signal is actually populated for that group — the unused mode always reads as 1,
+// never inflated, so this can't overcount either way.
+function buildLeaderSessionRows(){
+  const period=activitiesInStaffPeriod();
+  const funGroups={};
+  period.forEach((a,i)=>{
+    if(isCourseActivity(a))return;
+    const staffName=staffNameFromActivity(a)||'';
+    if(!staffName||staffName==='Unassigned')return;
+    const date=activityDateKey(a);
+    const label=a.dive_site||a.activity_name||a.activity||'Unnamed';
+    const key=[staffName,date,a.schedule_id||a.schedule||'manual',label].join('|');
+    if(!funGroups[key])funGroups[key]={staffName,date,label,divers:new Set(),rows:[]};
+    funGroups[key].divers.add(uniqueDiverKey(a,i));
+    funGroups[key].rows.push(a);
+  });
+  return Object.values(funGroups).map(g=>{
+    const diverCount=Math.max(1,g.divers.size);
+    const rowBased=Math.max(1,Math.round(g.rows.length/diverCount));
+    const siteListBased=splitDiveSites(g.label).length;
+    const numberOfDives=Math.max(rowBased,siteListBased);
+    return {staffName:g.staffName,date:g.date,activity:g.label,numberOfDivers:diverCount,numberOfDives};
+  }).sort((a,b)=>String(a.date).localeCompare(String(b.date))||a.activity.localeCompare(b.activity));
+}
+function findEducatorCommission(staffName,activity,date,diverName){return staffCommissionRecords.find(r=>r.commission_group==='dive_educator'&&r.staff_name===staffName&&r.title===activity&&r.date===date&&r.diver_name===diverName)||null;}
+function findLeaderCommission(staffName,activity,date){return staffCommissionRecords.find(r=>r.commission_group==='dive_leader'&&r.staff_name===staffName&&r.title===activity&&r.date===date)||null;}
+function fillStaffDropdown(id,names){
+  const sel=document.getElementById(id);if(!sel)return;
+  const current=sel.value;
+  sel.innerHTML=names.length?names.map(n=>`<option value="${escAttr(n)}">${esc(n)}</option>`).join(''):'<option value="">No staff activity this period</option>';
+  if(names.includes(current))sel.value=current;else if(names.length)sel.value=names[0];
+}
+let editingCommissionKeys=new Set();
+function renderStaff(){renderCommissionRows();}
 function renderCommissionRows(){
-  let educator=[];
-  Object.entries(courseTitleSummary).forEach(([name,v])=>Object.entries(v).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([title,count])=>{if(count>0)educator.push(findCommission('dive_educator',name,title,count));}));
-  document.getElementById('educatorRows').innerHTML=educator.length?educator.map(r=>commissionRowHTML(r,'dive_educator')).join(''):'<tr><td colspan="7"><div class="empty">No course counts to calculate yet.</div></td></tr>';
-  const leaders=Object.entries(guideSummary).filter(([n,v])=>v.completed>0).map(([name,v])=>findCommission('dive_leader',name,'Completed Dives',v.completed));
-  document.getElementById('leaderRows').innerHTML=leaders.length?leaders.map(r=>commissionRowHTML(r,'dive_leader')).join(''):'<tr><td colspan="6"><div class="empty">No completed fun dives to calculate yet.</div></td></tr>';
+  const pools=buildStaffPools();
+  fillStaffDropdown('educatorStaffName',pools.instructors);
+  fillStaffDropdown('leaderStaffName',pools.divemasters);
+  const eduName=document.getElementById('educatorStaffName')?.value||'';
+  const leadName=document.getElementById('leaderStaffName')?.value||'';
+  const eduRows=buildEducatorDiverRows().filter(r=>r.staffName===eduName);
+  const leadRows=buildLeaderSessionRows().filter(r=>r.staffName===leadName);
+  document.getElementById('educatorRows').innerHTML=eduRows.length?eduRows.map(educatorRowHTML).join('')+educatorTotalsRowHTML(eduRows):`<tr><td colspan="9"><div class="empty">${eduName?'No courses for this staff member in the selected period.':'No instructors or freelancers teaching courses this period.'}</div></td></tr>`;
+  document.getElementById('leaderRows').innerHTML=leadRows.length?leadRows.map(leaderRowHTML).join('')+leaderTotalsRowHTML(leadRows):`<tr><td colspan="9"><div class="empty">${leadName?'No fun dives for this staff member in the selected period.':'No divemasters or freelancers leading fun dives this period.'}</div></td></tr>`;
 }
-function commissionRowHTML(r,group){const qty=Number(r.quantity||0);const rate=Number(r.rate||0);const amount=qty*rate;const key=`${group}|${r.staff_name}|${r.title}`;const action=r.status==='Paid'?`<span class="muted">Paid</span>`:`<button class="btn btn-sm btn-teal" onclick="saveCommission('${escAttr(key)}')">Save Rate</button> <button class="btn btn-sm btn-green" onclick="markCommissionPaid('${escAttr(key)}')">Mark as Paid</button>`;return `<tr><td class="strong">${esc(r.staff_name)}</td>${group==='dive_educator'?`<td>${esc(r.title)}</td>`:''}<td class="num">${qty}</td><td class="num"><input class="input inline-input" type="number" min="0" id="rate-${hashKey(key)}" value="${rate}" oninput="updateCommissionCalc('${escAttr(key)}')"></td><td class="num strong" id="amount-${hashKey(key)}">${money(amount)}</td><td>${statusPill(r.status||'Unpaid')}</td><td>${action}</td></tr>`;}
+// Totals rows sum whatever is currently on screen (saved values, or live inputs for
+// unsaved/editable rows) and stay in sync as the secretary types via the recompute
+// functions called from updateEducatorCalc/updateLeaderCalc below.
+function educatorTotalsRowHTML(rows){
+  let comm=0,addl=0,total=0;
+  rows.forEach(r=>{
+    const existing=findEducatorCommission(r.staffName,r.activity,r.date,r.diverName);
+    const c=Number(existing?.rate||0),a=Number(existing?.additional_rate||0);
+    comm+=c;addl+=a;total+=(existing?.status==='Paid')?Number(existing.total_amount??(c+a)):(c+a);
+  });
+  return `<tr id="educatorTotalsRow" class="totals-row" style="border-top:2px solid var(--gray-300)"><td colspan="4" class="strong">Total</td><td class="num strong" id="eduSumComm">${money(comm)}</td><td class="num strong" id="eduSumAddl">${money(addl)}</td><td class="num strong" id="eduSumTotal">${money(total)}</td><td colspan="2"></td></tr>`;
+}
+function leaderTotalsRowHTML(rows){
+  let dives=0,comm=0,addl=0,total=0;
+  rows.forEach(r=>{
+    dives+=r.numberOfDives;
+    const existing=findLeaderCommission(r.staffName,r.activity,r.date);
+    const c=Number(existing?.rate||0),a=Number(existing?.additional_rate||0);
+    comm+=c;addl+=a;total+=(existing?.status==='Paid')?Number(existing.total_amount??(c+a)):(c+a);
+  });
+  return `<tr id="leaderTotalsRow" class="totals-row" style="border-top:2px solid var(--gray-300)"><td colspan="3" class="strong">Total</td><td class="num strong" id="leadSumDives">${dives}</td><td class="num strong" id="leadSumComm">${money(comm)}</td><td class="num strong" id="leadSumAddl">${money(addl)}</td><td class="num strong" id="leadSumTotal">${money(total)}</td><td colspan="2"></td></tr>`;
+}
+function recomputeEducatorTotals(){
+  const tbody=document.getElementById('educatorRows');
+  let comm=0,addl=0,total=0;
+  tbody.querySelectorAll('tr[data-key]').forEach(tr=>{
+    comm+=Number(tr.querySelector('.edu-comm-cell')?.dataset.value||0);
+    addl+=Number(tr.querySelector('.edu-addl-cell')?.dataset.value||0);
+    total+=Number(tr.querySelector('.edu-total-cell')?.dataset.value||0);
+  });
+  const sc=document.getElementById('eduSumComm'),sa=document.getElementById('eduSumAddl'),st=document.getElementById('eduSumTotal');
+  if(sc)sc.textContent=money(comm);if(sa)sa.textContent=money(addl);if(st)st.textContent=money(total);
+}
+function recomputeLeaderTotals(){
+  const tbody=document.getElementById('leaderRows');
+  let comm=0,addl=0,total=0;
+  tbody.querySelectorAll('tr[data-key]').forEach(tr=>{
+    comm+=Number(tr.querySelector('.lead-comm-cell')?.dataset.value||0);
+    addl+=Number(tr.querySelector('.lead-addl-cell')?.dataset.value||0);
+    total+=Number(tr.querySelector('.lead-total-cell')?.dataset.value||0);
+  });
+  const sc=document.getElementById('leadSumComm'),sa=document.getElementById('leadSumAddl'),st=document.getElementById('leadSumTotal');
+  if(sc)sc.textContent=money(comm);if(sa)sa.textContent=money(addl);if(st)st.textContent=money(total);
+}
 function escAttr(v){return String(v).replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
 function hashKey(k){let h=0;for(let i=0;i<k.length;i++)h=(h*31+k.charCodeAt(i))>>>0;return h;}
-function parseCommissionKey(key){const [group,staffName,title]=key.split('|');const quantity=group==='dive_leader'?(guideSummary[staffName]?.completed||0):(courseTitleSummary[staffName]?.[title]||courseSummary[staffName]?.[title]||0);return {group,staffName,title,quantity};}
-function updateCommissionCalc(key){const {quantity}=parseCommissionKey(key);const rate=Number(document.getElementById('rate-'+hashKey(key))?.value||0);document.getElementById('amount-'+hashKey(key)).textContent=money(quantity*rate);}
-async function saveCommission(key,markPaid=false){const {group,staffName,title,quantity}=parseCommissionKey(key);const rate=Number(document.getElementById('rate-'+hashKey(key))?.value||0);const amount=quantity*rate;const existing=staffCommissionRecords.find(r=>r.commission_group===group&&r.staff_name===staffName&&r.title===title);const payload={dive_center_id:diveCenterId,period_month:ym(),staff_name:staffName,commission_group:group,title,quantity,rate,commission_amount:amount,status:markPaid?'Paid':(existing?.status||'Unpaid'),paid_at:markPaid?nowIso():(existing?.paid_at||null),remarks:existing?.remarks||null,updated_at:nowIso()};let res;if(existing?.id)res=await client.from('staff_commission_records').update(payload).eq('id',existing.id);else res=await client.from('staff_commission_records').insert(payload);if(res.error){console.error('saveCommission error:',res.error.message,res.error.code,res.error.hint);showToast('Could not save commission record.','error');return;}showToast(markPaid?'Commission marked as paid.':'Commission rate saved.','success');await loadAll();}
-function markCommissionPaid(key){saveCommission(key,true);}
+function educatorKey(r){return ['dive_educator',r.staffName,r.activity,r.date,r.diverName].join('|');}
+function parseEducatorKey(key){const [group,staffName,activity,date,diverName]=key.split('|');return {group,staffName,activity,date,diverName};}
+function leaderKey(r){return ['dive_leader',r.staffName,r.activity,r.date].join('|');}
+function parseLeaderKey(key){const [group,staffName,activity,date]=key.split('|');return {group,staffName,activity,date};}
+function editCommissionRecord(key){editingCommissionKeys.add(key);renderCommissionRows();}
+// Commission is a flat amount typed in directly (no multiplier) — Total = Commission + Additional Rate.
+// That total (plus status) freezes once Paid; the informational columns (Rate Diver Paid, Number of
+// Divers/Dives) always stay live so they never go stale, but they also never affect the payout.
+function educatorRowHTML(r){
+  const key=educatorKey(r);
+  const existing=findEducatorCommission(r.staffName,r.activity,r.date,r.diverName);
+  const status=existing?.status||'Unpaid';
+  const isPaid=status==='Paid';
+  const isEditing=!isPaid||editingCommissionKeys.has(key);
+  const commission=Number(existing?.rate||0);
+  const additionalRate=Number(existing?.additional_rate||0);
+  const totalAmount=(isPaid&&!isEditing)?Number(existing.total_amount??(commission+additionalRate)):(commission+additionalRate);
+  const hk=hashKey(key);
+  let action;
+  if(isPaid&&!isEditing)action=`<button class="btn btn-sm btn-ghost" onclick="editCommissionRecord('${escAttr(key)}')">Edit</button>`;
+  else if(isPaid&&isEditing)action=`<button class="btn btn-sm btn-teal" onclick="saveEducatorRow('${escAttr(key)}')">Save</button>`;
+  else action=`<button class="btn btn-sm btn-teal" onclick="saveEducatorRow('${escAttr(key)}')">Save</button> <button class="btn btn-sm btn-green" onclick="confirmMarkEducatorPaid('${escAttr(key)}')">Mark Paid</button> <button class="btn btn-sm btn-ghost" style="color:var(--red)" onclick="deleteEducatorRow('${escAttr(key)}')">Delete</button>`;
+  const commCell=(isPaid&&!isEditing)?money(commission):`<input class="input inline-input" type="number" min="0" id="comm-${hk}" value="${commission}" oninput="updateEducatorCalc('${escAttr(key)}')">`;
+  const addlCell=(isPaid&&!isEditing)?money(additionalRate):`<input class="input inline-input" type="number" min="0" id="addl-${hk}" value="${additionalRate}" oninput="updateEducatorCalc('${escAttr(key)}')">`;
+  return `<tr data-key="${escAttr(key)}"><td>${fmtDate(r.date)}</td><td class="strong">${esc(r.diverName)}</td><td>${esc(r.activity)}</td><td class="num">${money(r.diverPaid)}</td><td class="num edu-comm-cell" data-value="${commission}">${commCell}</td><td class="num edu-addl-cell" data-value="${additionalRate}">${addlCell}</td><td class="num strong edu-total-cell" id="amount-${hk}" data-value="${totalAmount}">${money(totalAmount)}</td><td>${statusPill(status)}</td><td>${action}</td></tr>`;
+}
+function updateEducatorCalc(key){
+  const hk=hashKey(key);
+  const commInput=document.getElementById('comm-'+hk),addlInput=document.getElementById('addl-'+hk);
+  const comm=Number(commInput?.value||0),addl=Number(addlInput?.value||0),total=comm+addl;
+  if(commInput)commInput.closest('td').dataset.value=comm;
+  if(addlInput)addlInput.closest('td').dataset.value=addl;
+  const amountCell=document.getElementById('amount-'+hk);
+  amountCell.textContent=money(total);
+  amountCell.dataset.value=total;
+  recomputeEducatorTotals();
+}
+async function saveEducatorRow(key,markPaid=false){
+  const {staffName,activity,date,diverName}=parseEducatorKey(key);
+  const hk=hashKey(key);
+  const commission=Number(document.getElementById('comm-'+hk)?.value||0);
+  const additionalRate=Number(document.getElementById('addl-'+hk)?.value||0);
+  const totalAmount=commission+additionalRate;
+  const existing=findEducatorCommission(staffName,activity,date,diverName);
+  const payload={dive_center_id:diveCenterId,date,period_month:date.slice(0,7),staff_name:staffName,commission_group:'dive_educator',title:activity,diver_name:diverName,quantity:1,rate:commission,additional_rate:additionalRate,commission_amount:commission,total_amount:totalAmount,status:markPaid?'Paid':(existing?.status||'Unpaid'),paid_at:markPaid?nowIso():(existing?.paid_at||null),remarks:existing?.remarks||null,updated_at:nowIso()};
+  let res;
+  if(existing?.id)res=await client.from('staff_commission_records').update(payload).eq('id',existing.id);
+  else res=await client.from('staff_commission_records').insert(payload);
+  if(res.error){console.error('saveEducatorRow error:',res.error);showToast('Could not save commission record.','error');return;}
+  editingCommissionKeys.delete(key);
+  showToast(markPaid?'Commission marked as paid.':'Commission saved.','success');
+  await loadAll();
+}
+function confirmMarkEducatorPaid(key){confirmModal('Mark this commission as Paid? Once marked paid, it can only be edited — not deleted.',()=>saveEducatorRow(key,true),'Mark Paid','btn-green');}
+function deleteEducatorRow(key){
+  const {staffName,activity,date,diverName}=parseEducatorKey(key);
+  const existing=findEducatorCommission(staffName,activity,date,diverName);
+  if(!existing?.id){showToast('Nothing saved yet for this row.');return;}
+  confirmModal('Delete this commission record? This cannot be undone.',async()=>{
+    const {error}=await client.from('staff_commission_records').delete().eq('id',existing.id);
+    if(error){console.error(error);showToast('Could not delete commission record.','error');return;}
+    showToast('Commission record deleted.','success');
+    await loadAll();
+  },'Delete','btn-red');
+}
+function leaderRowHTML(r){
+  const key=leaderKey(r);
+  const existing=findLeaderCommission(r.staffName,r.activity,r.date);
+  const status=existing?.status||'Unpaid';
+  const isPaid=status==='Paid';
+  const isEditing=!isPaid||editingCommissionKeys.has(key);
+  const commission=Number(existing?.rate||0);
+  const additionalRate=Number(existing?.additional_rate||0);
+  const totalAmount=(isPaid&&!isEditing)?Number(existing.total_amount??(commission+additionalRate)):(commission+additionalRate);
+  const hk=hashKey(key);
+  let action;
+  if(isPaid&&!isEditing)action=`<button class="btn btn-sm btn-ghost" onclick="editCommissionRecord('${escAttr(key)}')">Edit</button>`;
+  else if(isPaid&&isEditing)action=`<button class="btn btn-sm btn-teal" onclick="saveLeaderRow('${escAttr(key)}')">Save</button>`;
+  else action=`<button class="btn btn-sm btn-teal" onclick="saveLeaderRow('${escAttr(key)}')">Save</button> <button class="btn btn-sm btn-green" onclick="confirmMarkLeaderPaid('${escAttr(key)}')">Mark Paid</button> <button class="btn btn-sm btn-ghost" style="color:var(--red)" onclick="deleteLeaderRow('${escAttr(key)}')">Delete</button>`;
+  const commCell=(isPaid&&!isEditing)?money(commission):`<input class="input inline-input" type="number" min="0" id="comm-${hk}" value="${commission}" oninput="updateLeaderCalc('${escAttr(key)}')">`;
+  const addlCell=(isPaid&&!isEditing)?money(additionalRate):`<input class="input inline-input" type="number" min="0" id="addl-${hk}" value="${additionalRate}" oninput="updateLeaderCalc('${escAttr(key)}')">`;
+  return `<tr data-key="${escAttr(key)}"><td>${fmtDate(r.date)}</td><td>${esc(r.activity)}</td><td class="num">${r.numberOfDivers}</td><td class="num">${r.numberOfDives}</td><td class="num lead-comm-cell" data-value="${commission}">${commCell}</td><td class="num lead-addl-cell" data-value="${additionalRate}">${addlCell}</td><td class="num strong lead-total-cell" id="amount-${hk}" data-value="${totalAmount}">${money(totalAmount)}</td><td>${statusPill(status)}</td><td>${action}</td></tr>`;
+}
+function updateLeaderCalc(key){
+  const hk=hashKey(key);
+  const commInput=document.getElementById('comm-'+hk),addlInput=document.getElementById('addl-'+hk);
+  const comm=Number(commInput?.value||0),addl=Number(addlInput?.value||0),total=comm+addl;
+  if(commInput)commInput.closest('td').dataset.value=comm;
+  if(addlInput)addlInput.closest('td').dataset.value=addl;
+  const amountCell=document.getElementById('amount-'+hk);
+  amountCell.textContent=money(total);
+  amountCell.dataset.value=total;
+  recomputeLeaderTotals();
+}
+async function saveLeaderRow(key,markPaid=false){
+  const {staffName,activity,date}=parseLeaderKey(key);
+  const hk=hashKey(key);
+  const commission=Number(document.getElementById('comm-'+hk)?.value||0);
+  const additionalRate=Number(document.getElementById('addl-'+hk)?.value||0);
+  const totalAmount=commission+additionalRate;
+  const existing=findLeaderCommission(staffName,activity,date);
+  const sessionMatch=buildLeaderSessionRows().find(r=>r.staffName===staffName&&r.activity===activity&&r.date===date);
+  const payload={dive_center_id:diveCenterId,date,period_month:date.slice(0,7),staff_name:staffName,commission_group:'dive_leader',title:activity,diver_name:null,quantity:sessionMatch?.numberOfDives||0,rate:commission,additional_rate:additionalRate,commission_amount:commission,total_amount:totalAmount,status:markPaid?'Paid':(existing?.status||'Unpaid'),paid_at:markPaid?nowIso():(existing?.paid_at||null),remarks:existing?.remarks||null,updated_at:nowIso()};
+  let res;
+  if(existing?.id)res=await client.from('staff_commission_records').update(payload).eq('id',existing.id);
+  else res=await client.from('staff_commission_records').insert(payload);
+  if(res.error){console.error('saveLeaderRow error:',res.error);showToast('Could not save commission record.','error');return;}
+  editingCommissionKeys.delete(key);
+  showToast(markPaid?'Commission marked as paid.':'Commission saved.','success');
+  await loadAll();
+}
+function confirmMarkLeaderPaid(key){confirmModal('Mark this commission as Paid? Once marked paid, it can only be edited — not deleted.',()=>saveLeaderRow(key,true),'Mark Paid','btn-green');}
+function deleteLeaderRow(key){
+  const {staffName,activity,date}=parseLeaderKey(key);
+  const existing=findLeaderCommission(staffName,activity,date);
+  if(!existing?.id){showToast('Nothing saved yet for this row.');return;}
+  confirmModal('Delete this commission record? This cannot be undone.',async()=>{
+    const {error}=await client.from('staff_commission_records').delete().eq('id',existing.id);
+    if(error){console.error(error);showToast('Could not delete commission record.','error');return;}
+    showToast('Commission record deleted.','success');
+    await loadAll();
+  },'Delete','btn-red');
+}
 
 function renderJoinRide(){
   const records=joinRideRecords.filter(r=>r.direction===joinDirection&&inRange(r.date));const collect=joinRideRecords.filter(r=>r.direction==='joined_our_boat');const pay=joinRideRecords.filter(r=>r.direction==='we_joined_another_boat');
@@ -802,10 +1100,30 @@ function renderJoinRide(){
   document.getElementById('joinTableTitle').textContent=joinDirection==='joined_our_boat'?'They Joined Our Boat':'We Joined Another Boat';document.getElementById('joinTableSub').textContent=joinDirection==='joined_our_boat'?'Money to collect from partner companies.':'Money to pay when partner companies send paperwork.';document.getElementById('statementBtn').style.display=joinDirection==='joined_our_boat'?'inline-flex':'none';
   document.getElementById('joinRows').innerHTML=records.length?records.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="strong">${esc(r.company)}</td><td class="num">${Number(r.number_of_divers||0)}</td><td class="num">${Number(r.number_of_dives||0)}</td><td>${esc(r.dive_sites||'—')}</td><td class="num strong">${money(r.total_amount)}</td><td>${statusPill(r.status)}</td><td class="num">${money(r.balance)}</td><td>${esc(r.remarks||'')}</td><td>${joinActions(r)}</td></tr>`).join(''):'<tr><td colspan="10"><div class="empty">No join ride records for the selected date range.</div></td></tr>';
 }
-function joinActions(r){let buttons=`<button class="btn btn-sm btn-ghost" onclick="editJoinRecord('${r.id}')">Edit</button>`;if(r.direction==='joined_our_boat'&&r.status!=='Collected')buttons+=` <button class="btn btn-sm btn-green" onclick="updateJoinStatus('${r.id}','Collected')">Mark Collected</button>`;if(r.direction==='we_joined_another_boat'&&r.status==='Expected To Pay')buttons+=` <button class="btn btn-sm btn-soft" onclick="updateJoinStatus('${r.id}','Statement Received')">Statement Received</button>`;if(r.direction==='we_joined_another_boat'&&r.status!=='Paid')buttons+=` <button class="btn btn-sm btn-green" onclick="updateJoinStatus('${r.id}','Paid')">Mark Paid</button>`;return buttons;}
-function fillJoinStatusOptions(){const sel=document.getElementById('joinStatus');const opts=joinDirection==='joined_our_boat'?['To Collect','Statement Printed','Collected']:['Expected To Pay','Statement Received','Paid'];sel.innerHTML=opts.map(o=>`<option>${o}</option>`).join('');}
-function openJoinRecordModal(){editingJoinId=null;fillJoinStatusOptions();document.getElementById('joinModalTitle').textContent='Add Join Ride Record';document.getElementById('joinDate').value=govtFeesToday();document.getElementById('joinCompany').value='';document.getElementById('joinDivers').value=0;document.getElementById('joinDives').value=0;document.getElementById('joinSites').value='';document.getElementById('joinRemarks').value='';document.getElementById('joinStatus').value=joinDirection==='joined_our_boat'?'To Collect':'Expected To Pay';updateJoinEstimate();openModal('joinRecordModal');}
-function editJoinRecord(id){const r=joinRideRecords.find(x=>x.id===id);if(!r)return;editingJoinId=id;joinDirection=r.direction;fillJoinStatusOptions();document.getElementById('joinModalTitle').textContent='Edit Join Ride Record';document.getElementById('joinDate').value=r.date||monthStart();document.getElementById('joinCompany').value=r.company||'';document.getElementById('joinDivers').value=r.number_of_divers||0;document.getElementById('joinDives').value=r.number_of_dives||0;document.getElementById('joinSites').value=r.dive_sites||'';document.getElementById('joinRemarks').value=r.remarks||'';document.getElementById('joinStatus').value=r.status||'To Collect';updateJoinEstimate();openModal('joinRecordModal');}
+function joinActions(r){
+  const isCollectDirection=r.direction==='joined_our_boat';
+  const isFinal=isCollectDirection?r.status==='Collected':r.status==='Paid';
+  if(isFinal){
+    return `<button class="btn btn-sm btn-ghost" onclick="editJoinRecord('${r.id}')">Edit</button>`;
+  }
+  const targetStatus=isCollectDirection?'Collected':'Paid';
+  return `<button class="btn btn-sm btn-green" onclick="confirmJoinStatus('${r.id}','${targetStatus}')">Mark ${targetStatus}</button> <button class="btn btn-sm btn-ghost" style="color:var(--red)" onclick="deleteJoinRecord('${r.id}')">Delete</button>`;
+}
+function confirmJoinStatus(id,status){
+  confirmModal(`Mark this join ride record as ${status}? Once marked ${status.toLowerCase()}, it can only be edited — not deleted.`,()=>updateJoinStatus(id,status),`Mark ${status}`,'btn-green');
+}
+function deleteJoinRecord(id){
+  confirmModal('Delete this join ride record? This cannot be undone.',async()=>{
+    const {error}=await client.from('join_ride_records').delete().eq('id',id);
+    if(error){console.error(error);showToast('Could not delete join ride record.','error');return;}
+    showToast('Join ride record deleted.','success');
+    await loadAll();
+  },'Delete','btn-red');
+}
+function fillJoinStatusOptions(includeFinal=true){const sel=document.getElementById('joinStatus');let opts=joinDirection==='joined_our_boat'?['To Collect','Statement Printed','Collected']:['Expected To Pay','Statement Received','Paid'];if(!includeFinal){const finalStatus=joinDirection==='joined_our_boat'?'Collected':'Paid';opts=opts.filter(o=>o!==finalStatus);}sel.innerHTML=opts.map(o=>`<option>${o}</option>`).join('');}
+function fillRentalStatusOptions(includeFinal=true){const sel=document.getElementById('rentalStatus');let opts=['To Collect','Collected','To Pay','Paid'];if(!includeFinal)opts=opts.filter(o=>o!=='Collected'&&o!=='Paid');sel.innerHTML=opts.map(o=>`<option>${o}</option>`).join('');}
+function openJoinRecordModal(){editingJoinId=null;fillJoinStatusOptions(false);document.getElementById('joinModalTitle').textContent='Add Join Ride Record';document.getElementById('joinDate').value=govtFeesToday();document.getElementById('joinCompany').value='';document.getElementById('joinDivers').value=0;document.getElementById('joinDives').value=0;document.getElementById('joinSites').value='';document.getElementById('joinRemarks').value='';document.getElementById('joinStatus').value=joinDirection==='joined_our_boat'?'To Collect':'Expected To Pay';updateJoinEstimate();openModal('joinRecordModal');}
+function editJoinRecord(id){const r=joinRideRecords.find(x=>x.id===id);if(!r)return;editingJoinId=id;joinDirection=r.direction;fillJoinStatusOptions(true);document.getElementById('joinModalTitle').textContent='Edit Join Ride Record';document.getElementById('joinDate').value=r.date||monthStart();document.getElementById('joinCompany').value=r.company||'';document.getElementById('joinDivers').value=r.number_of_divers||0;document.getElementById('joinDives').value=r.number_of_dives||0;document.getElementById('joinSites').value=r.dive_sites||'';document.getElementById('joinRemarks').value=r.remarks||'';document.getElementById('joinStatus').value=r.status||'To Collect';updateJoinEstimate();openModal('joinRecordModal');}
 function updateJoinEstimate(){const total=Number(document.getElementById('joinDivers').value||0)*Number(document.getElementById('joinDives').value||0)*JOIN_RATE;document.getElementById('joinTotal').value=money(total);}
 async function saveJoinRecord(){const diversN=Number(document.getElementById('joinDivers').value||0),divesN=Number(document.getElementById('joinDives').value||0),total=diversN*divesN*JOIN_RATE,status=document.getElementById('joinStatus').value;const payload={dive_center_id:diveCenterId,direction:joinDirection,date:document.getElementById('joinDate').value,company:document.getElementById('joinCompany').value.trim(),number_of_divers:diversN,number_of_dives:divesN,dive_sites:document.getElementById('joinSites').value.trim(),total_amount:total,status,balance:(status==='Collected'||status==='Paid')?0:total,remarks:document.getElementById('joinRemarks').value.trim(),updated_at:nowIso()};if(!payload.date||!payload.company){showToast('Date and company are required.','error');return;}let res;if(editingJoinId)res=await client.from('join_ride_records').update(payload).eq('id',editingJoinId);else res=await client.from('join_ride_records').insert(payload);if(res.error){console.error(res.error);showToast('Could not save join ride record.','error');return;}closeModal('joinRecordModal');showToast('Join ride record saved.','success');await loadAll();}
 async function updateJoinStatus(id,status){const r=joinRideRecords.find(x=>x.id===id);if(!r)return;const balance=(status==='Collected'||status==='Paid')?0:Number(r.total_amount||0);const {error}=await client.from('join_ride_records').update({status,balance,updated_at:nowIso()}).eq('id',id);if(error){console.error(error);showToast('Could not update status.','error');return;}showToast('Status updated.','success');await loadAll();}
@@ -818,9 +1136,30 @@ async function generateStatement(){const rows=getStatementRecords();if(!rows.len
 function printStatement(html){const w=window.open('','_blank');if(!w){showToast('Pop-up blocked. Please allow pop-ups to print.','error');return;}w.document.write(`<!DOCTYPE html><html><head><title>Join Ride Statement</title><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"><style>${document.querySelector('style').innerHTML}</style></head><body style="display:block;background:white;padding:20px"><div class="statement-preview">${html}</div><script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script></body></html>`);w.document.close();}
 
 function renderRentalGears(){const income=rentalGearRecords.filter(r=>r.status==='Collected').reduce((s,r)=>s+Number(r.total_amount||0),0),expense=rentalGearRecords.filter(r=>r.status==='Paid').reduce((s,r)=>s+Number(r.total_amount||0),0),toCollect=rentalGearRecords.filter(r=>r.status==='To Collect').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0),toPay=rentalGearRecords.filter(r=>r.status==='To Pay').reduce((s,r)=>s+Number(r.balance??r.total_amount??0),0),net=income+toCollect-expense-toPay;const cards=[['Rental Income',money(income),'Collected','green'],['Rental Expense',money(expense),'Paid out','orange'],['Still To Collect',money(toCollect),'Money in pending','orange'],['Still To Pay',money(toPay),'Money out pending','purple'],['Net Rental Balance',money(net),'Income - expense','blue']];document.getElementById('rentalCards').innerHTML=cards.map(c=>`<div class="metric-card ${c[3]}"><div class="metric-label">${esc(c[0])}</div><div class="metric-value">${esc(c[1])}</div><div class="metric-note">${esc(c[2])}</div></div>`).join('');const rangeRentals=rentalGearRecords.filter(r=>inRange(r.date));document.getElementById('rentalRows').innerHTML=rangeRentals.length?rangeRentals.map(r=>`<tr><td>${fmtDate(r.date)}</td><td class="strong">${esc(r.equipment)}</td><td>${esc(r.company)}</td><td class="num">${r.quantity}</td><td class="num">${money(r.rate)}</td><td>${statusPill(r.status)}</td><td class="num strong">${money(r.balance)}</td><td>${esc(r.remarks||'')}</td><td>${rentalActions(r)}</td></tr>`).join(''):'<tr><td colspan="9"><div class="empty">No rental records for the selected date range.</div></td></tr>';}
-function rentalActions(r){let buttons=`<button class="btn btn-sm btn-ghost" onclick="editRental('${r.id}')">Edit</button>`;if(r.status==='To Collect')buttons+=` <button class="btn btn-sm btn-green" onclick="updateRentalStatus('${r.id}','Collected')">Mark Collected</button>`;if(r.status==='To Pay')buttons+=` <button class="btn btn-sm btn-green" onclick="updateRentalStatus('${r.id}','Paid')">Mark Paid</button>`;return buttons;}
-function openRentalModal(){editingRentalId=null;document.getElementById('rentalModalTitle').textContent='Add Rental Record';document.getElementById('rentalDate').value=govtFeesToday();document.getElementById('rentalEquipment').selectedIndex=0;document.getElementById('rentalCompany').value='';document.getElementById('rentalQty').value=0;document.getElementById('rentalRate').value=0;document.getElementById('rentalStatus').value='To Collect';document.getElementById('rentalRemarks').value='';updateRentalEstimate();openModal('rentalModal');}
-function editRental(id){const r=rentalGearRecords.find(x=>x.id===id);if(!r)return;editingRentalId=id;document.getElementById('rentalModalTitle').textContent='Edit Rental Record';document.getElementById('rentalDate').value=r.date||govtFeesToday();const eqSel=document.getElementById('rentalEquipment');const eqVal=r.equipment||'';const opt=[...eqSel.options].find(o=>o.value===eqVal);if(opt)eqSel.value=eqVal;else{eqSel.value='Other';}document.getElementById('rentalCompany').value=r.company||'';document.getElementById('rentalQty').value=r.quantity||0;document.getElementById('rentalRate').value=r.rate||0;document.getElementById('rentalStatus').value=r.status||'To Collect';document.getElementById('rentalRemarks').value=r.remarks||'';updateRentalEstimate();openModal('rentalModal');}
+function rentalActions(r){
+  const isFinal=r.status==='Collected'||r.status==='Paid';
+  if(isFinal){
+    return `<button class="btn btn-sm btn-ghost" onclick="editRental('${r.id}')">Edit</button>`;
+  }
+  let buttons=`<button class="btn btn-sm btn-ghost" onclick="editRental('${r.id}')">Edit</button>`;
+  if(r.status==='To Collect')buttons+=` <button class="btn btn-sm btn-green" onclick="confirmRentalStatus('${r.id}','Collected')">Mark Collected</button>`;
+  if(r.status==='To Pay')buttons+=` <button class="btn btn-sm btn-green" onclick="confirmRentalStatus('${r.id}','Paid')">Mark Paid</button>`;
+  buttons+=` <button class="btn btn-sm btn-ghost" style="color:var(--red)" onclick="deleteRentalRecord('${r.id}')">Delete</button>`;
+  return buttons;
+}
+function confirmRentalStatus(id,status){
+  confirmModal(`Mark this rental as ${status}? Once marked ${status.toLowerCase()}, it can only be edited — not deleted.`,()=>updateRentalStatus(id,status),`Mark ${status}`,'btn-green');
+}
+function deleteRentalRecord(id){
+  confirmModal('Delete this rental record? This cannot be undone.',async()=>{
+    const {error}=await client.from('rental_gear_records').delete().eq('id',id);
+    if(error){console.error(error);showToast('Could not delete rental record.','error');return;}
+    showToast('Rental record deleted.','success');
+    await loadAll();
+  },'Delete','btn-red');
+}
+function openRentalModal(){editingRentalId=null;fillRentalStatusOptions(false);document.getElementById('rentalModalTitle').textContent='Add Rental Record';document.getElementById('rentalDate').value=govtFeesToday();document.getElementById('rentalEquipment').selectedIndex=0;document.getElementById('rentalCompany').value='';document.getElementById('rentalQty').value=0;document.getElementById('rentalRate').value=0;document.getElementById('rentalStatus').value='To Collect';document.getElementById('rentalRemarks').value='';updateRentalEstimate();openModal('rentalModal');}
+function editRental(id){const r=rentalGearRecords.find(x=>x.id===id);if(!r)return;editingRentalId=id;fillRentalStatusOptions(true);document.getElementById('rentalModalTitle').textContent='Edit Rental Record';document.getElementById('rentalDate').value=r.date||govtFeesToday();const eqSel=document.getElementById('rentalEquipment');const eqVal=r.equipment||'';const opt=[...eqSel.options].find(o=>o.value===eqVal);if(opt)eqSel.value=eqVal;else{eqSel.value='Other';}document.getElementById('rentalCompany').value=r.company||'';document.getElementById('rentalQty').value=r.quantity||0;document.getElementById('rentalRate').value=r.rate||0;document.getElementById('rentalStatus').value=r.status||'To Collect';document.getElementById('rentalRemarks').value=r.remarks||'';updateRentalEstimate();openModal('rentalModal');}
 function updateRentalEstimate(){const total=Number(document.getElementById('rentalQty').value||0)*Number(document.getElementById('rentalRate').value||0);document.getElementById('rentalTotal').value=money(total);}
 async function saveRentalRecord(){const quantity=Number(document.getElementById('rentalQty').value||0),rate=Number(document.getElementById('rentalRate').value||0),total=quantity*rate,status=document.getElementById('rentalStatus').value;const payload={dive_center_id:diveCenterId,date:document.getElementById('rentalDate').value,equipment:document.getElementById('rentalEquipment').value.trim(),company:document.getElementById('rentalCompany').value.trim(),quantity,rate,total_amount:total,status,balance:(status==='Collected'||status==='Paid')?0:total,remarks:document.getElementById('rentalRemarks').value.trim(),updated_at:nowIso()};if(!payload.date||!payload.equipment||!payload.company){showToast('Date, equipment, and company are required.','error');return;}let res;if(editingRentalId)res=await client.from('rental_gear_records').update(payload).eq('id',editingRentalId);else res=await client.from('rental_gear_records').insert(payload);if(res.error){console.error(res.error);showToast('Could not save rental record.','error');return;}closeModal('rentalModal');showToast('Rental record saved.','success');await loadAll();}
 async function updateRentalStatus(id,status){const r=rentalGearRecords.find(x=>x.id===id);if(!r)return;const balance=(status==='Collected'||status==='Paid')?0:Number(r.total_amount||0);const {error}=await client.from('rental_gear_records').update({status,balance,updated_at:nowIso()}).eq('id',id);if(error){console.error(error);showToast('Could not update rental status.','error');return;}showToast('Rental status updated.','success');await loadAll();}

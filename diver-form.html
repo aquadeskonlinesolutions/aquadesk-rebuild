@@ -1389,8 +1389,9 @@ async function loadPaymentSurcharges(){
   const{data}=await client.from('payment_surcharges').select('*').eq('dive_center_id',diveCenterId);
   if(!data)return;
   data.forEach(s=>{
-    if(s.surcharge_type==='card')defaultCardSurchargeRate=parseFloat(s.percentage)||5;
-    if(s.surcharge_type==='online')defaultOnlineSurchargeRate=parseFloat(s.percentage)||2;
+    const pct=parseFloat(s.percentage);
+    if(s.surcharge_type==='card')defaultCardSurchargeRate=Number.isFinite(pct)?pct:5;
+    if(s.surcharge_type==='online')defaultOnlineSurchargeRate=Number.isFinite(pct)?pct:2;
   });
 }
 
