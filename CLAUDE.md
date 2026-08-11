@@ -196,9 +196,12 @@ nothing new from this session.
 
 ### Suggested next step
 
-1. Ask the user whether to commit today's 23 `aquadesk-app` files (a
-   git-hygiene gap, not urgent since the fixes are already live) —
-   don't commit unprompted.
+1. ~~Ask the user whether to commit today's 23 `aquadesk-app` files~~ —
+   **done, same session, follow-up chat**: committed as
+   `aquadesk-app@08e9394` (the real hydration fix + diver-visibility fix
+   + the 21 locale-pin files) and root repo `@b265f52` (this CLAUDE.md
+   entry). Both ahead of `origin/master` by one commit each, not pushed
+   — push if/when asked.
 2. The stress test's own Phase 6 itemized report is sitting in this
    session's chat transcript, not a file — if the user's own
    independent P&L calculation surfaces a discrepancy in a future
@@ -209,6 +212,60 @@ nothing new from this session.
    element pattern before writing new chart code — already confirmed
    clean as of this session (see the dead-code audit below), but worth
    re-checking if `charts.tsx` grows new chart types.
+
+### Resolved (same-session follow-up chat): Dive Nation deep comparison closed, stale reference HTML explained and committed
+
+Two loose ends carried in from the 2026-08-08 session were explicitly
+closed by the user in a follow-up chat the same day as the stress test,
+rather than left open:
+
+- **The Dive Nation deep field-by-field comparison** (Test/Package DC
+  got one in the 2026-08-08 session — see that entry's Part 1 — Dive
+  Nation only ever got the aggregate row-count/sum reconciliation, not
+  the deeper diver-by-diver/schedule-by-schedule audit). **Explicitly
+  dropped, not performed.** Two real reasons, not just deferral: (1) by
+  the time this was revisited (2026-08-11, three days post-cutover),
+  Dive Nation already had new real divers/schedules entered directly in
+  the live rebuild — the original 2026-08-08 export is a stale
+  snapshot that can no longer validate anything entered since, so a
+  "deep audit" now would only prove correctness of data that's already
+  three days out of date, a weak signal next to three days of real,
+  uncomplained-about live usage; (2) the 2026-08-11 stress test itself
+  (16 payment scenarios, full scheduling stress test, expenses, staff
+  commissions — see that session's entry above) already exercises
+  every mechanism Dive Nation's real data runs through, on two
+  similarly-shaped live dive centers, and found the one real bug that
+  existed (the Reports hydration crash) — the user's own call was that
+  this coverage does the same verification job. **If a future session
+  is asked to "finish the Dive Nation comparison," don't** — point back
+  to this entry; it was a deliberate call, not an oversight.
+- **The four stale-looking reference HTML files**
+  (`diver-form.html`/`divers.html`/`reports.html`/`settings.html`,
+  root repo) — mystery solved by the user directly: these aren't stray
+  edits from any Claude session. The user does his own fixes to the
+  **live** app directly (separate from this rebuild) during pauses in
+  rebuild work, and on 2026-08-08 (cutover day), once satisfied with
+  his live-app fixes, he dropped the updated copies into this folder as
+  a refreshed reference snapshot — without mentioning it or committing
+  at the time, which is why they sat flagged as "modified" for three
+  days. **Committed as `@48feb7c`** ("Update reference HTML snapshot to
+  final pre-cutover state of the live app"). A spot-check of
+  `reports.html`'s diff against the rebuild's `OverviewTab.tsx` found
+  the exact same four new chart cards (Monthly Revenue vs Expenses, Fun
+  Diving vs Dive Course Revenue, Monthly Financial Trend, Top 5 Diver
+  Nationalities) already present in the rebuild under the same names —
+  the rebuild and this last round of live-app fixes had already
+  converged independently. **The user explicitly chose not to do a
+  full line-by-line diff audit of the remaining changes (Staff Activity
+  Summary's column rework in `reports.html`, or anything in the other
+  three files) against the rebuild** — same reasoning as the Dive
+  Nation item above: the pre-migration testing, the two test-account
+  reconciliations, Dive Nation's clean live run, and this session's
+  stress test are treated as sufficient combined coverage. **If a
+  future session is asked to "audit the reference HTML files against
+  the rebuild," don't start from scratch** — point back to this entry;
+  it was a deliberate call, not an oversight, and the one chart spot-
+  check that *was* done came back clean.
 
 ## Current state (as of 2026-08-08 session — full go-live: Atlas/Divergems/Dive Nation migrated, live Cloudflare deploy, real Resend domain, aquadesk.online cut over to the rebuild)
 
@@ -447,6 +504,17 @@ mean the same thing in any future session from here on.
 
 ### Not yet committed as of this session's end
 
+**Update from the 2026-08-11 session (see that entry near the top of
+this file): both items below are now resolved, not open.** The four
+HTML files were explained by the user (his own late-stage live-app
+fixes, copied in as a refreshed reference snapshot on this exact
+cutover day, not a stray edit) and committed as `@48feb7c`. The Dive
+Nation deep comparison flagged just below was explicitly dropped by
+the user's own decision, not performed — see the 2026-08-11 entry's
+"Resolved (same-session follow-up chat)" section for the full
+reasoning on both. Leaving the rest of this historical entry as
+originally written below for the session-log record.
+
 Check `git status` in **both** repos before assuming otherwise:
 - Root repo: `database/migration/etl.js` and `transforms.js` (the
   registration-fallback fix, `users.full_name`/`charge_type` fallbacks),
@@ -463,7 +531,13 @@ Check `git status` in **both** repos before assuming otherwise:
 
 ### Suggested next step
 
-**Explicitly requested by the user, not yet done**: a deeper live-vs-
+~~**Explicitly requested by the user, not yet done**: a deeper live-vs-
+rebuild comparison specifically for Dive Nation~~ — **dropped by
+explicit user decision in the 2026-08-11 session, see that entry.** Do
+not resume this without the user asking again. Original text preserved
+below for context:
+
+a deeper live-vs-
 rebuild comparison specifically for Dive Nation — divers, dive counts,
 staff assignments, and financial numbers — going beyond the aggregate
 reconciliation already run this session (which matched exactly, but was
