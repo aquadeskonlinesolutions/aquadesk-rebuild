@@ -188,30 +188,59 @@ documented in the 2026-08-08 entry below) — the uncommitted state is a
 git-hygiene gap, not a deployment gap. `aquadesk.online` is already
 running today's fix; only the git history hasn't caught up.
 
-**Root repo (`D:\Rebuild`) is unaffected by anything today** — its
-`git status` shows only the pre-existing modified reference HTML files
-already flagged as unresolved in the 2026-08-08 entry below
-(`diver-form.html`/`divers.html`/`reports.html`/`settings.html`),
-nothing new from this session.
+**Root repo (`D:\Rebuild`) update, same-session follow-up chat**: it
+was *not* left untouched after all — see the "Resolved" section right
+below for the reference-HTML commit and the closure-note commit, both
+made and pushed later the same day.
 
-### Suggested next step
+### End of day (2026-08-11) — exactly where things stand, read this first in tomorrow's session
 
-1. ~~Ask the user whether to commit today's 23 `aquadesk-app` files~~ —
-   **done, same session, follow-up chat**: committed as
-   `aquadesk-app@08e9394` (the real hydration fix + diver-visibility fix
-   + the 21 locale-pin files) and root repo `@b265f52` (this CLAUDE.md
-   entry). Both ahead of `origin/master` by one commit each, not pushed
-   — push if/when asked.
-2. The stress test's own Phase 6 itemized report is sitting in this
-   session's chat transcript, not a file — if the user's own
-   independent P&L calculation surfaces a discrepancy in a future
-   session, the raw figures need to be re-pulled from the same two
-   dive centers (still live in the database, not torn down) rather
-   than assumed to exist as a saved artifact.
-3. Grep the whole `src/` tree for any other SVG `<title>`-as-child-
-   element pattern before writing new chart code — already confirmed
-   clean as of this session (see the dead-code audit below), but worth
-   re-checking if `charts.tsx` grows new chart types.
+**Everything is committed AND pushed, both repos, confirmed in sync
+with `origin/master` (checked via `git fetch` + `git status --short
+--branch` showing no ahead/behind) as of tonight.** Nothing local,
+nothing pending, nothing waiting on a decision:
+- Root repo: `b265f52` (this session's CLAUDE.md write-up),
+  `48feb7c` (the reference HTML snapshot commit), `adbfa52` (the
+  Dive-Nation/stale-HTML closure notes) — all pushed.
+- `aquadesk-app`: `08e9394` (the real hydration fix + diver-visibility
+  fix + the 21 locale-pin files) — pushed.
+
+**Stress test status, per this session's own task-tracking**: Phase 3
+(16 payment scenarios, both centers), Phase 4 (scheduling, Center A),
+Phase 5 (expenses + staff commissions, both centers), and Phase 6 (the
+itemized raw-data report, delivered in chat) are all marked complete.
+The one real bug the stress test surfaced (the Reports hydration
+crash) is fixed, deployed live, committed, and pushed.
+
+**The user said "we will continue tomorrow" / "continue with the
+stress test" at the end of this session — but nothing in this file
+or this session's own tracking shows a queued Phase 7 or any other
+specific remaining stress-test work.** Don't assume the stress test is
+either "fully done, nothing left" or "has more phases waiting" —
+**ask the user directly at the start of tomorrow's session what they
+mean by "continue"**: whether their original written spec has phases
+beyond Phase 6 that weren't covered, whether they want to review/
+double-check anything from the Phase 6 itemized report now that they've
+had a night to look at it, or whether "continue" just meant resuming
+general project work with the stress test context still fresh. The
+full original spec text isn't preserved verbatim in this file (only
+this session's summary of it), so don't guess at unlisted phases from
+memory — get it from the user.
+
+Other loose ends, all closed, don't reopen without being asked:
+- The Dive Nation deep comparison and the stale reference HTML files —
+  both explicitly resolved this session, see the "Resolved" section
+  immediately below.
+- The stress test's own Phase 6 itemized report is sitting in this
+  session's chat transcript, not a file — if the user's own
+  independent P&L calculation surfaces a discrepancy in a future
+  session, the raw figures need to be re-pulled from the same two
+  dive centers (still live in the database, not torn down) rather
+  than assumed to exist as a saved artifact.
+- Grep the whole `src/` tree for any other SVG `<title>`-as-child-
+  element pattern before writing new chart code — already confirmed
+  clean as of this session (see the dead-code audit below), but worth
+  re-checking if `charts.tsx` grows new chart types.
 
 ### Resolved (same-session follow-up chat): Dive Nation deep comparison closed, stale reference HTML explained and committed
 
