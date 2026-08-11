@@ -50,6 +50,166 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-11 session — full stress-test pass across two live-shaped dive centers, one real production bug found and fixed: a hydration crash breaking Staff Activity Summary saves)
+
+**Purpose of this session**: not new feature work — a deliberate,
+spec-driven "Functional & Financial Stress Test" the user wrote
+themselves, run against two dive centers already sitting on the real,
+live `aquadesk.online` Supabase project (not disposable test fixtures —
+see the persistence note below). Center A uses tier pricing, Center B
+uses package pricing. The spec's own binding constraint, carried
+through the whole session: never invent pricing/rates/diver dynamics,
+follow the spec's scenarios exactly, and for the final phase, hand back
+**raw itemized data only** — no self-computed P&L — so the user could
+do their own independent financial calculation from the raw output.
+That itemized report was delivered directly in chat, not saved to a
+file; if it's needed again, re-run Phase 6's data pulls against the
+same two dive centers rather than assuming a copy exists somewhere.
+
+**Both test dive centers are a deliberate, persistent fixture — do
+NOT tear them down the way this project normally cleans up "Test DC"
+fixtures.** The user needs their data to remain in place for their own
+offline financial review. Unlike every other session in this file's
+history, there is no "confirmed database back to just the real
+accounts" cleanup step for this session — that's intentional, not an
+oversight.
+
+### Mid-stress-test detour: a real diver-visibility production bug, found and fixed
+
+While seeding stress-test data, a diver whose departure date had
+already passed and whose bill was fully closed still showed up in
+Divers > Individual Management as if still active. Root cause: a diver
+with **zero visit history at all** can never satisfy `hasClosedRecord`
+(nothing was ever marked closed, because nothing was ever opened),
+which permanently stranded them as "active" once their departure date
+passed — a gap in the original active-window logic, not a regression.
+Fixed in `divers/data.ts`:
+```ts
+const billFullyClosed = !hasOpenVisit && (hasClosedRecord || diverVisits.length === 0);
+```
+(was: `!hasOpenVisit && hasClosedRecord`). Verified live against the
+real reproducing diver. **Note**: the code comment left in place at
+this exact spot labels itself "(2026-08-08 fix)" — that date is stale/
+wrong, this fix was actually made and deployed **today, 2026-08-11**;
+not worth a special commit just to fix a comment date, but don't trust
+that in-code date label if a future session goes looking for when this
+landed.
+
+### The stress test itself — what was covered, all confirmed correct
+
+- **Phase 3 (payments)**: 16 total scenarios across both centers —
+  surcharges, foreign-currency conversion, split cash/card/online
+  payments, discounts, and deposit+balance combinations. All verified
+  correct via direct SQL against `billing.ts`'s
+  `computePaymentBreakdown()`, including its excess-amount handling
+  (an overshoot from surcharges/rounding is tracked separately, never
+  double-counted as revenue).
+- **Phase 4 (Scheduling)**, Center A: real multi-trip builds, freelancer
+  identity correctly persisted and correctly feeding Staff Activity
+  Summary's auto-commission calc (`staff_name` grouping works
+  identically to a named staff member); all three double-booking
+  warning types (diver/staff/boat) confirmed firing simultaneously and
+  correctly non-blocking; Boat Return's duplicate-activity guard
+  confirmed correctly scoped by exact calendar date (an initially
+  confusing asymmetry — one diver's old activity dated 3 days earlier
+  vs. the rest dated "today" — turned out to be correct behavior, not a
+  bug); `fuel_logs` (boat fuel tracking) vs. `activities.fuel_surcharge`
+  (diver-facing pricing line item) confirmed genuinely distinct, never
+  conflated.
+- **Phase 5 (expenses)**: 4 real entries across both centers, including
+  the "Other" custom-category free-text path.
+- **Phase 6**: itemized raw-data report delivered directly in chat per
+  the spec's explicit instruction, including four genuine findings/
+  flags surfaced along the way (not a clean pass dressed up — see the
+  chat transcript for the exact itemized figures and flags if needed
+  again).
+
+### The real bug: Staff Activity Summary saves silently failing, root cause a React hydration crash
+
+While exercising Staff Activity Summary in Phase 4/6, "Save" and "Mark
+as Paid" on commission rows stopped persisting — a real, reproducible
+`net::ERR_ABORTED` on the POST, correlating with a React hydration
+error (`#418` in production's minified build) on `/reports`. Confirmed
+via a genuinely fresh browser tab against the live site, not a stale-
+cache artifact.
+
+**Root cause**: `reports/charts.tsx`'s `MonthlyLineChart` rendered an
+SVG `<title>` as a **child element inside a `<circle>` repeated in a
+loop** (one per data point, for hover tooltips). A bare SVG `<title>`
+child, especially one repeated many times inside a loop, is a known
+React/browser-HTML-parser hydration-mismatch hazard — the parser's
+special RAWTEXT handling for the `<title>` tag name doesn't reliably
+stay scoped to SVG "foreign content" mode across server-rendered chunk
+boundaries. Fixed by replacing the nested `<title>` with an
+`aria-label` attribute directly on the `<circle>` — same accessible
+hover text, no parser-scoping hazard. See the retrospective entries
+below (items #60-63) for the full wrong-turn-then-right-turn account —
+the user explicitly asked for that sequence to be recorded, not just
+the final fix.
+
+Verified twice: locally in `next dev` (clean console on two separate
+fresh reloads of `/reports`) and again against the **live** deployed
+Worker with a genuinely fresh tab (hydration error gone, and
+functionally confirmed a real single click on "Save" now persists a
+commission record immediately — no more silent failure, no workaround
+needed).
+
+### What's live but NOT yet committed — check `git status` before assuming otherwise
+
+**`aquadesk-app` has 23 modified files, all uncommitted as of this
+session's end** (the user did not ask for a commit — per this
+project's standing "never commit unless asked" rule, do not commit
+these without being asked in a future turn):
+- `src/app/(app)/divers/data.ts` — the diver-visibility fix above.
+- `src/app/(app)/reports/charts.tsx` — **the real fix**, the
+  `<title>`→`aria-label` change in `MonthlyLineChart`.
+- 21 more files, each a one-line `.toLocaleString()` →
+  `.toLocaleString("en-PH")` locale-pin (a defensive fix against the
+  same general class of hydration non-determinism risk — tried first
+  as the hypothesized root cause of the bug above, confirmed via
+  redeploy that it was **not** the actual cause, but kept anyway since
+  it's a legitimate, correct fix in its own right, just not the one
+  that mattered here): `dashboard/DiversTable.tsx`, `dashboard/page.tsx`,
+  `reports/BillingAuditTab.tsx`, `ExpensesTab.tsx`, `GovtFeesTab.tsx`,
+  `JoinRideTab.tsx`, `OverviewTab.tsx`, `RentalGearsTab.tsx`,
+  `StaffTab.tsx`, `SettlementTab.tsx` (its own separately-named
+  `fmtPHP()` helper, same pattern, 3 spots), `settings/courses/
+  CourseRatesSection.tsx`, `settings/pricing/PackagesSection.tsx`,
+  `diver-form/[id]/components/{BillSummary,DepositsPanel,InvoicePanel,
+  RateSelectModal,VisitPanel,EquipmentModal}.tsx`,
+  `diver-form/[id]/invoiceEmailHtml.ts`, `divers/components/
+  DiverCard.tsx`, `office/DiveCenterList.tsx`,
+  `register/RegistrationWizard.tsx`.
+
+**Both fixes are already live in production** — deployed to the
+**live** Cloudflare account (`wrangler deploy --config
+wrangler.live.jsonc`, worker `aquadesk`, the same account/config
+documented in the 2026-08-08 entry below) — the uncommitted state is a
+git-hygiene gap, not a deployment gap. `aquadesk.online` is already
+running today's fix; only the git history hasn't caught up.
+
+**Root repo (`D:\Rebuild`) is unaffected by anything today** — its
+`git status` shows only the pre-existing modified reference HTML files
+already flagged as unresolved in the 2026-08-08 entry below
+(`diver-form.html`/`divers.html`/`reports.html`/`settings.html`),
+nothing new from this session.
+
+### Suggested next step
+
+1. Ask the user whether to commit today's 23 `aquadesk-app` files (a
+   git-hygiene gap, not urgent since the fixes are already live) —
+   don't commit unprompted.
+2. The stress test's own Phase 6 itemized report is sitting in this
+   session's chat transcript, not a file — if the user's own
+   independent P&L calculation surfaces a discrepancy in a future
+   session, the raw figures need to be re-pulled from the same two
+   dive centers (still live in the database, not torn down) rather
+   than assumed to exist as a saved artifact.
+3. Grep the whole `src/` tree for any other SVG `<title>`-as-child-
+   element pattern before writing new chart code — already confirmed
+   clean as of this session (see the dead-code audit below), but worth
+   re-checking if `charts.tsx` grows new chart types.
+
 ## Current state (as of 2026-08-08 session — full go-live: Atlas/Divergems/Dive Nation migrated, live Cloudflare deploy, real Resend domain, aquadesk.online cut over to the rebuild)
 
 **The rebuild is now the real, live AquaDesk — `aquadesk.online` (and
@@ -3416,6 +3576,18 @@ center could actually fit.
   sitting right there in this repo. Don't let a plausible-sounding
   explanation of current behavior substitute for actually opening the
   reference file (see retrospective #51).
+- **For any production hydration error (React error #418 or any other
+  minified hydration-family code), reproduce it locally in `next dev`
+  before deploying any fix hypothesis to production** — even a
+  textbook-plausible one. Production's minified error gives no useful
+  diff; `next dev`'s dev build prints the full unminified diagnostic,
+  readable directly from the Next.js error overlay's shadow DOM
+  (`document.querySelector('nextjs-portal').shadowRoot.textContent`),
+  and will usually name the exact file/line. Deploying a plausible
+  guess straight to production and finding out it didn't work is the
+  most expensive way to diagnose this class of bug (see retrospective
+  #62 — this cost a full build+deploy+verify cycle against live the one
+  time it was skipped).
 
 ## Retrospective — mistakes made, so they aren't repeated
 
@@ -4718,6 +4890,113 @@ The point isn't the fix (already applied) — it's recognizing the
     deterministically blocking every instance of a pattern, so a
     clearly-explained retry is worth trying before assuming a tool
     workaround is needed.**
+
+### Session 2026-08-11 (stress test across two live-shaped dive centers, real hydration bug)
+
+60. **A `<select>`'s new value read back within the same script call
+    that set it will show the old value — not because the read is
+    stale in the browser-console sense already documented elsewhere in
+    this file (items 15/19/21/35/39/41/48), but because the value
+    change triggers a real async server action, and nothing has
+    committed yet by the time the very next line of the same script
+    runs.** Testing D1's "Apply Charges," a dive-site `<select>` was set
+    via the established native-setter+dispatchEvent pattern and then
+    immediately re-read in the same `javascript_tool` call to confirm it
+    "took" — it read back correctly client-side, but the server action
+    that actually persists `activities.dive_site` hadn't completed, so
+    Apply Charges ran against a still-`null` site and silently
+    undercharged (₱2,100 instead of the correct ₱3,200, missing the
+    Fuel Medium and Shark Fee lines that key off the site). Traced via
+    direct SQL, not guesswork. **Lesson: this project's own established
+    "native-setter + dispatchEvent" pattern for React-controlled
+    `<select>`/`<input>` values must ALWAYS be followed by a
+    verification read in a SEPARATE, LATER tool call — never trust a
+    same-call readback as proof the value has actually persisted
+    server-side, since a change handler firing a server action needs a
+    real round-trip that a synchronous script can't wait for.**
+
+61. **(Testing technique — reconfirms and extends the already-
+    documented `read_console_messages`-accumulates-across-navigations
+    trap, items 19/35, to a new specific symptom.)** While diagnosing
+    the Staff Activity Summary save failure, an earlier stale console
+    error kept reappearing on repeated checks even after a redeploy had
+    already changed the running code — indistinguishable at a glance
+    from the bug still being present. Resolved, as in the prior
+    documented instances, by opening a genuinely **fresh browser tab**
+    against the live site rather than trusting console history
+    accumulated in an already-open tab. **Lesson: this pattern recurs
+    often enough (now three separate sessions) that "open a fresh tab,
+    don't trust an already-open one's console/log history" should be
+    the default first move when verifying a fix against live/deployed
+    code, not a fallback tried after confusion sets in.**
+
+62. **The central lesson from today, explicitly requested by the user
+    to be written down: a plausible, textbook-matching hypothesis was
+    deployed straight to PRODUCTION before its root cause was actually
+    confirmed, costing a full build+deploy+verify cycle that changed
+    nothing.** A real, reproducible React hydration error (`#418`,
+    production-minified) on `/reports` was correlated with Staff
+    Activity Summary's save silently failing. The first hypothesis —
+    `peso()`'s bare `.toLocaleString()` with no explicit locale, a
+    well-documented, textbook category of Next.js server/client
+    rendering mismatch — was reasonable-sounding enough that it went
+    straight to a fix-and-deploy cycle: all ~21 duplicated instances of
+    the pattern fixed, the full `proxy.ts` rename-dance +
+    `npm run cf:build` + restore + `wrangler deploy --config
+    wrangler.live.jsonc` cycle run against the **live** account, and
+    the live site re-verified with a fresh tab (per item 61) — the
+    hydration error was still there, completely unchanged. The
+    hypothesis was plausible but wrong, and the cost of finding that out
+    was a full live-production deploy cycle, not a cheap local check.
+    **The correct approach, used only after this wrong turn**:
+    production's minified React error gives no useful diff (`#418` has
+    no inline detail) — reproduce the *same* user flow locally via
+    `next dev` first, where React's dev build prints the full,
+    unminified "hydration failed because the server rendered HTML
+    didn't match the client" diagnostic. Started the local dev server
+    via `preview_start`, logged in locally, navigated to `/reports`,
+    reproduced the full error, and pulled the complete diagnostic text
+    directly out of the Next.js dev error overlay's shadow DOM
+    (`document.querySelector('nextjs-portal').shadowRoot.textContent`)
+    — which named the exact file and line
+    (`src/app/(app)/reports/charts.tsx (138:15)`), immediately pointing
+    at the real cause (an SVG `<title>` child element nested inside a
+    looped `<circle>`, a known parser-scoping hydration hazard — see
+    the session write-up above for the fix). **Lesson: for ANY
+    production hydration error (React error #418, or any other minified
+    hydration-family error code) — reproduce it locally in `next dev`
+    FIRST, before deploying any fix hypothesis to production, even a
+    textbook-plausible one. The unminified dev error gives an exact
+    file/line diagnostic in seconds via the error overlay's shadow DOM;
+    a minified production error code alone is not enough signal to
+    diagnose from, and confirming a wrong hypothesis by redeploying to
+    live is the most expensive way to find that out.** (Also see the
+    new "Working practices" bullet added above this section, which
+    restates this as a standing rule, not just a one-off lesson.)
+
+63. **A UI action gated behind a promise-based confirm dialog
+    (`useConfirm()`, this codebase's own on-brand replacement for native
+    `window.confirm` — see the 2026-07-30 session's write-up) can look
+    like "nothing happened" if a test script only simulates the first
+    click and never resolves the dialog itself, and this partly muddied
+    the initial bug report for the Staff Activity Summary failure.**
+    "Mark as Paid" routes through `ConfirmDialog.tsx`'s `useConfirm()`
+    before ever calling `persist()` — an early test pass that only
+    clicked the row-level "Mark as Paid" trigger, without a follow-up
+    click on the dialog's own "Mark Paid" confirm button, never actually
+    reached the save code at all, which looked identical in symptom to
+    the *real* bug (the plain "Save" button, which calls `persist(r,
+    false)` directly with no confirm step, also failing). The real bug
+    was still real and still needed the hydration fix above — but the
+    initial reproduction conflated a testing gap (dialog not resolved)
+    with the actual defect, muddying the first few minutes of
+    diagnosis. **Lesson: before concluding a click-triggered save
+    "does nothing," check whether that action is confirm-gated
+    (`useConfirm()`/`ConfirmDialog` in this codebase specifically) and
+    make sure a test script resolves the dialog itself, not just the
+    button that opens it — same family as the already-documented
+    `<select>`/native-popup browser-automation quirks (items 14, 21,
+    49), a different specific trap.**
 
 ## Dead-code audit (2026-07-23 session)
 
@@ -6197,6 +6476,55 @@ own separate step alongside a CLAUDE.md update and retrospective.
 table-based function), **four real latent bugs found and fixed** via the
 new permanent `preflight.js` tooling before they could affect a future
 batch. Nothing else found.
+
+## Dead-code audit (2026-08-11 session — stress test, diver-visibility fix, hydration bug fix)
+
+Requested explicitly by the user at session close, as its own separate
+step, specifically checking whether today's work left old functions/
+code unused instead of replacing them in place.
+
+- Grepped the whole `src/` tree for the hazardous SVG-`<title>`-as-
+  child-element pattern (`<title>` as a JSX tag anywhere, not just
+  inside `charts.tsx`) — **zero remaining instances** anywhere else in
+  the codebase; the only matches are the two explanatory code comments
+  in `charts.tsx` itself, describing the fix and referencing the
+  pattern by name, not live instances of it.
+- Usage-count check on `monthShortLabel` (the helper local to
+  `charts.tsx`, in scope since the fix touched the file it's defined
+  in) — confirmed 4 real call sites, all legitimate: the two
+  pre-existing, unaffected HTML `title`-*attribute* usages in
+  `MonthlyBarChart` (a plain DOM attribute, not the hazardous nested
+  SVG element — never part of the bug), the new `aria-label` in the
+  fixed `MonthlyLineChart`, and the month-caption row beneath the
+  chart. Nothing orphaned by the fix.
+- Diffed all 23 changed `aquadesk-app` files (`git diff --stat` plus
+  individual `git diff` reads) against what the session's own work
+  actually intended — every file resolves to one of exactly two
+  categories: the one real fix (`reports/charts.tsx`) or the
+  locale-pin defensive fix (`.toLocaleString()` → `.toLocaleString(
+  "en-PH")`, 21 files) plus the one unrelated, earlier-in-session
+  diver-visibility fix (`divers/data.ts`) — nothing unexplained, no
+  leftover debug code, no orphaned helper left behind by either fix.
+- The locale-pin fix (tried first as a hypothesis for the hydration
+  bug, confirmed via redeploy **not** to be the actual cause — see
+  retrospective #62) was deliberately kept rather than reverted, since
+  it's independently correct as a defensive fix against the same
+  general class of non-determinism risk (`Number.toLocaleString()`
+  without an explicit locale argument can genuinely differ between a
+  server's and a browser's default locale). Confirmed via `git diff`
+  that every one of the 21 files' changes is a single, complete,
+  correctly-formed one-line edit — no partial/inconsistent conversions
+  left in any file.
+- No test-fixture cleanup to confirm this session, unlike almost every
+  other entry in this file — **both stress-test dive centers are a
+  deliberate, persistent fixture** (see the "Current state" entry
+  above) and were intentionally left in the database, not torn down.
+
+**Nothing found that needed fixing.** Everything added today resolves
+to a real, confirmed, single-purpose change; the one thing that turned
+out not to be the actual bug (the locale pin) was kept anyway because
+it's a legitimate fix in its own right, not because it was left behind
+by mistake.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
