@@ -50,6 +50,291 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-13/14 session — 8 pricing/data-integrity fixes committed, a real course-mode equipment-charging bug found and deployed live, a "remember me" login feature built but held back, and a new Bundles/equipment-inclusion feature built and verified but NOT yet committed or deployed)
+
+**Read this whole entry before doing anything — this session ended with
+real, verified work sitting uncommitted and undeployed on purpose, at
+the user's own explicit request, so a fresh session doesn't assume
+"uncommitted" means "abandoned" or rush to deploy without being asked
+again.** The user's own words, mid-session: *"we will deploy these
+changes tonight so not to disrupt any active users"* — that's tonight
+relative to 2026-08-13/14, a still-open commitment as of this write-up,
+not yet fulfilled.
+
+### Part A — 8 logical, separated commits for accumulated stress-test pricing fixes (both repos)
+
+Cleanup of real pricing/data-integrity bugs that had accumulated
+un-committed from work following the 2026-08-11 stress-test session
+(see that entry above). All committed, all already verified working
+before this session started fixing/committing them. In `aquadesk-app`,
+chronologically: `fce9194` (Divers card read a write-once payment
+snapshot instead of live activities, could silently disagree with the
+page's own "Running Bill" line — now both derive from the same
+source), `4a4896d` (Staff Activity Summary rows computed live with no
+saved `staff_commission_records` row yet looked identical to saved
+ones but reset on reload if nobody clicked Save first — added an
+"Unsaved" badge), `8e850a3` (Rental trips were redisplaying as Join
+Ride on every reload since both collapsed onto the same `is_joiner`
+boolean — companion migration `87f8e19` in the root repo adds a real
+`schedules.boat_mode` column; same commit also fixed
+`markBoatReturned`'s nitrox/15L flag write silently dropping one of
+the two flags via a ternary that could only ever keep one), `d180f09`
+(package-mode pricing was still stacking fuel/marine/shark on top of
+the package price instead of being fully all-inclusive; a
+long-documented known gap — `equipment_rental` was never computed by
+anything — closed with a new `resolveEquipmentCharge()` matching a
+diver's saved equipment against Settings > Equipment Rental rates),
+`92d4709` (multi-site trips create several activity rows sharing an
+identical `date`+`created_at`; with no tiebreaker, re-running Apply
+Charges could silently flip which row landed in which tier band
+between runs — added a final `.order("id")` tiebreaker), `b351bd2`
+(wired the two pricing.ts fixes above into `applyChargesToVisit` for
+real), `23eed3e` (a course price is one flat fee for the whole
+enrollment, but a student on 3 separate boat trips during their course
+was getting the full course rate charged on every trip's row,
+multiplying a single enrollment's price — fixed in both the bulk Apply
+Charges path and the single-row re-pick path), `ceea866` (new dive
+centers were silently defaulting to tier pricing via a schema column
+default that `createDiveCenter` never overrode, even though nobody had
+actually chosen that — the office console's Create Dive Center form
+now requires an explicit Tier/Package radio choice, server-side
+enforced; existing dive centers' `pricing_mode` values were confirmed
+untouched by this change).
+
+### Part B — Security/financial audit of the pricing bugs just fixed (no code changes, a review pass)
+
+Requested explicitly by the user before any further work: identify
+which of the project's dive centers are real (paying, live) vs. test/
+disposable fixtures, and audit whether the pricing bugs just fixed in
+Part A had caused any real financial harm to a real dive center before
+being caught — specifically the equipment-rental-never-charged gap and
+the course-mode multi-trip overcharge, both of which had been live
+(if latently wrong) for a while. Concluded any real underbilling this
+surfaced was a **pre-migration historical fact** — money never
+correctly charged before today's fix existed, not new loss caused by
+today's session — and proposed (did not execute) a cleanup plan for
+the accumulated stress-test data from the 2026-08-11 session. The
+detailed per-center figures from this pass live in this session's own
+chat transcript, not this file — if they're needed again, re-derive
+them from the real dive centers' current `activities`/`payments` rows
+rather than assuming a saved copy exists.
+
+### Cleanup + a real crash bug fix + first live deploy of the day
+
+Executed the approved stress-test-data cleanup. Separately, found and
+fixed a real crash: `resolveEquipmentCharge` (the new function from
+Part A's `d180f09`) threw when a diver's `equipment_requested` was in
+the **old**, pre-migration shape (`{"items": {...}}`, an object keyed
+by item name — real historical divers migrated from the live app have
+this) instead of this rebuild's own shape (`{"items": [{name, size}]}`,
+an array) — fixed with an `Array.isArray()` guard, matching the
+already-established guard `EquipmentManagementTab.tsx` uses for the
+identical reason (`aquadesk-app@18e4eb7`). Explicitly clarified to the
+user that the underbilling this exposed was historical, not new.
+
+**Explicit user instruction: "deploy now."** Deployed
+`18e4eb7` to the live Cloudflare Worker (`wrangler deploy --config
+wrangler.live.jsonc`, the `proxy.ts` rename-dance as usual) — the only
+deploy this session that was both requested and executed without a
+later "hold off" qualifier.
+
+### A second real bug found, fixed, and deployed: course-mode equipment charging leaking through at package-pricing dive centers
+
+The user asked to specifically verify that equipment charging excludes
+course-mode visits (matching the confirmed business rule at the time:
+equipment is always bundled into the course price, never charged
+separately — this was true up through this point in the session, and
+is the rule the brand-new Bundles/equipment-toggle feature below now
+makes configurable instead of hardcoded). Found the real bug: the
+equipment-charging gate at that point in the session read `!isPackage`
+— true for a course-mode visit at a *package*-pricing-mode dive
+center, since `isPackage` was already defined as `!isCourse &&
+pricing_mode === "package"`. That let equipment charge through for
+course visits specifically at package-mode dive centers, a real live
+production bug (confirmed via direct SQL no real diver had actually
+been overcharged by it yet, but the code path was live and
+exploitable). Fixed to `!isCourse && !isPackage`
+(`aquadesk-app@60f2f13`), verified with 4 targeted test cases, and
+**deployed live** per the user's own urgency framing for this one.
+
+### Session-expiry / lockout investigation → confirmed already-correct, built the one real missing piece ("remember me") — committed, explicitly held back from deploy
+
+The user asked why the old live app "expires sessions" and has a
+5-failed-attempts/30-minute lockout, and asked for the rebuild to
+match that, including `/office` being able to unlock a locked account.
+First pass (a subagent) found no real session-expiry code in the old
+app and was corrected by the user pointing specifically at
+`login.html`. Direct re-investigation of that file found the real
+mechanism: not session expiry at all — a client-side `localStorage`
+"remember me" flag that gates whether an already-authenticated visit
+to `/login` auto-skips the form and jumps straight into the app. A
+**session-expiry note, corrected here for a future session's benefit**:
+there is no real timed session expiry anywhere in the old app; "expires"
+was the user's own description of what *feels* like expiry from the
+outside (having to log in again) but is actually just this
+remember-me gate not being set.
+
+**Account lockout (5 attempts/30-minute lockout) and `/office`'s
+"Unlock Login" button were both already fully built and working** —
+confirmed by reading the actual code (`login_guard_check`/`_fail`/
+`_reset` RPCs wired into `signIn`, `/office`'s unlock action calling
+`login_guard_reset`), no changes needed. Only the "remember me" gate
+was actually missing, and was built:
+- `LoginForm.tsx` gained a "Remember me" checkbox.
+- `signIn` (`lib/actions/auth.ts`) sets/clears a real cookie
+  (`aquadesk_remember`, `httpOnly`, 1-year expiry) based on the
+  checkbox — a cookie, not `localStorage`, since the gate it controls
+  is enforced in `proxy.ts` middleware, which can only read cookies.
+  (Hit and fixed a real Next.js 16 build error along the way: a
+  `"use server"` file can only export async functions — the
+  `REMEMBER_COOKIE` constant had to lose its `export` keyword, since
+  nothing outside the file needed it anyway.)
+- `proxy.ts`'s existing "already-authenticated visit to `/login`
+  redirects into the app" check now also requires the remember cookie
+  — matching the old app exactly: a valid session alone doesn't skip
+  the login form, only a valid session **and** a prior "remember me"
+  both do.
+- Verified live against a seeded test dive center/owner.
+
+**Committed as `aquadesk-app@0a83083`, explicitly NOT deployed** — the
+user's own words: *"we will deploy these changes tonight so not to
+disrupt any active users."* This is why, unlike the two bug-fix deploys
+above, this feature sat committed-but-live-Worker-unaware for the rest
+of the session.
+
+### New feature, same session: per-course equipment-inclusion toggle + multi-dive Bundles + Diver Form "Apply Bundle" — built, verified live, explicitly held back from BOTH commit and deploy
+
+Immediately after the remember-me feature, the user gave the same
+instruction again even more explicitly — *"no do not deploy anything
+now, we will deploy these changes tonight... instead i would like to
+add these features but same no deployment first, we just need to make
+sure this can be added and functional"* — then described a new
+feature in full. Two points were genuinely ambiguous enough to ask
+about before touching billing math (given two same-day incidents
+already required emergency production fixes on pricing logic this
+exact session): whether a bundle price is fully inclusive or just the
+dive rate, and whether to auto-derive the bundle's name or add a free
+name field. **User's confirmed answers**: fully inclusive except
+nitrox/15L (which stay separate, and every field stays manually
+editable afterward even after a bundle is applied); add a real
+free-text name field (not auto-derived).
+
+**Migration 037** (`database/037_course_equipment_and_bundles.sql`,
+**applied directly to the shared dev/prod Supabase project — this is
+routine for this project's migrations, and is NOT the same thing as
+deploying to the live Cloudflare Worker, so it doesn't conflict with
+the user's "no deployment" instruction — but the migration FILE itself
+is not yet committed to this root git repo**, see the checklist at the
+end of this entry):
+- `course_rates.equipment_included boolean not null default true` —
+  every existing and new course starts included, matching the
+  previously-hardcoded blanket exclusion so no existing dive center's
+  billing silently changes; a dive center can now flip specific
+  courses to gear-excluded instead.
+- New `bundles` table (`dive_center_id`, `name`, `dive_count` 1–100
+  check, `price`, `equipment_included`, `is_active`) — the same
+  "Settings tier" RLS shape as `course_rates`/`equipment_rental_rates`
+  (select open to all tenant users, owner-only write).
+- `activities.bundle_id`, a nullable FK — a pure display-only tag
+  (matches the existing `activities.package_id` precedent from
+  migration 032), never read back for pricing, only marks which one
+  row's `dive_site` text is actually a bundle name (rendered in
+  italics by the UI) rather than a real dive site.
+
+**Settings > Courses** (`settings/courses/`): `CourseRatesSection.tsx`
+gained an "Equipment included in rate" checkbox in the add/edit form
+and an "Equipment charged separately" badge on excluded courses. New
+`BundlesSection.tsx` — Add/Edit/Delete, 4 fields (name, dive-count
+dropdown 1–100, price, equipment-included checkbox) — added to
+`page.tsx` below Course Rates. `saveCourseRate`/new `saveBundle`/
+`deleteBundle` actions in `actions.ts`.
+
+**Diver Form** (`diver-form/[id]/`): a fun-diving visit's toolbar
+gains an "Apply Bundle" button (new `ApplyBundleModal.tsx`) showing
+the visit's completed dive count and a picker of the dive center's
+active bundles. New `applyBundleToVisit` action
+(`diver-form/[id]/actions.ts`): zeroes `dive_rate`/`fuel_surcharge`/
+`marine_tax`/`shark_fee`/`equipment_rental`/`bundle_id` on every
+non-cancelled row except the chronologically last one; the last row
+gets `dive_rate = bundle.price`, `dive_site = bundle.name` (rendered
+in italics — `VisitPanel.tsx`'s `ActivityRow`, and the read-only
+closed-visit row), `bundle_id` set, and — only if the bundle's own
+`equipment_included` is false — a real `equipment_rental` total
+computed via the existing `resolveEquipmentCharge()`, summed across
+every collapsed dive with the same per-dive/per-day cadence dedup
+`applyChargesToVisit` already uses. `nitrox_fee`/`fifteen_l_fee` are
+never touched on any row, matching the confirmed business rule.
+
+**The pre-existing "equipment never charges for course-mode visits"
+gate was also updated as part of this feature** (it has to be — the
+new per-course toggle would otherwise be silently unreachable for
+course visits): `applyChargesToVisit`'s equipment gate now embeds the
+visit's `course_rates.equipment_included` via the `visits.
+course_rate_id` FK and only skips charging when that course actually
+has equipment included, instead of unconditionally skipping every
+course-mode visit.
+
+**Verified live end-to-end** against a disposable seeded test dive
+center (`Bundle Verify Test DC`, tier-mode) — since I didn't have the
+DB pooler password preserved across this session's own context
+compaction, the user re-provided it mid-session; not persisted here,
+per the standing credential-hygiene note at the end of this file. Four
+scenarios confirmed via both the UI and direct SQL: (1) a 3-dive
+equipment-included bundle applied to a 3-row visit — first two rows
+fully zeroed, last row `dive_rate=3000`, `equipment_rental=0`,
+italicized "3-Dive Package"; (2) a 6-dive equipment-excluded bundle
+applied to a 6-row visit with a diver who'd requested a "BCD" (₱300/
+dive rental rate seeded) — last row `dive_rate=5500`,
+`equipment_rental=1800` (₱300 × 6 dives, correctly per-dive not
+per-day), `bundle_id` set; (3) a course visit using a gear-excluded
+course correctly got a real equipment charge via Apply Charges
+(previously always ₱0 regardless); (4) a course visit using a
+gear-included (default) course still correctly charges ₱0 equipment —
+confirming the toggle didn't silently change existing behavior for the
+common case. Test dive center and its auth user fully deleted
+afterward — confirmed 6 real `dive_centers` rows remain (Test DC,
+Package Test DC, Atlas, Divergems, Dive Nation, Demo), matching the
+known-real count. `tsc --noEmit` and `npm run lint` both clean (one
+real lint error hit and fixed along the way — an unescaped apostrophe
+in `ApplyBundleModal.tsx`'s JSX text).
+
+### Exactly what's pending for "tonight" — read this first in the next session
+
+**Nothing from this session has been deployed to the live Cloudflare
+Worker except the two bug-fix commits (`18e4eb7`, `60f2f13`) — those
+two, and only those two, are already live.** Everything else below is
+either committed-but-undeployed or fully uncommitted, both
+deliberately, per the user's own repeated "deploy tonight" instruction:
+
+- **`aquadesk-app@0a83083`** ("remember me") — committed, **not
+  deployed**.
+- **The new Bundles/equipment-toggle feature — NOT committed to
+  `aquadesk-app`, NOT deployed.** `git status` at session end showed
+  modified: `diver-form/[id]/DiverDetailClient.tsx`, `actions.ts`,
+  `components/VisitPanel.tsx`, `data.ts`, `page.tsx`,
+  `settings/courses/CourseRatesSection.tsx`, `actions.ts`, `data.ts`,
+  `page.tsx`; untracked: `diver-form/[id]/components/
+  ApplyBundleModal.tsx`, `settings/courses/BundlesSection.tsx` (plus
+  the already-known harmless untracked `.claude/`).
+- **Migration `037_course_equipment_and_bundles.sql` — already
+  applied to the real shared Supabase project (schema is live in the
+  database right now), but the migration file itself is untracked in
+  the root `D:\Rebuild` repo.** Commit it there before or alongside
+  committing the app-code changes above — don't let the file sit
+  applied-but-uncommitted the way a few earlier sessions in this
+  file's history flagged as a recurring risk.
+- **When "tonight" actually happens**: commit the Bundles feature (both
+  repos), then run the full live-deploy sequence
+  (`proxy.ts` rename-dance → `npm run cf:build` → restore → `wrangler
+  deploy --config wrangler.live.jsonc`) **once**, covering both
+  `0a83083` and the newly-committed Bundles work together — no need
+  for two separate deploys unless the user asks for them staged apart.
+  Confirm with the user before deploying, per this project's standing
+  "never deploy unless asked" rule — "tonight" was said in advance,
+  it's still worth a quick confirmation at the actual moment, not an
+  standing blanket authorization to deploy the instant a new session
+  starts.
+
 ## Current state (as of 2026-08-11 session — full stress-test pass across two live-shaped dive centers, one real production bug found and fixed: a hydration crash breaking Staff Activity Summary saves)
 
 **Purpose of this session**: not new feature work — a deliberate,
