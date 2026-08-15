@@ -50,6 +50,190 @@ sections for schema, page map, design direction, and migration plan.
   a reset — that account is a `platform_admins` row + matching
   `auth.users` row, not a `public.users` row).
 
+## Current state (as of 2026-08-15 session — Reports date-range/filter overhaul, real idle-timeout session expiry, office console secretary-unlock fix — all live and deployed)
+
+Two separate asks in one session, both fully built, verified live,
+committed, and deployed to the live Cloudflare Worker by session end.
+**Root repo untouched this session — no schema/migration changes, this
+was pure `aquadesk-app` work.**
+
+**Note on this file's own continuity, not reconstructed this session**:
+`git log` on `aquadesk-app` shows three commits (`bfda5de`, `85b52f2`,
+`7ff9a00` — the Bundles feature landing for real, a Courses-tab rename,
+a favicon fix) that landed *after* the last "Current state" entry below
+(2026-08-13/14) but were never written up here. Out of scope for
+tonight's ask, which was specifically about today's own work — flagging
+this gap exists rather than guessing at what happened, so a future
+session doesn't assume this file's history is fully continuous.
+
+### Part A — Reports: Join Ride/Rental Gears cards now respect the date picker, plus real column filters
+
+The user noticed Join Ride's and Rental Gears' summary cards (To
+Collect, Collected, Still To Pay, etc.) were all-time running totals
+that ignored the shared Reports date-range picker, even though their
+own record tables already respected it — and separately asked for
+per-column filters (Company, Status, Category, etc.) on all three
+tables' records.
+
+Two genuine business-logic ambiguities were confirmed via
+`AskUserQuestion` before touching anything, given this project's own
+repeated pricing/financial-display incidents this month: (1) whether
+the *outstanding-balance* cards specifically (To Collect/To Pay/Still
+To Collect/Still To Pay/Net Rental Balance — as opposed to pure
+period-activity cards like Collected/Paid) should also scope to the
+date range, given that doing so changes their meaning from "what's
+currently owed" to "what became owed within this window" and could
+hide older unpaid amounts — **user's explicit answer: scope everything
+to the range**, no exception for balance-type cards; (2) filter-dropdown
+style — **user's explicit answer: dropdown everywhere, populated from
+whatever values actually exist in the current data**, not a fixed enum
+list and not free-text search.
+
+- **`JoinRideTab.tsx`**: `collect`/`pay` (feeding the 5 summary cards)
+  now additionally filtered by the applied date range; a separate
+  unscoped `allCollect` was kept specifically for the statement
+  generator's company picker, which has its own independent
+  `stmtFrom`/`stmtTo` range and would otherwise have been wrongly
+  limited by whatever range happens to be applied on the page. New
+  Company + Status dropdown filters on the records table, options
+  derived from the direction+date-scoped rows currently in view,
+  resetting whenever the They-Joined/We-Joined direction tab switches
+  (since the available companies/statuses differ per direction).
+- **`RentalGearsTab.tsx`**: same pattern — all 5 cards now computed
+  from `dateRows` (date-filtered) instead of the full unscoped
+  `records`. New Equipment + Company + Status dropdown filters.
+- **`ExpensesTab.tsx`**: cards here were **already** correctly
+  date-range-scoped (server-side fetch) — no change needed there, only
+  added Category + Payment Method + Recorded By dropdown filters on
+  the table.
+- Every table's empty-state message now distinguishes "nothing in this
+  date range" from "nothing matches the current filters," rather than
+  one generic message for both.
+- **Verified live** against a seeded `Reports Filter Verify Test DC`
+  (Join Ride records and Rental Gear records spread across two
+  different months, multiple companies/statuses; Expenses across
+  multiple categories/payment methods): narrowing the date range from
+  the full month down to a 10-day window correctly recomputed every
+  card (e.g. Join Ride's To Collect dropped from ₱7,000 to ₱3,000, Paid
+  dropped to ₱0 once the paying record fell outside the range); widening
+  back restored the original figures; every dropdown filter correctly
+  narrowed its table without touching the cards; company/equipment/
+  category dropdown option lists correctly tracked the currently-visible
+  date+direction-scoped data, not a fixed global list. Test dive center
+  deleted afterward — confirmed 6 real `dive_centers` rows remain.
+- Committed as `aquadesk-app@6acd4d7`.
+
+### Part B — Real idle-timeout session expiry (1 hour) + office console's secretary-unlock gap
+
+Two related asks, arising from the user noticing they were always
+logged in on `aquadesk.online` and asking why, given the old live app
+apparently expires sessions and locks accounts after failed attempts.
+
+**First, a re-investigation that confirmed a prior session's finding
+rather than overturning it.** The user pushed back explicitly ("i did
+not check remember me... the old project session expires") on the
+initial explanation. Rather than re-assert from memory, `login.html`
+was read directly again — its own code comment settles it
+unambiguously: *"Never destroy an active session just because the
+login page was visited... Session exists but no remember me → just
+show the form; do NOT sign out."* Confirms the 2026-08-13/14 session's
+own finding: **the old app never really expires sessions either** —
+what reads as "expiring" there is the same remember-me/localStorage
+mechanism already ported into this rebuild (`aquadesk_remember`
+cookie, gates only whether an already-authenticated visit to `/login`
+auto-skips the form). This match between the rebuild's behavior and
+the old app's real behavior is correct, not a rebuild bug — but the
+user was explicit that they want something genuinely **new**: real
+session expiry, which neither app has ever had, "without having to
+upgrade supabase."
+
+**Confirmed first, via `AskUserQuestion`**: idle-timeout (not a fixed
+absolute session length), 1 hour.
+
+- **`src/lib/supabase/proxy.ts`** — new idle-timeout enforcement,
+  entirely app-level, no Supabase config/tier dependency (Supabase's
+  own JWT-expiry dashboard setting wouldn't have achieved this anyway —
+  the refresh token silently renews the access token regardless, so
+  only an app-side check can force a real logout). A plain server-only
+  cookie (`aquadesk_last_seen`, httpOnly, not the Supabase session
+  cookie itself) stores the timestamp of the last authenticated request
+  against any protected route, reset on every request. If more than an
+  hour has passed since that timestamp, the middleware calls the real
+  `supabase.auth.signOut()` (not just a redirect — this actually
+  invalidates the session) and redirects to `/login?timeout=1`. Applies
+  uniformly to owners, secretaries, *and* platform admins on `/office` —
+  no special-casing, since there's no reason a platform-admin session
+  should be exempt. Skipped entirely on public routes (`/login`,
+  `/register`, `/staff`, `/reset-password`, `/account/password`) so it
+  can never interfere with anonymous access.
+- **`src/app/login/page.tsx`** — gained a `?timeout=1` banner ("You were
+  signed out after a period of inactivity. Please sign in again."),
+  matching the already-established `?suspended=1` pattern on the same
+  page.
+- **A real, separate gap found and fixed while working in this area**:
+  `/office`'s "Unlock Login" button only ever showed for a dive center's
+  **owner** — `DiveCenterList.tsx`'s `ownerOf()` filtered `dc.users`
+  down to `role === "owner"` before checking lock status, even though
+  the query one level up (`office/page.tsx`) already fetches *every*
+  user per dive center, secretaries included. A locked-out secretary
+  had no unlock path anywhere in the office console. Given this
+  project's own multi-tenant design allows unlimited secretary logins
+  per dive center, this was a real operational gap, not a cosmetic one.
+  Fixed: `lockedUsers` now filters `dc.users` for *any* locked user,
+  each rendered with its own "Unlock `<name>`" button; `unlockOwnerLogin`
+  renamed to `unlockUserLogin` (`office.ts`) since it was already
+  role-agnostic under the hood (`login_guard_reset` takes a plain
+  email) — only the UI had ever restricted it to the owner.
+- **Verified live** against a seeded `Session Verify Test DC` (a test
+  platform admin, an unlocked owner, and a secretary pre-seeded with
+  `locked_until` in the future): confirmed active back-to-back
+  navigation across multiple pages never triggers the idle logout;
+  confirmed genuine idle time past the threshold forces a real logout
+  (redirected to `/login?timeout=1` with the message, and — critically —
+  confirmed the session was *actually* dead afterward by then hitting a
+  different protected route directly and landing on a plain,
+  un-messaged `/login`, not just a one-time nag); confirmed `/office`
+  now shows "Unlock Session Verify Secretary" (not just an owner row),
+  and clicking it correctly cleared `failed_login_attempts`/
+  `locked_until` in the database (checked via direct SQL, not just the
+  UI). Test data fully deleted afterward — confirmed 6 real
+  `dive_centers` and 1 real `platform_admins` row remain.
+- Committed as `aquadesk-app@a0df24d`.
+
+### Both parts deployed live
+
+Full deploy sequence run once per part, covering each commit
+immediately after it landed (the user asked to deploy Part A before
+giving the Part B feedback that led to more work, so this wasn't one
+combined end-of-session deploy): `proxy.ts` rename-dance → `npm run
+cf:build` → restore → `wrangler deploy --config wrangler.live.jsonc`
+against the **live** Cloudflare account. Bundle sizes 1644.20 KiB and
+1644.16 KiB gzipped, both comfortably under the 3 MiB limit. Post-deploy
+smoke-checked both times with a fresh tab against `aquadesk.online`
+directly (not workers.dev): `/login` loads clean with no console
+errors, protected routes (`/reports`, `/office`) correctly redirect a
+logged-out visitor to `/login`.
+
+### Not yet pushed — the one open item at session end
+
+**`aquadesk-app` is 2 commits ahead of `origin/master`** (`6acd4d7`,
+`a0df24d`) — committed and already deployed live, but not pushed to
+GitHub. The user asked to "commit and deploy" both times, which was
+done exactly as asked (local commit + live Cloudflare deploy) — pushing
+to the remote wasn't part of either request, so it was deliberately
+left for the user to explicitly ask for, not assumed. Root repo
+(`D:\Rebuild`) has no changes this session and is already in sync with
+its own `origin/master`.
+
+### Suggested next step
+
+Push `aquadesk-app`'s two commits to `origin/master` whenever asked —
+nothing else is outstanding. Both features are live, verified, and
+match exactly what the user asked for. No new page or feature is
+implied by anything above; whatever comes next is most likely more of
+the same feedback-response pattern this project has been in since
+2026-07-25.
+
 ## Current state (as of 2026-08-13/14 session — 8 pricing/data-integrity fixes committed, a real course-mode equipment-charging bug found and deployed live, a "remember me" login feature built but held back, and a new Bundles/equipment-inclusion feature built and verified but NOT yet committed or deployed)
 
 **Read this whole entry before doing anything — this session ended with
@@ -3976,6 +4160,21 @@ center could actually fit.
   most expensive way to diagnose this class of bug (see retrospective
   #62 — this cost a full build+deploy+verify cycle against live the one
   time it was skipped).
+- **After running `cf:build` (or any `next build`) in a session, delete
+  `.next` before the next `next dev` start in the same directory** — a
+  production build and dev server sharing `.next` can leave the dev
+  server reporting "Ready" while every route 404s, even with no other
+  process running concurrently and even after a clean stop/restart of
+  the dev server itself (see retrospective #64, a new variant of the
+  already-documented concurrent-build-and-dev-server family, items
+  #43-48/#58).
+- **Never test a short-interval timeout/expiry feature against a
+  threshold close to this sandbox's own per-request latency**
+  (multi-second, especially right after clearing `.next`) — use a test
+  threshold generously larger than that latency, not just larger than
+  the test sequence's step count, or the result will look like a
+  logic bug when it's really just environment latency eating the
+  window (see retrospective #65).
 
 ## Retrospective — mistakes made, so they aren't repeated
 
@@ -5385,6 +5584,88 @@ The point isn't the fix (already applied) — it's recognizing the
     button that opens it — same family as the already-documented
     `<select>`/native-popup browser-automation quirks (items 14, 21,
     49), a different specific trap.**
+
+### Session 2026-08-15 (Reports date-range/filter overhaul, idle-timeout session expiry, office unlock fix)
+
+64. **Running `npm run cf:build` earlier in a session, then starting a
+    local dev server later in that same session for unrelated
+    verification, can leave the dev server reporting "✓ Ready" while
+    every route — including root `/` and `/login` — genuinely 404s**, a
+    new, more confusing variant of the already-documented concurrent-
+    Next.js-process family (retrospective #58, which was about a build
+    *failing* when a dev server was running at the same time). This
+    session hit the reverse-order case: `cf:build` ran first (for the
+    day's first deploy), completed and exited cleanly, and only
+    *afterward* — with no dev server running at all — did starting
+    `next dev` for the idle-timeout verification produce a fully
+    "Ready"-reporting server that 404'd on every single route, static or
+    dynamic. Not a build failure this time, a *runtime* corruption of
+    `.next`'s dev-mode artifacts left behind by the earlier production
+    build sharing the same `.next` directory. Confirmed and fixed by
+    fully deleting `.next` (`Remove-Item -Recurse -Force`) before
+    restarting the dev server, which then worked immediately. **Lesson:
+    after running `cf:build` (or any `next build`) in a session, always
+    delete `.next` before the *next* `next dev` start in that same
+    directory — don't assume a clean stop/restart of the dev server
+    process alone is enough to recover, since the corruption lives in
+    the shared build-output directory, not in the server process
+    itself.**
+
+65. **(Testing technique.) Verifying a short-duration, cookie-timestamp-
+    based timeout feature (the new idle-timeout logic) with a test
+    threshold close to or smaller than this sandbox's own per-request
+    latency produces unreliable, contradictory-looking results that
+    have nothing to do with whether the feature actually works.** First
+    attempt used a 5-second `IDLE_TIMEOUT_MS` for testing — one run
+    failed to expire when it should have, a second (cleaner) run
+    expired correctly, and a third "verify active use doesn't
+    false-trigger" run then expired unexpectedly *during* active
+    back-to-back navigation, which briefly looked like a real logic bug
+    in the cookie-comparison code. It wasn't: this dev sandbox's own
+    per-request latency (real Supabase queries plus, immediately after
+    clearing `.next`, first-visit Turbopack compilation) routinely runs
+    2–5+ seconds *per request* in this environment, confirmed via the
+    dev server's own logged request durations — comparable to or larger
+    than the 5-second test threshold itself, so ordinary page-load
+    latency alone could burn through the whole window between two
+    "quick" navigations. Widening the test threshold to 25 seconds
+    (still far short of the real 1-hour production value, but
+    generously larger than this environment's worst-case per-request
+    latency) immediately produced clean, consistent, correct results in
+    both directions on repeated tries. **Lesson: never test a
+    short-interval timeout/expiry feature in this environment using a
+    threshold anywhere near this sandbox's own typical per-request
+    latency (multi-second, especially right after a cache-clearing
+    restart) — pick a test threshold generously larger than that
+    latency, not just larger than the number of actions in the test
+    sequence, and prefer clean back-to-back tool calls with no extra
+    reads/checks interleaved between the trigger and the
+    verification.** This extends the file's existing "don't trust tight
+    timing in this environment" family (items 15/19/21/35/39/41/48/60/61)
+    with a concrete numeric guardrail rather than just a qualitative
+    caution.
+
+66. **Re-hit the exact, already-documented Postgres type-inference
+    error from retrospective #40 (`$1` reused across a plain column
+    reference and inside `jsonb_build_object(...)` without an explicit
+    cast, "inconsistent types deduced for parameter $1") on literally
+    the first raw-SQL `auth.identities` insert written this session** —
+    despite that lesson existing specifically to prevent this, word for
+    word, since 2026-07-30. Cost one avoidable round-trip before adding
+    the `::uuid` cast and moving on. This is the same category of lapse
+    retrospective #10 already named ("a lesson recorded for next time
+    must also be applied to the rest of the current session") — except
+    here the lesson was from a *much earlier* session, not the same
+    one, meaning the gap is really about not re-reading/reusing a
+    known-good fixture script verbatim before hand-typing a fresh one.
+    **Lesson: before writing a new raw-SQL `auth.users`/
+    `auth.identities` fixture insert from scratch, copy the shape from
+    this file's own already-correct example (retrospective #40's fix,
+    or any of this session's own now-working seed scripts) rather than
+    retyping the `jsonb_build_object(...)` block by hand — the specific
+    trap (an untyped `$N` reused inside `jsonb_build_object`) is easy to
+    reintroduce by habit even when its exact fix is already
+    documented.**
 
 ## Dead-code audit (2026-07-23 session)
 
@@ -6913,6 +7194,45 @@ to a real, confirmed, single-purpose change; the one thing that turned
 out not to be the actual bug (the locale pin) was kept anyway because
 it's a legitimate fix in its own right, not because it was left behind
 by mistake.
+
+## Dead-code audit (2026-08-15 session — Reports date-range/filter overhaul, idle-timeout session expiry, office unlock fix)
+
+Requested explicitly by the user before closing out, as its own separate
+step.
+
+- `npx tsc --noEmit` and `npm run lint` — both clean, run fresh at the
+  very end.
+- Grepped the whole `src/` tree for the one symbol renamed today,
+  `unlockOwnerLogin` — zero remaining references; `unlockUserLogin` (its
+  replacement) resolves to exactly its definition (`office.ts`) plus its
+  one real call site (`DiveCenterList.tsx`).
+- Grepped for the old `isLocked` singular-owner-lock variable in
+  `DiveCenterList.tsx` (replaced by the `lockedUsers` array this
+  session) — zero remaining references, a complete replacement not left
+  alongside the old check.
+- Confirmed `IDLE_TIMEOUT_MS` is restored to its real `60 * 60 * 1000`
+  (1 hour) production value with no leftover test-only comment — the
+  shortened 5s/25s values used mid-session purely for live verification
+  (see retrospective #65) were never left in place.
+- No new exported symbols were added in the Reports tabs this session
+  (`JoinRideTab.tsx`/`RentalGearsTab.tsx`/`ExpensesTab.tsx`) — every new
+  piece of state (`companyFilter`, `allCollect`, `dateRows`,
+  `tableRows`, etc.) is component-local, so the usual cross-file
+  usage-count pass doesn't apply; confirmed via clean lint (which would
+  flag an unused local const) that nothing was left dangling.
+- `LAST_SEEN_COOKIE`/`IDLE_TIMEOUT_MS` (`proxy.ts`) are deliberately
+  module-private, not exported — matching this codebase's established
+  precedent for constants only ever used within their own defining file
+  (same pattern as `BOAT_MODE_LABELS`'s fix from an earlier session).
+- Test data (`Reports Filter Verify Test DC`, `Session Verify Test DC` +
+  its platform admin/owner/secretary) fully deleted after each part's
+  verification — confirmed via direct query both times that exactly 6
+  real `dive_centers` rows and 1 real `platform_admins` row remain.
+
+**Nothing found that needed fixing.** Everything added today resolves
+to a real, confirmed consumer; the one symbol renamed today
+(`unlockOwnerLogin` → `unlockUserLogin`) has zero stale references
+remaining.
 
 ## Resolved gap: root folder git history (was: "Known gap")
 
