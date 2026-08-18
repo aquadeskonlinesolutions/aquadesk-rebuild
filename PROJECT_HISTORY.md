@@ -7277,3 +7277,122 @@ them at runtime. The raw **Postgres superuser password is deliberately
 not** copied into any tracked file, including this one — if direct SQL
 access is needed in a future session, ask the user for it again rather
 than assuming a stale copy is still correct or safe to have lying around.
+
+## Archived from CLAUDE.md: "Current State (as of 2026-08-17 session end)"
+
+The rebuild has been feature-complete and in an ongoing feedback-response
++ new-feature phase since 2026-07-25 (all originally-planned pages built;
+work since then is bug fixes, polish, and new scoped features the user
+brings). aquadesk.online has served the rebuild (not the old app) since
+the 2026-08-08 cutover. Six real dive centers exist: Test Dive Center,
+Package Test Dive Center (a shared, persistent test fixture other
+sessions reuse - reset to a clean baseline after every testing pass),
+Atlas Divers Malapascua, Divergems Diving Center, Dive Nation Malapascua
+(the one real actively-operating paying client), and Demo Dive Center.
+Migrations run through 039.
+
+### 2026-08-17 session: Paddle subscription billing, built and shipped
+
+A full self-serve billing integration was built, hardened, verified, and
+deployed live - but deliberately kept invisible to real users until the
+live Paddle account is verified (see kill switch below).
+
+- Settings > Subscription tab (settings/subscription/): shows current
+  subscription_status, lets an owner pick Monthly ($65/mo,
+  pri_01m05n3arvpxce4d910jpbqxn6) or Annual ($733/yr,
+  pri_01m05n3av5d8bgbsdwpn8q781j) - both under Paddle sandbox product
+  pro_01m05n3aqpdaf5n62txw4aqdbp - and opens Paddle checkout. Also
+  displays the full AquaDesk Service Agreement (constants.ts) in a
+  scrollable box between the status row and the plan picker.
+- Checkout is security-hardened: the Paddle transaction is created
+  server-side (createSubscriptionCheckoutTransaction in actions.ts,
+  calling paddle.transactions.create()), with customData carrying the
+  dive center/user id derived from the authenticated session
+  (requireOwner()) - never from anything the browser sends. The client
+  only ever receives an opaque transactionId and calls
+  Checkout.open({ transactionId }). This closed a real cross-tenant
+  hijack hole the first version had - any metadata passed to a
+  third-party checkout SDK that a server later trusts for a privileged
+  write must be set server-side from the authenticated session, never
+  from anything the client echoes back.
+- Webhook route (src/app/api/webhooks/paddle/route.ts +
+  src/lib/paddle/{server,process-webhook}.ts): verifies Paddle-Signature
+  via paddle.webhooks.unmarshal() before trusting anything. Handles
+  transaction.completed/subscription.created (activate, matched via
+  customData - the only events that carry it), subscription.canceled ->
+  cancelled, subscription.past_due -> suspended, and
+  subscription.updated/subscription.activated -> back to active when the
+  event's own status says so. Every lifecycle event after the first
+  activation is matched by the stored paddle_subscription_id, not
+  customData (renewals never carry it). proxy.ts's PUBLIC_ROUTES had to
+  gain /api/webhooks/paddle or every real Paddle delivery would have
+  silently redirected to /login.
+- Migration 038: dive_centers.paddle_subscription_id/paddle_customer_id,
+  partial unique index on the former.
+- /office: shows each dive center's Paddle IDs via a "Paddle-managed"
+  badge next to the manual status override dropdown, and hides the
+  manual Start Billing/Mark as Paid buttons whenever a Paddle
+  subscription is attached, so a platform admin can't run a parallel
+  manual billing cycle on top of live Paddle autopay.
+- 7 real findings from an /ultrareview pass, all fixed and re-verified:
+  the customData hijack hole, no duplicate-subscription guard (the
+  Subscribe button now hides entirely once subscriptionStatus is
+  "active" - a purchase UI must gate on current entitlement state, not
+  just SDK-readiness), no recovery path from suspended back to active,
+  a Supabase zero-row update silently "succeeding" instead of retrying
+  (a Supabase UPDATE matching zero rows returns {error: null} - chain
+  .select("id") and check the array length if the caller needs to know
+  whether it found something), the /office parallel-billing gap above,
+  and two diagnostic-clarity hardenings (missing-webhook-secret and
+  missing-NEXT_PUBLIC_PADDLE_ENV now fail loudly/distinctly).
+- Boat Manifest made optional per dive center (unrelated to Paddle, same
+  session): new dive_centers.boat_manifest_enabled (migration 039,
+  default true), enforced via requireBoatManifestEnabled() in dal.ts
+  (the real boundary - nav hiding is optimistic UI only), toggled from
+  /office. Migration 039 extended the enforce_dive_center_update_scope
+  trigger's platform-admin allowlist to permit this column - verified
+  via a real simulated platform-admin RLS session.
+- Kill switch: NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED
+  (src/lib/featureFlags.ts's isSubscriptionTabEnabled()) hides the
+  Subscription tab and redirects /settings/subscription ->
+  /settings/pricing unless exactly the string "true". Off by default -
+  the live Paddle account wasn't verified for real money yet, so this
+  had to be unreachable by a real customer. Build-time-only
+  (NEXT_PUBLIC_*), so flipping it is a rebuild + redeploy. Almost shipped
+  enabled to production that night - Next.js reads .env.local during
+  next build, not only next dev, and this project had no
+  .env.production/.env.production.local override file at the time, so
+  whatever .env.local held shipped as-is. Caught only by deliberately
+  reasoning through env-file precedence immediately before running
+  cf:build, fixed with a manual flip-false/build/deploy/flip-true
+  sequence that night. (Resolved 2026-08-18 - see CLAUDE.md's Current
+  State - by adding a real .env.production.local file.)
+
+Verification performed 2026-08-17: real Paddle sandbox checkout -> real
+webhook delivery -> correct Supabase write, done twice (before and after
+the security rewrite) via a real browser + a cloudflared quick tunnel +
+the Paddle sandbox notification destination (ntfset_01m07mn3fvez2hcj5t2zh8dev4)
+pointed at that tunnel's URL. Real sandbox subscription cancellation ->
+real webhook -> subscription_status correctly flipped to cancelled,
+matched purely by stored paddle_subscription_id with no customData
+present. subscription.past_due/updated/activated recovery-to-active was
+verified via self-constructed, genuinely-signed webhook requests (real
+HMAC, real secret) - not an actual Paddle-triggered past-due/retry-success
+cycle; Paddle's sandbox has no simple one-click "make this fail then
+retry" dashboard action the way cancel is a single API call. The /office
+Boat Manifest toggle was verified only via a direct simulated-RLS-session
+SQL test, not clicked in a real browser. Live deploy smoke-checked
+directly against aquadesk.online: root/login 200, protected routes
+307-redirect correctly, no errors. Bundle 1868.19 KiB gzipped. That
+session had no browser/computer-automation tool available at all.
+
+Deployed and committed state as of 2026-08-17 session end: aquadesk.online
+running that day's build (Subscription tab disabled). aquadesk-app: 5
+commits (2b2928b Paddle billing base, 8820697 the 7 ultrareview fixes,
+636da1c Boat Manifest flag, 67c0bdd Service Agreement, 6ca9ddc the kill
+switch). Root repo: migrations 038/039 committed and pushed (ec99a02,
+3b97304). Package Test Dive Center reset to baseline after every round of
+live testing, confirmed via direct query still 6 real dive_centers rows.
+A cloudflared quick tunnel paired with the Paddle sandbox notification
+destination was set up for that session's live-webhook testing - the
+tunnel URL is ephemeral and was likely dead by the next session.

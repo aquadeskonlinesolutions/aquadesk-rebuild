@@ -82,166 +82,181 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Current State (as of 2026-08-17 session end)
+## Current State (as of 2026-08-18 session, in progress)
+
+**Update (later same day):** the live Paddle migration described below
+is now **code-complete and deployed** — nothing left to build. It's
+blocked purely on two external approvals: Paddle domain/account
+verification and Payoneer identity verification, both expected within
+~3 days. Once they clear, the remaining steps are: paste the live
+`PADDLE_API_KEY` into `.env.production.local` (still blank), flip
+`NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED` to `true` in that same file, and
+then opt individual dive centers into Paddle billing one at a time via
+the new `paddle_billing_enabled` toggle in `/office` (migration 040,
+shipped this session) rather than turning it on for everyone at once —
+see `PROJECT_HISTORY.md` if this file's own write-up of that session
+has since been archived.
 
 **The rebuild has been feature-complete and in an ongoing feedback-
-response + new-feature phase since 2026-07-25** (all originally-planned
-pages built; work since then is bug fixes, polish, and new scoped
-features the user brings). `aquadesk.online` has served the rebuild
-(not the old app) since the 2026-08-08 cutover. Six real dive centers
-exist: Test Dive Center, Package Test Dive Center (a shared, persistent
-*test* fixture other sessions reuse — reset to a clean baseline after
-every testing pass, see below), Atlas Divers Malapascua, Divergems
-Diving Center, Dive Nation Malapascua (the one real actively-operating
-paying client), and Demo Dive Center. Migrations run through **039**.
+response + new-feature phase since 2026-07-25.** `aquadesk.online` has
+served the rebuild since the 2026-08-08 cutover. Six real dive centers
+exist: Test Dive Center, Package Test Dive Center (shared test fixture,
+reset to baseline after every testing pass), Atlas Divers Malapascua,
+Divergems Diving Center, Dive Nation Malapascua (the one real paying
+client), and Demo Dive Center. Migrations run through **039**. Full
+detail on the 2026-08-17 session (Paddle sandbox billing built,
+hardened, verified) is in `PROJECT_HISTORY.md`.
 
-### Today's session: Paddle subscription billing, built and shipped
+### This session: migrating the tested sandbox Paddle integration to live
 
-A full self-serve billing integration was built, hardened, verified,
-and deployed live — but **deliberately kept invisible to real users**
-until the live Paddle account is verified (see kill switch below).
+Goal: get the live Paddle account and code ready for **verification**
+(the "Verify your account" / "Test and go live" steps are explicitly
+*not* part of this) — additive/code-side only, no live entity deleted
+or recreated. **Session paused partway through — resume here.**
 
-- **Settings > Subscription tab** (`settings/subscription/`): shows
-  current `subscription_status`, lets an owner pick Monthly
-  ($65/mo, `pri_01m05n3arvpxce4d910jpbqxn6`) or Annual ($733/yr,
-  `pri_01m05n3av5d8bgbsdwpn8q781j`) — both under Paddle sandbox product
-  `pro_01m05n3aqpdaf5n62txw4aqdbp` — and opens Paddle checkout. Also
-  displays the full AquaDesk Service Agreement (`constants.ts`) in a
-  scrollable box between the status row and the plan picker.
-- **Checkout is security-hardened**: the Paddle transaction is created
-  **server-side** (`createSubscriptionCheckoutTransaction` in
-  `actions.ts`, calling `paddle.transactions.create()`), with
-  `customData.aquadesk_dive_center_id`/`aquadesk_user_id` derived from
-  the authenticated session (`requireOwner()`) — never from anything the
-  browser sends. The client only ever receives an opaque `transactionId`
-  and calls `Checkout.open({ transactionId })`. This closes a real
-  cross-tenant hijack hole the first version had — see Lessons below,
-  item 1.
-- **Webhook route** (`src/app/api/webhooks/paddle/route.ts` +
-  `src/lib/paddle/{server,process-webhook}.ts`): verifies
-  `Paddle-Signature` via `paddle.webhooks.unmarshal()` before trusting
-  anything. Handles `transaction.completed`/`subscription.created`
-  (activate, matched via `customData` — the only events that carry it),
-  `subscription.canceled` → `cancelled`, `subscription.past_due` →
-  `suspended`, and `subscription.updated`/`subscription.activated` →
-  back to `active` when the event's own status says so (recovers a
-  dive center once a failed-payment retry succeeds). Every lifecycle
-  event after the first activation is matched by the stored
-  `paddle_subscription_id`, not `customData` (renewals never carry it).
-  `proxy.ts`'s `PUBLIC_ROUTES` had to gain `/api/webhooks/paddle` — a
-  real bug (same class as an earlier `/crew`/`/reset-password` miss)
-  that would have silently redirected every real Paddle delivery to
-  `/login`.
-- **Migration 038**: `dive_centers.paddle_subscription_id`/
-  `paddle_customer_id`, partial unique index on the former.
-- **`/office`**: shows each dive center's Paddle IDs via a "Paddle-
-  managed" badge next to the (already-existing) manual status override
-  dropdown, and hides the manual Start Billing/Mark as Paid buttons
-  (replaced with "Managed by Paddle") whenever a Paddle subscription is
-  attached — so a platform admin can't accidentally run a parallel
-  manual billing cycle on top of live Paddle autopay.
-- **7 real findings from an `/ultrareview` pass, all fixed and
-  re-verified end-to-end** (3 `normal`, 4 `nit`): the customData hijack
-  hole (see Lessons #1), no duplicate-subscription guard (Lessons #2),
-  no recovery path from `suspended` back to `active`, a Supabase
-  zero-row update silently "succeeding" instead of retrying, the
-  `/office` parallel-billing gap above, and two diagnostic-clarity
-  hardenings (missing-webhook-secret and missing-`NEXT_PUBLIC_PADDLE_ENV`
-  now fail loudly/distinctly instead of silently misbehaving).
-- **Boat Manifest is now optional per dive center** (unrelated to
-  Paddle, same session): new `dive_centers.boat_manifest_enabled`
-  (migration 039, default `true` — zero disruption to existing
-  Malapascua-based dive centers), enforced via a new
-  `requireBoatManifestEnabled()` in `dal.ts` (the real boundary — nav
-  hiding in `Sidebar.tsx`/`nav.ts` is optimistic UI only), toggled from
-  `/office`. Migration 039 also had to extend the
-  `enforce_dive_center_update_scope` trigger's platform-admin allowlist
-  to permit this column — verified via a real simulated platform-admin
-  RLS session (not a service-role bypass) that the toggle works *and*
-  that out-of-scope fields are still correctly blocked.
-- **Kill switch**: `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED`
-  (`src/lib/featureFlags.ts`'s `isSubscriptionTabEnabled()`) hides the
-  Subscription tab from Settings nav and redirects
-  `/settings/subscription` → `/settings/pricing` unless this is exactly
-  the string `"true"`. **Off by default** (unset = hidden) — the live
-  Paddle account isn't verified for real money yet, so this must not be
-  reachable by a real customer with a real card. Build-time-only
-  (`NEXT_PUBLIC_*`), so flipping it is a rebuild + redeploy, not a
-  runtime toggle. Local `.env.local` has it `=true` so dev/testing isn't
-  affected. **See Lessons #3 below — this almost shipped enabled to
-  production tonight; there is no automated guardrail against that
-  happening again, only a manual check.**
+**Done:**
+- **Live catalog created**: product `pro_01m09hht4axrx7hk2srdxk95gk`
+  ("AquaDesk"), prices `pri_01m09hhte5a3xqf0wbecr5q2jw` (Monthly,
+  $65 USD) and `pri_01m09hhtq4h5hcvz6ayesta107` (Annual, $733 USD) —
+  mirrors the sandbox catalog exactly. No discounts existed in sandbox,
+  so none to migrate.
+- **Live client-side token created**: `ctkn_01m09hhxr3j4ppg16j98f4eq0b`
+  (`live_0b0ec3885c3ac1b33c9562b6634`).
+- **Live notification destination created**: `AquaDesk production
+  webhook` (`ntfset_01m09hja3yk2cbm1hr61hb5ky6`), pointed at
+  `https://aquadesk.online/api/webhooks/paddle`, subscribed to the same
+  6 events the webhook handler acts on (`transaction.completed`,
+  `subscription.created/canceled/past_due/updated/activated`). The
+  live account genuinely had zero notification destinations before
+  this (confirmed with the user directly — see MCP quirk below on why
+  the API alone couldn't prove that). **Never recreate this — doing so
+  rotates `endpoint_secret_key` and silently breaks every future
+  delivery.**
+- **Code swapped to be environment-aware, not hardcoded-to-one-env**:
+  `actions.ts`'s `PRICE_IDS` is now keyed by `NEXT_PUBLIC_PADDLE_ENV`
+  (sandbox vs. production), same var `getPaddleInstance()` already
+  gated on — deliberately **not** a literal find-and-replace of the
+  sandbox IDs, since that would have broken local sandbox testing
+  (asked for in this same request: "verify locally or in staging").
+  There was already no `Paddle.Environment.set('sandbox')` anywhere to
+  remove — the codebase was built environment-driven from day one.
+- **Paddle Retain wired up**: `settings/subscription/page.tsx` now
+  selects `paddle_customer_id` and passes it down;
+  `SubscriptionClient.tsx` adds `pwCustomer: { id: paddleCustomerId }`
+  to `Paddle.Initialize()` when present (omitted entirely pre-first-
+  checkout, per Paddle's own requirement that this be a real Paddle
+  customer id, never an internal id/email). Verified against the
+  installed `@paddle/paddle-js` types (`PaddleSetupBaseOptions.
+  pwCustomer`) — `tsc --noEmit` passes clean.
+- **Webhook IP allowlist added**: new
+  `src/lib/paddle/webhook-ip-allowlist.ts` fetches
+  `https://api.paddle.com/ips` (not hardcoded — that endpoint is the
+  source of truth), caches 1 hour, fails open only if never once
+  successfully fetched. Wired into `route.ts` but **gated to
+  `NEXT_PUBLIC_PADDLE_ENV === "production"` only** — a bare `cf-
+  connecting-ip` check would otherwise reject local `cloudflared`-
+  tunnel sandbox testing, which doesn't carry that header the way
+  Cloudflare's own edge does. Defense-in-depth on top of, not instead
+  of, `Paddle-Signature` verification.
+- **Closed the standing `.env.production.local` gap from 2026-08-17's
+  Lesson #3** (a `NEXT_PUBLIC_*` kill switch almost shipped enabled
+  because `.env.local` was the only thing `cf:build` ever read):
+  `.env.production.local` now exists (gitignored, verified against how
+  `opennextjs-cloudflare build` actually invokes `next build` as a
+  real subprocess — standard Next.js env-file precedence applies) with
+  the live client token, `NEXT_PUBLIC_PADDLE_ENV=production`, the live
+  webhook secret, and `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=false`
+  (deliberately, per this task's explicit "don't open to real
+  customers yet"). Local dev (`.env.local`) is completely untouched —
+  still sandbox, still `SUBSCRIPTION_TAB_ENABLED=true`. **This means a
+  future `cf:build`/`cf:deploy` will pick up live Paddle values
+  automatically without anyone hand-editing `.env.local` — check this
+  file's own values are still what should ship before ever flipping
+  `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true` here for a real go-live
+  build.**
+- `.env.example` created (blank template, all current keys documented).
 
-### Verification performed today (what's actually proven, not just written)
+**A real MCP tool quirk hit this session — worth knowing about before
+trusting `notificationSettings.list()` again**: both the sandbox and
+live Paddle MCP connections return an **empty array** from
+`client.notificationSettings.list()` while `pagination.estimatedTotal`
+reports a non-zero, inconsistent count across repeated identical calls
+(seen: 2, then 1, then 2 again on live; 1 on sandbox) — every other
+list endpoint tried (`products`, `prices`, `clientTokens`) had counts
+that matched their arrays exactly. Given the guardrail against ever
+recreating a live notification destination, this session stopped and
+asked the user to confirm via the dashboard directly rather than
+trust/ignore the count — they confirmed live had zero. **Don't trust
+`notificationSettings.list()`'s array as ground truth without cross-
+checking `pagination.estimatedTotal` for a mismatch first**, and if
+one exists, verify directly in the dashboard rather than guessing.
+Separately, the live MCP connection's first attempt at all three
+`*.create()` write calls failed with "You aren't permitted to perform
+this request" despite correct permissions already being saved — the
+user reauthorized the connection fresh and the retry succeeded
+immediately. **If a Paddle MCP write is rejected on a permissions
+error even though the dashboard-side permissions look correct, try a
+full reconnect before assuming the permissions themselves are wrong.**
 
-- Real Paddle sandbox checkout → real webhook delivery → correct
-  Supabase write, done **twice**: once against the original (later
-  found insecure) checkout shape, and again after the security rewrite
-  to the `transactionId` flow — both via a real browser + a `cloudflared`
-  tunnel + the Paddle sandbox notification destination
-  (`ntfset_01m07mn3fvez2hcj5t2zh8dev4`) pointed at that tunnel's URL.
-- Real Paddle sandbox subscription cancellation → real webhook →
-  `subscription_status` correctly flipped to `cancelled`, matched
-  purely by stored `paddle_subscription_id` with **no** `customData`
-  present (proves the post-activation lifecycle-matching design).
-- `subscription.past_due`/the new `subscription.updated`/
-  `subscription.activated` recovery-to-active path were verified via
-  **self-constructed, genuinely-signed** webhook requests (computed the
-  real HMAC using the real secret) — **not** via an actual Paddle-
-  triggered past-due/retry-success cycle. Paddle's sandbox doesn't have
-  a simple one-click "make this fail then retry" dashboard action the
-  way cancel is a single API call. **If a future session wants to
-  close this gap for real, look at Paddle's simulator's dedicated
-  subscription-renewal/past-due scenario config.**
-- The `/office` Boat Manifest toggle was verified **only** via a direct
-  simulated-RLS-session SQL test (rolled back, confirmed the trigger
-  allows it and still blocks out-of-scope fields) — **not** clicked in
-  a real browser by the user. Worth a quick visual check next time
-  `/office` is touched.
-- Live deploy smoke-checked directly against `aquadesk.online` (not
-  `workers.dev`): root/`/login` 200, protected routes 307-redirect
-  correctly, no errors. Bundle 1868.19 KiB gzipped.
-- **This session had no browser/computer-automation tool available at
-  all** (confirmed via `ToolSearch` — unlike some earlier sessions'
-  documented tooling). Every real-browser step in this list was the
-  *user* clicking through live while a background `Monitor` watched the
-  dev-server log for the resulting webhook POST — not something this
-  session did unassisted. **Check for a browser tool via `ToolSearch`
-  early in a new session rather than assuming one is or isn't there.**
-
-### Deployed and committed state as of session end
-
-- **Live**: `aquadesk.online` is running today's build (Subscription
-  tab correctly **disabled** in that build — see Lessons #3 for how
-  close that came to going wrong).
-- **`aquadesk-app`**: 5 commits made and pushed today (`2b2928b`
-  Paddle billing base, `8820697` the 7 ultrareview fixes, `636da1c`
-  Boat Manifest flag, `67c0bdd` Service Agreement, `6ca9ddc` the kill
-  switch). Repo is clean, in sync with `origin/master`.
-- **Root repo**: migrations `038`/`039` committed and pushed
-  (`ec99a02`, `3b97304`). Clean, in sync with `origin/master`.
-- **Package Test Dive Center** (the shared test fixture) — reset to
-  its pre-session baseline (`subscription_status: active`,
-  `paddle_subscription_id`/`paddle_customer_id: null`) after every
-  round of live testing today. Confirmed via direct query: still 6
-  real `dive_centers` rows, nothing extra left behind.
-- **Local dev environment, likely stale by the next session**: a
-  `cloudflared` quick tunnel and its pairing with the Paddle sandbox
-  notification destination were set up for today's live-webhook
-  testing. The tunnel URL is ephemeral — if that process isn't still
-  running (likely not, across a machine restart or new session), the
-  notification destination is pointing at a dead URL. **Don't assume
-  local webhook testing still works without re-checking/re-pairing a
-  fresh tunnel URL first.**
+**Still outstanding — all require either a live API key the MCP can't
+create, or dashboard-only actions the MCP doesn't expose:**
+1. **Live `PADDLE_API_KEY`**: no API-creation method exists via this
+   MCP (confirmed by search) — the user needs to create one in
+   Developer Tools > API keys and paste it into
+   `.env.production.local` (currently blank there).
+2. **Payment methods** (Checkout > Checkout settings > Payment
+   methods) — not exposed by this MCP at all, dashboard only.
+3. **Default payment link** (Checkout > Checkout settings) — dashboard
+   only, must be a real approved domain, not localhost. **Tension to
+   flag**: the only page that would serve as that link
+   (`/settings/subscription`) currently redirects away in every real
+   deployed build, live or pre-prod, because
+   `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED` is off everywhere except
+   local dev — so there's no publicly reachable live checkout page to
+   point the default link at yet. Worth deciding whether to
+   temporarily flip the pre-prod build's flag on for this purpose
+   before assuming the dashboard step is simple.
+4. **Domain approval** (Checkout > Request domain approval) — the MCP
+   only exposes `checkoutDomains.get/list/delete/verify`, no
+   create/submit method, confirmed by search. Submit `aquadesk.online`
+   (and consider the pre-prod domain too, if live checkout testing is
+   wanted there before going fully live — see tension above).
+5. **Bank details** (Business account > Payouts > Payout settings) —
+   dashboard only.
+6. **Pre-verification readiness gaps found, not yet fixed**:
+   - **No live Terms & Conditions, Privacy Policy, or Refund/
+     Cancellation Policy page exists anywhere publicly.** The only
+     related text is the "Service Agreement" in
+     `settings/subscription/constants.ts`, rendered inside an
+     authenticated page that's currently unreachable. This is a real
+     gap for verification, not just a nice-to-have.
+   - **Public pricing doesn't match the live Paddle catalog just
+     created.** `LandingPage.tsx`'s `#pricing` section advertises
+     ₱4,000/month with "14-day free trial · No credit card required."
+     The live catalog is $65 USD/mo or $733 USD/yr with no trial
+     period configured anywhere in the code. Needs a decision — update
+     the landing page copy, or add trial pricing/PHP support to the
+     Paddle catalog — before this would pass a reviewer's pricing
+     check.
+   - Contact (`mkbusiness.ai@gmail.com` in the footer) and product
+     description are both fine as-is.
+   - `aquadesk.online` itself wasn't re-verified live this session
+     (`WebFetch` got a 403, most likely Cloudflare bot-challenge
+     rather than a real outage, given the 2026-08-08 cutover and no
+     reason to suspect regression — but not actually confirmed, and
+     this session had no browser tool per the 2026-08-17 note below).
 
 ### Suggested next step
 
-Once the live Paddle account is verified for real payments: flip
-`NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true` for a **production** build
-specifically (not by editing local `.env.local`, which only affects
-local dev) and redeploy. Otherwise, whatever comes next is most likely
-the same feedback-response pattern this project has been in since
-2026-07-25 — no other new feature is implied by anything above.
+Resume this exact task: once the user has (a) reauthorized/fixed
+anything else needed, (b) created the live API key, and (c) made the
+dashboard-only decisions above (especially the default-payment-link /
+domain-approval tension), finish wiring the live API key into
+`.env.production.local`, then move to the pre-verification pricing/
+legal-pages gaps before suggesting they proceed to "Verify your
+account." Do **not** flip `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true`
+anywhere or deploy a live-pointed build until the user explicitly says
+verification has passed.
 
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
 
@@ -351,25 +366,24 @@ build/deploy pipeline again:**
    "do they already have one" is as important a precondition as "can
    they start one."**
 
-3. **`NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true` (correct for local dev)
-   almost got baked into tonight's live production build.** Next.js
-   reads `.env.local` during `next build`, not only `next dev` — this
-   project has no `.env.production`/`.env.production.local` override
-   file, so whatever `.env.local` currently holds ships as-is. Caught
-   only by deliberately reasoning through env-file precedence
-   immediately before running `cf:build`, not by any automated check.
-   Fixed this one time with a manual flip-to-false → build → deploy →
-   flip-back-to-true sequence. **This is a real, still-open process
-   gap, not a closed one** — nothing currently prevents the same
-   near-miss next time a `NEXT_PUBLIC_*` kill switch exists and someone
-   builds for production without checking it first. **Lesson: before
-   ANY Cloudflare build/deploy, explicitly check every `NEXT_PUBLIC_*`
-   feature-flag/kill-switch's current value in `.env.local` against
-   what should actually ship — do not assume local dev's env state is
-   deploy-safe.** Worth eventually building a real guardrail (a
-   dedicated production env file the build step actually uses, or a
-   pre-build assertion script) instead of relying on remembering to
-   check by hand every time.
+3. **RESOLVED 2026-08-18** — `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true`
+   (correct for local dev) almost got baked into the 2026-08-17 live
+   production build, because Next.js reads `.env.local` during `next
+   build`, not only `next dev`, and this project had no
+   `.env.production`/`.env.production.local` override file — so
+   whatever `.env.local` held shipped as-is. Fixed that night with a
+   manual flip-false/build/deploy/flip-true sequence, but flagged as a
+   still-open process gap. **Closed 2026-08-18**: `aquadesk-app/
+   .env.production.local` now exists (gitignored) and is what a real
+   `cf:build`/`cf:deploy` picks up automatically for
+   production-specific values (verified against how
+   `opennextjs-cloudflare build` actually invokes `next build` — a real
+   subprocess, standard Next.js env precedence applies), leaving
+   `.env.local` as local-dev-only. **Lesson, now about maintenance
+   rather than absence**: before any Cloudflare build/deploy, check
+   `.env.production.local`'s current values (not `.env.local`'s)
+   against what should actually ship — the guardrail only works if its
+   contents are kept correct.
 
 **Older, still-relevant recurring themes** (each of these has multiple
 full incident write-ups in `PROJECT_HISTORY.md` — this is an index, not
