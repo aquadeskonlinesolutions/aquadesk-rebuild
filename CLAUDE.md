@@ -223,28 +223,33 @@ create, or dashboard-only actions the MCP doesn't expose:**
    wanted there before going fully live — see tension above).
 5. **Bank details** (Business account > Payouts > Payout settings) —
    dashboard only.
-6. **Pre-verification readiness gaps found, not yet fixed**:
-   - **No live Terms & Conditions, Privacy Policy, or Refund/
-     Cancellation Policy page exists anywhere publicly.** The only
-     related text is the "Service Agreement" in
-     `settings/subscription/constants.ts`, rendered inside an
-     authenticated page that's currently unreachable. This is a real
-     gap for verification, not just a nice-to-have.
-   - **Public pricing doesn't match the live Paddle catalog just
-     created.** `LandingPage.tsx`'s `#pricing` section advertises
-     ₱4,000/month with "14-day free trial · No credit card required."
-     The live catalog is $65 USD/mo or $733 USD/yr with no trial
-     period configured anywhere in the code. Needs a decision — update
-     the landing page copy, or add trial pricing/PHP support to the
-     Paddle catalog — before this would pass a reviewer's pricing
-     check.
-   - Contact (`mkbusiness.ai@gmail.com` in the footer) and product
-     description are both fine as-is.
-   - `aquadesk.online` itself wasn't re-verified live this session
-     (`WebFetch` got a 403, most likely Cloudflare bot-challenge
-     rather than a real outage, given the 2026-08-08 cutover and no
-     reason to suspect regression — but not actually confirmed, and
-     this session had no browser tool per the 2026-08-17 note below).
+
+**RESOLVED 2026-08-19 — pre-verification readiness gaps** (both flagged
+in the 2026-08-18 session as blockers; neither is anymore):
+- **Public legal pages**: `aquadesk.online/terms`, `/privacy`, and
+  `/refund-policy` now exist — static, unauthenticated pages under a
+  new `src/app/(legal)/` route group, linked from the landing page
+  footer. Terms and Refund Policy are adapted from the "Service
+  Agreement" in `settings/subscription/constants.ts`; Privacy Policy is
+  new content covering what data is collected (diver records, waivers,
+  payment info via Paddle) and the third-party processors involved
+  (Supabase, Paddle, Cloudflare, Resend). Contact email on all three is
+  `aquadeskonline@gmail.com` (the landing page footer itself still
+  shows `mkbusiness.ai@gmail.com` — left as-is, out of scope for this
+  change). Committed, pushed, and deployed live; verified with `curl`
+  using a browser `User-Agent` (not `WebFetch` — see below) that all
+  three return 200 with the correct title and contact email.
+- **Pricing mismatch**: turned out to be a stale note in this file, not
+  an actual gap. User confirmed directly on 2026-08-19 that the live
+  site's `#pricing` section already shows $65/mo ≈ ₱4,000/mo and
+  $733/yr ≈ ₱45,000/yr with no trial-period language — no code change
+  was needed.
+- `aquadesk.online` itself wasn't re-verified live in the 2026-08-18
+  session (`WebFetch` got a 403). Confirmed reachable in the 2026-08-19
+  session via `curl` with a browser `User-Agent` — plain `WebFetch`
+  still 403s on this domain, which is Cloudflare's bot challenge, not a
+  site problem. **Use `curl` with a browser UA (not `WebFetch`) to
+  smoke-check `aquadesk.online` going forward.**
 
 ### Suggested next step
 
@@ -252,11 +257,13 @@ Resume this exact task: once the user has (a) reauthorized/fixed
 anything else needed, (b) created the live API key, and (c) made the
 dashboard-only decisions above (especially the default-payment-link /
 domain-approval tension), finish wiring the live API key into
-`.env.production.local`, then move to the pre-verification pricing/
-legal-pages gaps before suggesting they proceed to "Verify your
-account." Do **not** flip `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true`
-anywhere or deploy a live-pointed build until the user explicitly says
-verification has passed.
+`.env.production.local`. The pre-verification pricing/legal-pages gaps
+are now resolved (see above) — once the API key and dashboard-only
+items are done, the account should be ready for the user to proceed to
+"Verify your account." Do **not** flip
+`NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true` anywhere or deploy a
+live-pointed build until the user explicitly says verification has
+passed.
 
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
 
