@@ -17,6 +17,90 @@ behind some past decision, check `PROJECT_HISTORY.md` — don't assume
 something is lost just because it's not restated here.** Going forward,
 new session write-ups belong in *this* file, not the archive.
 
+## Resume Checklist (read this first if picking this project back up cold)
+
+The user's Pro plan expired 2026-08-20 and the next session could start
+any time after — days, weeks, unknown. Everything below was true/checked
+**as of 2026-08-19**; re-verify rather than trust it, especially anything
+marked with a date. See "Time-Sensitive" section right after this one for
+what's most likely to have gone stale.
+
+1. **Check Paddle account/domain verification status** in the Paddle
+   dashboard (Overview or the verification checklist page). As of
+   2026-08-19: account verification not yet passed; the checkout-domain
+   submission for `aquadesk.online` (`chedom_01m09jyk1m5w7xmj6gt9cb5qgq`)
+   was in `pending_review`, confirmed via a live `checkoutDomains.list()`
+   API call that day. Re-check status — don't assume either way.
+2. **Check Payoneer identity verification status** separately (payout
+   provider, unrelated system to Paddle — no API/MCP access to check
+   this programmatically, ask the user or have them check directly).
+3. **Check whether the live `PADDLE_API_KEY` still exists and hasn't
+   expired.** Per the user, it was created in the Paddle dashboard around
+   2026-08-18/19 with the default 90-day expiry — **see "Time-Sensitive"
+   below for the exact date.** As of 2026-08-19 it was confirmed **still
+   blank** in `aquadesk-app/.env.production.local` (checked by reading
+   the file directly) — creating it in the dashboard and pasting it into
+   the codebase are two separate steps, and only the first had happened.
+4. **Reconfirm the live Paddle catalog/token/webhook still exist and are
+   active** — don't trust the snapshot below without rechecking, since
+   these can be edited or revoked from the dashboard independent of this
+   codebase. As of 2026-08-19, a direct Paddle API query confirmed all
+   active: product `pro_01m09hht4axrx7hk2srdxk95gk` ("AquaDesk"), price
+   `pri_01m09hhte5a3xqf0wbecr5q2jw` ($65.00 USD/mo), price
+   `pri_01m09hhtq4h5hcvz6ayesta107` ($733.00 USD/yr), client token
+   `ctkn_01m09hhxr3j4ppg16j98f4eq0b`, and notification destination
+   `ntfset_01m09hja3yk2cbm1hr61hb5ky6` → `https://aquadesk.online/api/
+   webhooks/paddle`, subscribed to the 6 events the webhook handler acts
+   on. **Never recreate the notification destination** — doing so
+   rotates `endpoint_secret_key` and silently breaks delivery; if it's
+   gone, that's a real problem to raise with the user, not something to
+   silently fix by recreating it.
+5. **Once Paddle account verification has genuinely passed** (not just
+   domain approval — the full "Verify your account"/"Test and go live"
+   flow), run the go-live sequence, in order:
+   a. If the live `PADDLE_API_KEY` is missing or expired, have the user
+      (re)create it in Developer Tools > API keys — no MCP method exists
+      to do this (confirmed by search 2026-08-18). Paste it into
+      `aquadesk-app/.env.production.local`.
+   b. Confirm the remaining dashboard-only items are done: payment
+      methods (Checkout > Checkout settings), default payment link
+      (same page — needs a real reachable checkout page, see the
+      tension noted under "Still outstanding" below), bank details
+      (Business account > Payouts).
+   c. Flip `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true` in
+      `aquadesk-app/.env.production.local` — **never in `.env.local`**,
+      that file is local-dev-only and must stay on sandbox values.
+   d. Run the full Cloudflare live-deploy sequence (see "Working
+      practices" below) to ship the flip.
+   e. Do a real, small-value card test end-to-end once live — confirms
+      actual billing works, not just that the build deployed.
+   f. Opt individual dive centers into Paddle billing one at a time via
+      the `paddle_billing_enabled` toggle in `/office` (migration 040)
+      — do not flip it for every dive center at once.
+6. **Do not** flip the kill switch or deploy a live-pointed build before
+   verification has actually passed, no matter how long the gap was.
+
+## Time-Sensitive — don't trust these as still-accurate after a gap
+
+- **Live `PADDLE_API_KEY` expiry: 2026-11-16.** Per the user, created in
+  the Paddle dashboard with the default 90-day expiry around
+  2026-08-18/19. If resuming after that date, it will need regenerating
+  in the dashboard before the go-live sequence above can work at all —
+  check this *first*, before assuming step 5a is a quick copy-paste.
+- **The "~3 days" Paddle/Payoneer verification estimate is exactly
+  that — an estimate the user made on 2026-08-19, not a promise or a
+  Paddle-stated SLA.** Don't repeat it forward as if it were still
+  current; check actual status instead (Resume Checklist steps 1–2).
+- **The sandbox webhook's notification destination
+  (`ntfset_01m07mn3fvez2hcj5t2zh8dev4`, in `.env.local`) points at a
+  `cloudflared` quick-tunnel URL** — those are ephemeral and expire
+  when the tunnel process stops. If resuming local Paddle sandbox
+  testing, assume that URL is dead and the destination needs
+  `notificationSettings.update()` to a fresh tunnel URL before webhooks
+  will arrive locally again. This doesn't affect production.
+- Everything under "Current State" below is dated. Treat "as of
+  2026-08-19" as the actual claim, not "currently."
+
 ## What this project is
 
 Rebuilding AquaDesk, a dive-center management SaaS, from a plain HTML/JS +
@@ -34,7 +118,7 @@ sections for schema, page map, design direction, and migration plan.
   separate git repo (`git -C aquadesk-app ...`) — two independent repos
   in this tree, don't mix up which one a `git` command should target.
 - `D:\Rebuild\database\` — tracked SQL migration files (currently
-  001–039), the source of truth for schema/RLS/functions.
+  001–040), the source of truth for schema/RLS/functions.
 
 ## Absolute rule: two separate Supabase projects, never confuse them
 
@@ -82,188 +166,132 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Current State (as of 2026-08-18 session, in progress)
+## Current State (as of 2026-08-19 session)
 
-**Update (later same day):** the live Paddle migration described below
-is now **code-complete and deployed** — nothing left to build. It's
-blocked purely on two external approvals: Paddle domain/account
-verification and Payoneer identity verification, both expected within
-~3 days. Once they clear, the remaining steps are: paste the live
-`PADDLE_API_KEY` into `.env.production.local` (still blank), flip
-`NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED` to `true` in that same file, and
-then opt individual dive centers into Paddle billing one at a time via
-the new `paddle_billing_enabled` toggle in `/office` (migration 040,
-shipped this session) rather than turning it on for everyone at once —
-see `PROJECT_HISTORY.md` if this file's own write-up of that session
-has since been archived.
+**What's live on `aquadesk.online` right now** (verified 2026-08-19 —
+direct `curl` with a browser User-Agent against the real domain, not
+`WebFetch`, which 403s on this domain due to Cloudflare's bot challenge,
+not an outage):
+- The rebuild itself, serving since the 2026-08-08 cutover.
+- Landing page pricing correctly shows $65/mo ≈ ₱4,000/mo and $733/yr ≈
+  ₱45,000/yr, no trial-period language — this was actually fixed via
+  commit `75957e2` during the 2026-08-18 session; a prior version of
+  this file's write-up called it "not yet fixed," which was simply
+  stale by the time it was read again on 2026-08-19, not a real gap.
+- Public, unauthenticated legal pages: `/terms`, `/privacy`,
+  `/refund-policy` — added 2026-08-19, linked from the landing footer.
+  Terms and Refund Policy adapted from the "Service Agreement" in
+  `settings/subscription/constants.ts`; Privacy Policy is new content
+  (data collected, third-party processors: Supabase, Paddle, Cloudflare,
+  Resend). Contact email on all three is `aquadeskonline@gmail.com`
+  (the landing footer itself still shows `mkbusiness.ai@gmail.com` —
+  left as-is, out of scope for that change).
+- A working "Request a Free Demo" form on the landing page — wired
+  2026-08-19 via a new Server Action (`src/lib/actions/demoRequest.ts`),
+  sending to `aquadeskonline@gmail.com` with reply-to set to the
+  submitter, an off-screen honeypot field, and required-field/email
+  validation. Reuses the *same* Resend setup as invoice emails
+  (`getResendClient()`/`RESEND_FROM_EMAIL`) — see the Resend caveat
+  below.
+- Settings > Subscription tab is **hidden** — `NEXT_PUBLIC_SUBSCRIPTION_
+  TAB_ENABLED=false` in `.env.production.local` — so no real customer
+  can reach Paddle checkout yet. This is deliberate, not a bug.
 
-**The rebuild has been feature-complete and in an ongoing feedback-
-response + new-feature phase since 2026-07-25.** `aquadesk.online` has
-served the rebuild since the 2026-08-08 cutover. Six real dive centers
-exist: Test Dive Center, Package Test Dive Center (shared test fixture,
-reset to baseline after every testing pass), Atlas Divers Malapascua,
-Divergems Diving Center, Dive Nation Malapascua (the one real paying
-client), and Demo Dive Center. Migrations run through **039**. Full
-detail on the 2026-08-17 session (Paddle sandbox billing built,
-hardened, verified) is in `PROJECT_HISTORY.md`.
+**What's built but dormant** (code-complete, not reachable by real
+customers):
+- The full live Paddle billing stack: catalog, client-side token, Retain
+  wiring, webhook IP allowlist, environment-aware price IDs, server-side
+  checkout Server Action. Built 2026-08-18, confirmed still active via a
+  direct Paddle API query on 2026-08-19 (see Resume Checklist step 4).
+  Dormant because (a) the Subscription tab kill switch is off, and (b)
+  the live `PADDLE_API_KEY` is still blank in `.env.production.local`.
+- Two per-dive-center opt-in flags, both schema-level and wired into
+  `/office`: `boat_manifest_enabled` (migration 039) and
+  `paddle_billing_enabled` (migration 040, 2026-08-18). The latter has
+  no effect on any dive center yet — it's gated behind the tab-level
+  kill switch above, so flipping it per-center today does nothing
+  observable until that switch also flips.
 
-### This session: migrating the tested sandbox Paddle integration to live
+**What's genuinely pending external parties** (nothing this codebase or
+a future session can unblock directly):
+- Paddle account verification and the `aquadesk.online` checkout-domain
+  review (submitted 2026-08-18 as `chedom_01m09jyk1m5w7xmj6gt9cb5qgq`,
+  confirmed still `pending_review` via API on 2026-08-19).
+- Payoneer identity verification (payout provider, separate system, no
+  programmatic way to check status).
+- See "Time-Sensitive" above — the "~3 days" estimate for both is dated
+  2026-08-19 and should not be repeated forward as still-current.
 
-Goal: get the live Paddle account and code ready for **verification**
-(the "Verify your account" / "Test and go live" steps are explicitly
-*not* part of this) — additive/code-side only, no live entity deleted
-or recreated. **Session paused partway through — resume here.**
+**What's fully done, no further action needed**: the public legal pages,
+the demo request form, the landing-page pricing fix, migrations 001–040
+applied. The six real dive centers (Test Dive Center, Package Test Dive
+Center — shared fixture reset after testing, Atlas Divers Malapascua,
+Divergems Diving Center, Dive Nation Malapascua — the one real paying
+client, Demo Dive Center) were not re-verified this session; carried
+forward from the 2026-08-17 write-up in `PROJECT_HISTORY.md` unchanged.
 
-**Done:**
-- **Live catalog created**: product `pro_01m09hht4axrx7hk2srdxk95gk`
-  ("AquaDesk"), prices `pri_01m09hhte5a3xqf0wbecr5q2jw` (Monthly,
-  $65 USD) and `pri_01m09hhtq4h5hcvz6ayesta107` (Annual, $733 USD) —
-  mirrors the sandbox catalog exactly. No discounts existed in sandbox,
-  so none to migrate.
-- **Live client-side token created**: `ctkn_01m09hhxr3j4ppg16j98f4eq0b`
-  (`live_0b0ec3885c3ac1b33c9562b6634`).
-- **Live notification destination created**: `AquaDesk production
-  webhook` (`ntfset_01m09hja3yk2cbm1hr61hb5ky6`), pointed at
-  `https://aquadesk.online/api/webhooks/paddle`, subscribed to the same
-  6 events the webhook handler acts on (`transaction.completed`,
-  `subscription.created/canceled/past_due/updated/activated`). The
-  live account genuinely had zero notification destinations before
-  this (confirmed with the user directly — see MCP quirk below on why
-  the API alone couldn't prove that). **Never recreate this — doing so
-  rotates `endpoint_secret_key` and silently breaks every future
-  delivery.**
-- **Code swapped to be environment-aware, not hardcoded-to-one-env**:
-  `actions.ts`'s `PRICE_IDS` is now keyed by `NEXT_PUBLIC_PADDLE_ENV`
-  (sandbox vs. production), same var `getPaddleInstance()` already
-  gated on — deliberately **not** a literal find-and-replace of the
-  sandbox IDs, since that would have broken local sandbox testing
-  (asked for in this same request: "verify locally or in staging").
-  There was already no `Paddle.Environment.set('sandbox')` anywhere to
-  remove — the codebase was built environment-driven from day one.
-- **Paddle Retain wired up**: `settings/subscription/page.tsx` now
-  selects `paddle_customer_id` and passes it down;
-  `SubscriptionClient.tsx` adds `pwCustomer: { id: paddleCustomerId }`
-  to `Paddle.Initialize()` when present (omitted entirely pre-first-
-  checkout, per Paddle's own requirement that this be a real Paddle
-  customer id, never an internal id/email). Verified against the
-  installed `@paddle/paddle-js` types (`PaddleSetupBaseOptions.
-  pwCustomer`) — `tsc --noEmit` passes clean.
-- **Webhook IP allowlist added**: new
-  `src/lib/paddle/webhook-ip-allowlist.ts` fetches
-  `https://api.paddle.com/ips` (not hardcoded — that endpoint is the
-  source of truth), caches 1 hour, fails open only if never once
-  successfully fetched. Wired into `route.ts` but **gated to
-  `NEXT_PUBLIC_PADDLE_ENV === "production"` only** — a bare `cf-
-  connecting-ip` check would otherwise reject local `cloudflared`-
-  tunnel sandbox testing, which doesn't carry that header the way
-  Cloudflare's own edge does. Defense-in-depth on top of, not instead
-  of, `Paddle-Signature` verification.
-- **Closed the standing `.env.production.local` gap from 2026-08-17's
-  Lesson #3** (a `NEXT_PUBLIC_*` kill switch almost shipped enabled
-  because `.env.local` was the only thing `cf:build` ever read):
-  `.env.production.local` now exists (gitignored, verified against how
-  `opennextjs-cloudflare build` actually invokes `next build` as a
-  real subprocess — standard Next.js env-file precedence applies) with
-  the live client token, `NEXT_PUBLIC_PADDLE_ENV=production`, the live
-  webhook secret, and `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=false`
-  (deliberately, per this task's explicit "don't open to real
-  customers yet"). Local dev (`.env.local`) is completely untouched —
-  still sandbox, still `SUBSCRIPTION_TAB_ENABLED=true`. **This means a
-  future `cf:build`/`cf:deploy` will pick up live Paddle values
-  automatically without anyone hand-editing `.env.local` — check this
-  file's own values are still what should ship before ever flipping
-  `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true` here for a real go-live
-  build.**
-- `.env.example` created (blank template, all current keys documented).
+**Resend caveat** (applies to both invoice emails and the new demo
+request form): `RESEND_FROM_EMAIL` is Resend's shared sandbox address
+(`onboarding@resend.dev`, no custom domain verified on the account) in
+*every* environment, including `.env.production.local` — no override
+exists there. This works today only because the fixed recipients
+(`aquadeskonline@gmail.com` for demo requests; each diver's own address
+for invoices) happen to be reachable from that sandbox address — a real
+send to `aquadeskonline@gmail.com` was verified via direct Resend API
+call on 2026-08-19. Existing code comments flag this as intentionally
+deferred pending a real `aquadesk.online` sending subdomain — worth
+scoping as its own follow-up (it would fix both use cases at once), not
+a today problem.
 
-**A real MCP tool quirk hit this session — worth knowing about before
-trusting `notificationSettings.list()` again**: both the sandbox and
-live Paddle MCP connections return an **empty array** from
-`client.notificationSettings.list()` while `pagination.estimatedTotal`
-reports a non-zero, inconsistent count across repeated identical calls
-(seen: 2, then 1, then 2 again on live; 1 on sandbox) — every other
-list endpoint tried (`products`, `prices`, `clientTokens`) had counts
-that matched their arrays exactly. Given the guardrail against ever
-recreating a live notification destination, this session stopped and
-asked the user to confirm via the dashboard directly rather than
-trust/ignore the count — they confirmed live had zero. **Don't trust
-`notificationSettings.list()`'s array as ground truth without cross-
-checking `pagination.estimatedTotal` for a mismatch first**, and if
-one exists, verify directly in the dashboard rather than guessing.
-Separately, the live MCP connection's first attempt at all three
-`*.create()` write calls failed with "You aren't permitted to perform
-this request" despite correct permissions already being saved — the
-user reauthorized the connection fresh and the retry succeeded
-immediately. **If a Paddle MCP write is rejected on a permissions
-error even though the dashboard-side permissions look correct, try a
-full reconnect before assuming the permissions themselves are wrong.**
+**Dead-code audit for everything built in the 2026-08-19 session** (demo
+request form + legal pages): clean. `requestDemo` has exactly the two
+expected call sites (definition + the one call in `DemoModal`); no
+stray "not wired up" placeholder text remains anywhere in `src/`; the
+three legal page files and the `(legal)` layout are only reachable via
+Next.js file-based routing (expected — page files aren't meant to be
+imported elsewhere). No orphaned code found.
 
-**Still outstanding — all require either a live API key the MCP can't
-create, or dashboard-only actions the MCP doesn't expose:**
-1. **Live `PADDLE_API_KEY`**: no API-creation method exists via this
-   MCP (confirmed by search) — the user needs to create one in
-   Developer Tools > API keys and paste it into
-   `.env.production.local` (currently blank there).
-2. **Payment methods** (Checkout > Checkout settings > Payment
-   methods) — not exposed by this MCP at all, dashboard only.
-3. **Default payment link** (Checkout > Checkout settings) — dashboard
-   only, must be a real approved domain, not localhost. **Tension to
-   flag**: the only page that would serve as that link
-   (`/settings/subscription`) currently redirects away in every real
-   deployed build, live or pre-prod, because
-   `NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED` is off everywhere except
-   local dev — so there's no publicly reachable live checkout page to
-   point the default link at yet. Worth deciding whether to
-   temporarily flip the pre-prod build's flag on for this purpose
-   before assuming the dashboard step is simple.
-4. **Domain approval** (Checkout > Request domain approval) — the MCP
-   only exposes `checkoutDomains.get/list/delete/verify`, no
-   create/submit method, confirmed by search. Submit `aquadesk.online`
-   (and consider the pre-prod domain too, if live checkout testing is
-   wanted there before going fully live — see tension above).
-5. **Bank details** (Business account > Payouts > Payout settings) —
-   dashboard only.
+**A Paddle MCP quirk found this session, worth knowing before next use**:
+`.get()`-style methods (`products.get`, `prices.get`, `clientTokens.get`,
+`notificationSettings.get`, etc.) take the ID as a **positional string
+argument** — `client.products.get("pro_...")` — not an object like
+`{ product_id: "pro_..." }`, even though `paddle:search`'s own
+documented param shape suggests the latter. Passing an object produces
+`"URL called is invalid."` with no clearer hint. This is on top of the
+2026-08-18 finding that `notificationSettings.list()`'s returned array
+can't be trusted without cross-checking `pagination.estimatedTotal`.
 
-**RESOLVED 2026-08-19 — pre-verification readiness gaps** (both flagged
-in the 2026-08-18 session as blockers; neither is anymore):
-- **Public legal pages**: `aquadesk.online/terms`, `/privacy`, and
-  `/refund-policy` now exist — static, unauthenticated pages under a
-  new `src/app/(legal)/` route group, linked from the landing page
-  footer. Terms and Refund Policy are adapted from the "Service
-  Agreement" in `settings/subscription/constants.ts`; Privacy Policy is
-  new content covering what data is collected (diver records, waivers,
-  payment info via Paddle) and the third-party processors involved
-  (Supabase, Paddle, Cloudflare, Resend). Contact email on all three is
-  `aquadeskonline@gmail.com` (the landing page footer itself still
-  shows `mkbusiness.ai@gmail.com` — left as-is, out of scope for this
-  change). Committed, pushed, and deployed live; verified with `curl`
-  using a browser `User-Agent` (not `WebFetch` — see below) that all
-  three return 200 with the correct title and contact email.
-- **Pricing mismatch**: turned out to be a stale note in this file, not
-  an actual gap. User confirmed directly on 2026-08-19 that the live
-  site's `#pricing` section already shows $65/mo ≈ ₱4,000/mo and
-  $733/yr ≈ ₱45,000/yr with no trial-period language — no code change
-  was needed.
-- `aquadesk.online` itself wasn't re-verified live in the 2026-08-18
-  session (`WebFetch` got a 403). Confirmed reachable in the 2026-08-19
-  session via `curl` with a browser `User-Agent` — plain `WebFetch`
-  still 403s on this domain, which is Cloudflare's bot challenge, not a
-  site problem. **Use `curl` with a browser UA (not `WebFetch`) to
-  smoke-check `aquadesk.online` going forward.**
+### Prior sessions (condensed further — see `PROJECT_HISTORY.md` for full detail)
 
-### Suggested next step
+**2026-08-17**: Paddle sandbox billing built, hardened, and verified
+end-to-end (checkout, webhook sync, Retain, office visibility).
 
-Resume this exact task: once the user has (a) reauthorized/fixed
-anything else needed, (b) created the live API key, and (c) made the
-dashboard-only decisions above (especially the default-payment-link /
-domain-approval tension), finish wiring the live API key into
-`.env.production.local`. The pre-verification pricing/legal-pages gaps
-are now resolved (see above) — once the API key and dashboard-only
-items are done, the account should be ready for the user to proceed to
-"Verify your account." Do **not** flip
-`NEXT_PUBLIC_SUBSCRIPTION_TAB_ENABLED=true` anywhere or deploy a
-live-pointed build until the user explicitly says verification has
-passed.
+**2026-08-18**: migrated the sandbox integration toward live —
+created the live catalog/token/webhook (see above), made price-ID
+selection environment-aware via `NEXT_PUBLIC_PADDLE_ENV`, wired Paddle
+Retain, added the webhook IP allowlist, closed the `.env.production.local`
+gap (Lesson #3 below), added `paddle_billing_enabled` (migration 040),
+fixed the landing-page pricing copy (`75957e2`), and submitted the
+`aquadesk.online` checkout domain for approval. Session paused with the
+account still needing full Paddle verification + Payoneer — see Resume
+Checklist above for the up-to-date status and full go-live sequence.
+Two outstanding items *without* a corresponding MCP method (confirmed
+by search): creating a live `PADDLE_API_KEY`, and submitting a checkout
+domain for review (the latter is now done — see above — the MCP still
+can't submit new ones, only read/delete/verify existing ones).
+
+Still outstanding from that session, dashboard-only, unconfirmed as of
+2026-08-19 (no MCP method exists for any of these):
+1. **Payment methods** (Checkout > Checkout settings > Payment methods).
+2. **Default payment link** (Checkout > Checkout settings) — must be a
+   real approved domain, not localhost. **Tension**: the only page that
+   would serve as that link (`/settings/subscription`) redirects away
+   in every real deployed build (live or pre-prod) while the kill switch
+   is off — so there's no publicly reachable live checkout page to point
+   the default link at yet. Worth deciding whether to temporarily flip
+   the *pre-prod* build's flag on for this purpose before assuming the
+   dashboard step is simple.
+3. **Bank details** (Business account > Payouts > Payout settings).
 
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
 
@@ -314,9 +342,11 @@ passed.
   navigations, and a UI read taken in the same tool call immediately
   after a mutation can show pre-mutation state even though the DB
   already committed — reload or switch tabs before trusting a read
-  like that. **Also new as of 2026-08-17: check whether a browser tool
-  exists at all via `ToolSearch` before assuming — this session had
-  none, unlike documented earlier ones.**
+  like that. **Also: check whether a browser tool exists at all via
+  `ToolSearch` before assuming — several sessions since 2026-08-17 have
+  had none.** When no browser tool is available, say so explicitly
+  rather than claiming a UI flow was tested when only `tsc`/build/dev-
+  server-render was actually checked.
 - **Never test a short-interval timeout/expiry feature using a
   threshold near this sandbox's own per-request latency** (multi-
   second, especially right after a cache-clearing restart) — pick a
@@ -327,21 +357,24 @@ passed.
   "Ready" while every route 404s.
 - **Cloudflare deploy sequence** (`aquadesk-app`): stop the local dev
   server → clear `.next` → **check every `NEXT_PUBLIC_*` kill-switch/
-  feature-flag's current value in `.env.local` against what should
-  actually ship** (see Lessons #3 — this is not yet automated) →
-  rename `src/proxy.ts` out of the way (Node.js middleware isn't
-  supported by the installed OpenNext adapter version) → `npm run
-  cf:build` → restore `src/proxy.ts` immediately → `wrangler deploy
-  --config wrangler.live.jsonc` (or the pre-prod config) with that
-  account's `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` — **check
-  which Cloudflare account's credentials are in hand, live and pre-prod
-  are separate accounts, matching the Supabase live/rebuild distinction
-  above** → smoke-check the real domain directly, not `workers.dev`.
+  feature-flag's current value in `.env.production.local` (not
+  `.env.local`) against what should actually ship** (see Lessons #3 —
+  this is not yet automated) → rename `src/proxy.ts` out of the way
+  (Node.js middleware isn't supported by the installed OpenNext adapter
+  version) → `npm run cf:build` → restore `src/proxy.ts` immediately →
+  `wrangler deploy --config wrangler.live.jsonc` (or the pre-prod
+  config) with that account's `CLOUDFLARE_API_TOKEN`/
+  `CLOUDFLARE_ACCOUNT_ID` — **check which Cloudflare account's
+  credentials are in hand, live and pre-prod are separate accounts,
+  matching the Supabase live/rebuild distinction above** → smoke-check
+  the real domain directly (`curl` with a browser User-Agent — plain
+  `WebFetch` 403s on `aquadesk.online` due to Cloudflare's bot
+  challenge, not a real failure), not `workers.dev`.
 
 ## Lessons (condensed — full 66+-item numbered retrospective in `PROJECT_HISTORY.md`)
 
-**Today's three — read these before touching Paddle billing or the
-build/deploy pipeline again:**
+**Read these before touching Paddle billing, the build/deploy pipeline,
+or this file's own "Current State" claims again:**
 
 1. **The original Paddle checkout trusted client-supplied `customData`
    to decide which dive center got credited — a real cross-tenant
@@ -391,6 +424,21 @@ build/deploy pipeline again:**
    `.env.production.local`'s current values (not `.env.local`'s)
    against what should actually ship — the guardrail only works if its
    contents are kept correct.
+
+4. **This file's own 2026-08-18 write-up went stale within the same
+   session it was written**, in two separate ways caught only by a
+   direct re-check on 2026-08-19: it called the landing-page pricing
+   mismatch "found, not yet fixed" when a later commit that same
+   session (`75957e2`) had already fixed it; and it said the
+   `aquadesk.online` checkout-domain approval "needs submitting" when
+   it had already been submitted (confirmed `pending_review` via a live
+   `checkoutDomains.list()` call). Neither was wrong when first written
+   — both were simply overtaken by later work in the same session
+   without the write-up being updated. **Lesson: treat this file's own
+   prose as a starting hypothesis, not ground truth, for anything
+   independently checkable — a commit, a live API resource, a deployed
+   page. Re-verify before repeating a "still outstanding" claim
+   forward, especially across a session boundary.**
 
 **Older, still-relevant recurring themes** (each of these has multiple
 full incident write-ups in `PROJECT_HISTORY.md` — this is an index, not
