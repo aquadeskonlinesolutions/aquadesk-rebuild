@@ -17,6 +17,10 @@ behind some past decision, check `PROJECT_HISTORY.md` — don't assume
 something is lost just because it's not restated here.** Going forward,
 new session write-ups belong in *this* file, not the archive.
 
+**Shell note (as of 2026-09-04):** the user is now working from native
+Windows PowerShell for this project going forward, not Git Bash/WSL —
+use PowerShell syntax for any commands/instructions given to them.
+
 ## Resume Checklist (read this first if picking this project back up cold)
 
 The user's Pro plan expired 2026-08-20 and the next session could start
@@ -118,7 +122,7 @@ sections for schema, page map, design direction, and migration plan.
   separate git repo (`git -C aquadesk-app ...`) — two independent repos
   in this tree, don't mix up which one a `git` command should target.
 - `D:\Rebuild\database\` — tracked SQL migration files (currently
-  001–040), the source of truth for schema/RLS/functions.
+  001–042), the source of truth for schema/RLS/functions.
 
 ## Absolute rule: two separate Supabase projects, never confuse them
 
@@ -166,100 +170,98 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Current State (as of 2026-08-19 session)
+## Current State (as of 2026-09-04 session)
 
-**What's live on `aquadesk.online` right now** (verified 2026-08-19 —
-direct `curl` with a browser User-Agent against the real domain, not
-`WebFetch`, which 403s on this domain due to Cloudflare's bot challenge,
-not an outage):
-- The rebuild itself, serving since the 2026-08-08 cutover.
-- Landing page pricing correctly shows $65/mo ≈ ₱4,000/mo and $733/yr ≈
-  ₱45,000/yr, no trial-period language — this was actually fixed via
-  commit `75957e2` during the 2026-08-18 session; a prior version of
-  this file's write-up called it "not yet fixed," which was simply
-  stale by the time it was read again on 2026-08-19, not a real gap.
-- Public, unauthenticated legal pages: `/terms`, `/privacy`,
-  `/refund-policy` — added 2026-08-19, linked from the landing footer.
-  Terms and Refund Policy adapted from the "Service Agreement" in
-  `settings/subscription/constants.ts`; Privacy Policy is new content
-  (data collected, third-party processors: Supabase, Paddle, Cloudflare,
-  Resend). Contact email on all three is `aquadeskonline@gmail.com`
-  (the landing footer itself still shows `mkbusiness.ai@gmail.com` —
-  left as-is, out of scope for that change).
-- A working "Request a Free Demo" form on the landing page — wired
-  2026-08-19 via a new Server Action (`src/lib/actions/demoRequest.ts`),
-  sending to `aquadeskonline@gmail.com` with reply-to set to the
-  submitter, an off-screen honeypot field, and required-field/email
-  validation. Reuses the *same* Resend setup as invoice emails
-  (`getResendClient()`/`RESEND_FROM_EMAIL`) — see the Resend caveat
-  below.
-- Settings > Subscription tab is **hidden** — `NEXT_PUBLIC_SUBSCRIPTION_
-  TAB_ENABLED=false` in `.env.production.local` — so no real customer
-  can reach Paddle checkout yet. This is deliberate, not a bug.
+**Paddle/billing status is unchanged and NOT re-verified this
+session** — nothing Paddle-related was touched today. Everything in
+"Resume Checklist" and "Time-Sensitive" above is still exactly as
+dated (2026-08-19); re-verify per those sections' own instructions
+before trusting it, same as always. This session's work was in a
+completely different area (below).
 
-**What's built but dormant** (code-complete, not reachable by real
-customers):
-- The full live Paddle billing stack: catalog, client-side token, Retain
-  wiring, webhook IP allowlist, environment-aware price IDs, server-side
-  checkout Server Action. Built 2026-08-18, confirmed still active via a
-  direct Paddle API query on 2026-08-19 (see Resume Checklist step 4).
-  Dormant because (a) the Subscription tab kill switch is off, and (b)
-  the live `PADDLE_API_KEY` is still blank in `.env.production.local`.
-- Two per-dive-center opt-in flags, both schema-level and wired into
-  `/office`: `boat_manifest_enabled` (migration 039) and
-  `paddle_billing_enabled` (migration 040, 2026-08-18). The latter has
-  no effect on any dive center yet — it's gated behind the tab-level
-  kill switch above, so flipping it per-center today does nothing
-  observable until that switch also flips.
+**What shipped live on `aquadesk.online` this session** (deployed and
+smoke-checked with a browser User-Agent, same method as always — plain
+`WebFetch`/`curl` without one still 403s on this domain, not an
+outage):
+- **Settlement report "Open Form" button** — each row in the Reports >
+  Settlement on-screen table now has the same "Open Form" button used
+  on Dashboard/Divers (`/diver-form/[id]`, opens in a new tab).
+  `SettlementRow` now carries `diverId` through from both payments and
+  deposits (`reports/data.ts`). Print output and CSV export are
+  unaffected — confirmed they're genuinely separate code paths, not
+  just visually hidden.
+- **Scheduling "Print Roster"** — new button on the Scheduling page
+  prints the full current active-diver roster (dive-center-wide, not
+  scoped to the selected schedule date): nationality, age, short cert
+  label, logged dives, group + leader name, fun-diving/course status
+  line. "Active" reuses `divers/visibility.ts`'s
+  `isDiverActive`/`isGroupActive` — the same definition the Divers page
+  uses — rather than Scheduling's own narrower "open visit today"
+  check. New files: `scheduling/rosterFormat.ts` (three small display
+  formatters, rewritten — not literally ported — from the old app's
+  scheduling.html), `scheduling/components/RosterPrintView.tsx`. New
+  loader: `scheduling/data.ts`'s `loadRosterDivers()`.
+- **Diver trace numbers** — every diver now has a permanent,
+  human-readable `{CODE}-{NNNN}` identifier (e.g. `DN-0001`), assigned
+  once at creation, shown beside the name on the Diver Form header
+  (small, muted-but-legible secondary text — see Lesson below on why
+  it went through two rounds of sizing feedback). Full design:
+  - `dive_centers.dive_center_code` — one short code per dive center,
+    unique, NOT NULL. Backfilled: `DN` (Dive Nation Malapascua), `AT`
+    (Atlas Divers Malapascua), `DG` (Divergems Diving Center) —
+    user-confirmed — plus `TD` (Test Dive Center), `PT` (Package Test
+    Dive Center), `DC` (Demo Dive Center) — Claude-suggested
+    placeholders, approved by the user.
+  - `divers.trace_number` — unique, format-checked
+    (`^[A-Z]{2,4}-[0-9]{4,}$`).
+  - `dive_center_trace_counters` — one row per dive center, "next
+    number to hand out," incremented atomically via a single
+    `UPDATE ... RETURNING` (Postgres's row lock serializes concurrent
+    registrations at the same dive center — no explicit locking code
+    needed). A trigger auto-creates this row for any future dive
+    center (there's no app-side "create dive center" path today —
+    confirmed by investigation — they're onboarded manually).
+  - The ONLY diver-creation path in the whole app is the SECURITY
+    DEFINER function `submit_diver_registration(jsonb)`, called only
+    from the public `/register` wizard. Confirmed by grepping every
+    `.sql` file for `insert into public.divers` (only ever this one
+    function, across 4 historical redefinitions) and every
+    `supabase.rpc(...)` call in the app. Trace-number assignment lives
+    entirely inside that function's new-diver insert branch; the
+    returning-diver update branch is untouched.
+  - Migrations: `041_diver_trace_numbers.sql` (schema + counter +
+    function update) and `042_diver_trace_number_backfill.sql`
+    (backfilled all 123 existing divers, oldest-`created_at`-first per
+    dive center, `id` as tiebreak for rows sharing an identical
+    timestamp — a handful of `Package Test Dive Center` fixture rows
+    do). **Both migrations were run this session — see the Lessons
+    entry below on how, since it's a deliberate one-time exception to
+    the standing rule, not a new default.** Verified after running:
+    0 divers with a null `trace_number`, 0 duplicate `trace_number`
+    values, each dive center's counter correctly advanced past its
+    backfilled count.
+  - App-side: `diver-form/[id]/data.ts` (`DiverDetail.traceNumber`,
+    added to the `divers` select) → `diver-form/[id]/components/
+    ProfileHeader.tsx` (displayed next to the name, `text-base
+    text-gray-600 font-normal` — see sizing history in Lessons).
+  - **Not built, suggested only**: search-by-trace-number on the
+    Divers page. The user didn't ask for it; flagged as a plausible
+    follow-up, not implemented.
 
-**What's genuinely pending external parties** (nothing this codebase or
-a future session can unblock directly):
-- Paddle account verification and the `aquadesk.online` checkout-domain
-  review (submitted 2026-08-18 as `chedom_01m09jyk1m5w7xmj6gt9cb5qgq`,
-  confirmed still `pending_review` via API on 2026-08-19).
-- Payoneer identity verification (payout provider, separate system, no
-  programmatic way to check status).
-- See "Time-Sensitive" above — the "~3 days" estimate for both is dated
-  2026-08-19 and should not be repeated forward as still-current.
-
-**What's fully done, no further action needed**: the public legal pages,
-the demo request form, the landing-page pricing fix, migrations 001–040
-applied. The six real dive centers (Test Dive Center, Package Test Dive
-Center — shared fixture reset after testing, Atlas Divers Malapascua,
-Divergems Diving Center, Dive Nation Malapascua — the one real paying
-client, Demo Dive Center) were not re-verified this session; carried
-forward from the 2026-08-17 write-up in `PROJECT_HISTORY.md` unchanged.
-
-**Resend caveat** (applies to both invoice emails and the new demo
-request form): `RESEND_FROM_EMAIL` is Resend's shared sandbox address
-(`onboarding@resend.dev`, no custom domain verified on the account) in
-*every* environment, including `.env.production.local` — no override
-exists there. This works today only because the fixed recipients
-(`aquadeskonline@gmail.com` for demo requests; each diver's own address
-for invoices) happen to be reachable from that sandbox address — a real
-send to `aquadeskonline@gmail.com` was verified via direct Resend API
-call on 2026-08-19. Existing code comments flag this as intentionally
-deferred pending a real `aquadesk.online` sending subdomain — worth
-scoping as its own follow-up (it would fix both use cases at once), not
-a today problem.
-
-**Dead-code audit for everything built in the 2026-08-19 session** (demo
-request form + legal pages): clean. `requestDemo` has exactly the two
-expected call sites (definition + the one call in `DemoModal`); no
-stray "not wired up" placeholder text remains anywhere in `src/`; the
-three legal page files and the `(legal)` layout are only reachable via
-Next.js file-based routing (expected — page files aren't meant to be
-imported elsewhere). No orphaned code found.
-
-**A Paddle MCP quirk found this session, worth knowing before next use**:
-`.get()`-style methods (`products.get`, `prices.get`, `clientTokens.get`,
-`notificationSettings.get`, etc.) take the ID as a **positional string
-argument** — `client.products.get("pro_...")` — not an object like
-`{ product_id: "pro_..." }`, even though `paddle:search`'s own
-documented param shape suggests the latter. Passing an object produces
-`"URL called is invalid."` with no clearer hint. This is on top of the
-2026-08-18 finding that `notificationSettings.list()`'s returned array
-can't be trusted without cross-checking `pagination.estimatedTotal`.
+**Dead-code audit for this session's work**: one real finding, fixed —
+`scheduling/rosterFormat.ts` exported `CERT_LEVEL_SHORT` (the raw
+map), but only the wrapper function `certLevelShort()` was ever
+imported anywhere else; the map itself had zero external references.
+Un-exported it (made module-local) rather than leaving an unused
+export. Everything else built this session (the Settlement `diverId`
+threading, the Roster loader/formatters/print view, the trace-number
+column/type/display) was checked with a real `grep -rl "\bsymbolName\b"`
+usage-count pass per new exported symbol — all genuinely referenced,
+nothing else orphaned. One coincidental naming overlap, not a bug:
+`PhaseOnePanel.tsx` has a pre-existing *comment* referencing the old
+app's own `diverExperienceLine` function name (prior art, unrelated to
+this session's new `rosterFormat.ts` export of the same name) — just a
+naming coincidence between two different things, nothing to fix.
 
 ### Prior sessions (condensed further — see `PROJECT_HISTORY.md` for full detail)
 
@@ -293,6 +295,37 @@ Still outstanding from that session, dashboard-only, unconfirmed as of
    dashboard step is simple.
 3. **Bank details** (Business account > Payouts > Payout settings).
 
+**2026-08-19**: added public unauthenticated legal pages (`/terms`,
+`/privacy`, `/refund-policy`, linked from the landing footer — Terms/
+Refund Policy adapted from the Service Agreement in `settings/
+subscription/constants.ts`, Privacy Policy new content, contact email
+`aquadeskonline@gmail.com` on all three); wired a working "Request a
+Free Demo" form on the landing page (`src/lib/actions/demoRequest.ts`,
+reusing the same Resend sandbox setup as invoice emails — see the
+Resend caveat below); confirmed the landing-page pricing fix from
+`75957e2` (2026-08-18) was actually live. Dead-code audit that session
+came back clean. Two Paddle MCP quirks found and noted: `.get()`-style
+methods take the ID as a positional string argument, not `{ id }`; and
+`notificationSettings.list()`'s array can't be trusted without
+cross-checking `pagination.estimatedTotal`.
+
+**Resend caveat** (still applies, unchanged since 2026-08-19 — applies
+to both invoice emails and the demo request form): `RESEND_FROM_EMAIL`
+is Resend's shared sandbox address (`onboarding@resend.dev`, no custom
+domain verified on the account) in *every* environment, including
+`.env.production.local` — no override exists there. Works today only
+because the fixed recipients (`aquadeskonline@gmail.com` for demo
+requests; each diver's own address for invoices) happen to be
+reachable from that sandbox address. Worth scoping as its own
+follow-up (a real `aquadesk.online` sending subdomain would fix both
+use cases at once), not a today problem.
+
+**2026-09-04**: Settlement report "Open Form" button, Scheduling "Print
+Roster", and the full diver trace-number feature (investigation →
+migration → reviewed backfill → app wiring → display) — see "Current
+State" above for the full write-up, and the Lessons section below for
+three things worth not repeating.
+
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
 
 - **Every schema/RLS claim gets tested with a real simulated session**
@@ -307,7 +340,22 @@ Still outstanding from that session, dashboard-only, unconfirmed as of
   pooler connection string), run from `database/migration/` (which
   already has `pg` installed) so `require("pg")` resolves — a script
   placed elsewhere needs its own `node_modules`. Wrap migrations in
-  `begin;`/`commit;` inside the SQL file itself.
+  `begin;`/`commit;` inside the SQL file itself. **Always delete the
+  scratch runner/inspection script immediately after use** —
+  `database/migration/` is meant to stay just `etl.js`/`preflight.js`/
+  `transforms.js`/`verify.js` between sessions, not accumulate one-off
+  `check_*.js`/`run_*.js`/`seed_*.js` files.
+- **The standing rule is: migrations are written by Claude, reviewed
+  and run manually by the user in the Supabase SQL Editor — not run by
+  Claude.** On 2026-09-04 the user explicitly overrode this, in the
+  moment, for that session's two migrations specifically ("run it
+  yourself now, permission approved" — after Claude initially declined
+  and explained the standing rule). **This was a one-time,
+  session-specific authorization, not a change to the standing
+  default.** A future session should still write the migration file,
+  explain it in plain language, and wait for the user to run it or to
+  explicitly say otherwise *in that session* — don't assume blanket
+  permission carries forward from this one instance.
 - **Before writing any insert/update against an existing table, verify
   its real column names/types/allowed-check-constraint-values** — this
   schema was originally named from the blueprint's shallow inventory,
@@ -439,6 +487,56 @@ or this file's own "Current State" claims again:**
    independently checkable — a commit, a live API resource, a deployed
    page. Re-verify before repeating a "still outstanding" claim
    forward, especially across a session boundary.**
+
+5. **Almost lost the 2026-08-19 session's detail while writing this
+   file's 2026-09-04 update, right after Lesson #4 above was written
+   about exactly this class of mistake.** This file's design keeps one
+   "Current State" section that gets replaced each session — but
+   2026-08-19's content had never been archived to `PROJECT_HISTORY.md`
+   (that archive stops at 2026-08-17), so replacing the section
+   wholesale would have deleted it with no copy anywhere. Caught before
+   finishing the edit, and a condensed version was added to "Prior
+   sessions" first. **Lesson: before replacing this file's "Current
+   State" section, check whether its current content already exists
+   elsewhere (`PROJECT_HISTORY.md`, a "Prior sessions" entry) — if not,
+   condense it into "Prior sessions" as part of the *same* edit, not
+   as an afterthought.**
+
+6. **A commit message claimed a schema-dependent code change was "safe
+   to ship ahead of its migration" because it null-checked gracefully
+   — but the real risk wasn't the null case.** `diver-form/[id]/data.ts`
+   added `trace_number` to a `.select(...)` string before migration 041
+   (which adds that column) had actually been run against the DB.
+   Supabase/PostgREST rejects a `.select()` naming an unknown column as
+   a hard query error, not a silently-ignored field — so deploying at
+   that point would have broken *every* `/diver-form/[id]` page load
+   entirely, not just shown a blank trace number. Caught by rechecking
+   the live DB schema directly before deploying, but the commit message
+   itself had already asserted the wrong thing. **Lesson: before
+   claiming a schema-dependent code change is safe to ship ahead of its
+   own migration, verify what a `.select()` naming a not-yet-existing
+   column actually does — assume PostgREST hard-fails the whole query,
+   not that it degrades gracefully, unless checked otherwise.**
+
+7. **Default "muted/secondary" UI text undershot readability for this
+   app's actual users.** The Diver Form's new trace-number display
+   started at `text-xs text-gray-400` — a literal reading of "keep it
+   visually secondary" — and needed two separate rounds of user
+   feedback (darker, then bigger) before it was actually legible.
+   **Lesson: AquaDesk's users are dive-shop secretaries, not
+   necessarily young or especially tech-fluent — default any new
+   "secondary" text to at least `text-sm`/`text-gray-600`, and treat
+   "visually secondary" as *smaller/lighter than the primary element
+   next to it*, not *as small/light as Tailwind's defaults allow*.**
+
+8. **A live (production) `wrangler deploy` can get blocked by Claude
+   Code's own auto-mode permission classifier**, separate from any
+   Cloudflare/wrangler-level error — happened once on 2026-09-04, on
+   the exact same command that had worked minutes earlier for the
+   pre-prod deploy. Not a bug to work around; just surface it to the
+   user and retry once they confirm (or have them run the command
+   directly) — don't try alternate tools/flags to route around a
+   classifier block.
 
 **Older, still-relevant recurring themes** (each of these has multiple
 full incident write-ups in `PROJECT_HISTORY.md` — this is an index, not
