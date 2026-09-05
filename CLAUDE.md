@@ -122,7 +122,7 @@ sections for schema, page map, design direction, and migration plan.
   separate git repo (`git -C aquadesk-app ...`) — two independent repos
   in this tree, don't mix up which one a `git` command should target.
 - `D:\Rebuild\database\` — tracked SQL migration files (currently
-  001–042), the source of truth for schema/RLS/functions.
+  001–046), the source of truth for schema/RLS/functions.
 
 ## Absolute rule: two separate Supabase projects, never confuse them
 
@@ -170,100 +170,143 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Current State (as of 2026-09-04 session)
+## Current State (as of 2026-09-05 session)
 
 **Paddle/billing status is unchanged and NOT re-verified this
 session** — nothing Paddle-related was touched today. Everything in
 "Resume Checklist" and "Time-Sensitive" above is still exactly as
 dated (2026-08-19); re-verify per those sections' own instructions
-before trusting it, same as always. This session's work was in a
-completely different area (below).
+before trusting it, same as always.
 
-**What shipped live on `aquadesk.online` this session** (deployed and
-smoke-checked with a browser User-Agent, same method as always — plain
-`WebFetch`/`curl` without one still 403s on this domain, not an
-outage):
-- **Settlement report "Open Form" button** — each row in the Reports >
-  Settlement on-screen table now has the same "Open Form" button used
-  on Dashboard/Divers (`/diver-form/[id]`, opens in a new tab).
-  `SettlementRow` now carries `diverId` through from both payments and
-  deposits (`reports/data.ts`). Print output and CSV export are
-  unaffected — confirmed they're genuinely separate code paths, not
-  just visually hidden.
-- **Scheduling "Print Roster"** — new button on the Scheduling page
-  prints the full current active-diver roster (dive-center-wide, not
-  scoped to the selected schedule date): nationality, age, short cert
-  label, logged dives, group + leader name, fun-diving/course status
-  line. "Active" reuses `divers/visibility.ts`'s
-  `isDiverActive`/`isGroupActive` — the same definition the Divers page
-  uses — rather than Scheduling's own narrower "open visit today"
-  check. New files: `scheduling/rosterFormat.ts` (three small display
-  formatters, rewritten — not literally ported — from the old app's
-  scheduling.html), `scheduling/components/RosterPrintView.tsx`. New
-  loader: `scheduling/data.ts`'s `loadRosterDivers()`.
-- **Diver trace numbers** — every diver now has a permanent,
-  human-readable `{CODE}-{NNNN}` identifier (e.g. `DN-0001`), assigned
-  once at creation, shown beside the name on the Diver Form header
-  (small, muted-but-legible secondary text — see Lesson below on why
-  it went through two rounds of sizing feedback). Full design:
-  - `dive_centers.dive_center_code` — one short code per dive center,
-    unique, NOT NULL. Backfilled: `DN` (Dive Nation Malapascua), `AT`
-    (Atlas Divers Malapascua), `DG` (Divergems Diving Center) —
-    user-confirmed — plus `TD` (Test Dive Center), `PT` (Package Test
-    Dive Center), `DC` (Demo Dive Center) — Claude-suggested
-    placeholders, approved by the user.
-  - `divers.trace_number` — unique, format-checked
-    (`^[A-Z]{2,4}-[0-9]{4,}$`).
-  - `dive_center_trace_counters` — one row per dive center, "next
-    number to hand out," incremented atomically via a single
-    `UPDATE ... RETURNING` (Postgres's row lock serializes concurrent
-    registrations at the same dive center — no explicit locking code
-    needed). A trigger auto-creates this row for any future dive
-    center (there's no app-side "create dive center" path today —
-    confirmed by investigation — they're onboarded manually).
-  - The ONLY diver-creation path in the whole app is the SECURITY
-    DEFINER function `submit_diver_registration(jsonb)`, called only
-    from the public `/register` wizard. Confirmed by grepping every
-    `.sql` file for `insert into public.divers` (only ever this one
-    function, across 4 historical redefinitions) and every
-    `supabase.rpc(...)` call in the app. Trace-number assignment lives
-    entirely inside that function's new-diver insert branch; the
-    returning-diver update branch is untouched.
-  - Migrations: `041_diver_trace_numbers.sql` (schema + counter +
-    function update) and `042_diver_trace_number_backfill.sql`
-    (backfilled all 123 existing divers, oldest-`created_at`-first per
-    dive center, `id` as tiebreak for rows sharing an identical
-    timestamp — a handful of `Package Test Dive Center` fixture rows
-    do). **Both migrations were run this session — see the Lessons
-    entry below on how, since it's a deliberate one-time exception to
-    the standing rule, not a new default.** Verified after running:
-    0 divers with a null `trace_number`, 0 duplicate `trace_number`
-    values, each dive center's counter correctly advanced past its
-    backfilled count.
-  - App-side: `diver-form/[id]/data.ts` (`DiverDetail.traceNumber`,
-    added to the `divers` select) → `diver-form/[id]/components/
-    ProfileHeader.tsx` (displayed next to the name, `text-base
-    text-gray-600 font-normal` — see sizing history in Lessons).
-  - **Not built, suggested only**: search-by-trace-number on the
-    Divers page. The user didn't ask for it; flagged as a plausible
-    follow-up, not implemented.
+**Three rounds of work shipped live on `aquadesk.online` today**, each
+investigated and confirmed before building, each ending in its own
+commit + push + live deploy (smoke-checked with a browser User-Agent
+each time, same method as always):
 
-**Dead-code audit for this session's work**: one real finding, fixed —
-`scheduling/rosterFormat.ts` exported `CERT_LEVEL_SHORT` (the raw
-map), but only the wrapper function `certLevelShort()` was ever
-imported anywhere else; the map itself had zero external references.
-Un-exported it (made module-local) rather than leaving an unused
-export. Everything else built this session (the Settlement `diverId`
-threading, the Roster loader/formatters/print view, the trace-number
-column/type/display) was checked with a real `grep -rl "\bsymbolName\b"`
-usage-count pass per new exported symbol — all genuinely referenced,
-nothing else orphaned. One coincidental naming overlap, not a bug:
-`PhaseOnePanel.tsx` has a pre-existing *comment* referencing the old
-app's own `diverExperienceLine` function name (prior art, unrelated to
-this session's new `rosterFormat.ts` export of the same name) — just a
-naming coincidence between two different things, nothing to fix.
+**Round 1 — the session's original 3-task brief:**
+- **Online payment channel**: new `payment_channel` enum (E-Wallet/
+  PayPal/Wise/Bank), required whenever "Online" is the selected payment
+  method, everywhere it's recorded: Bill Summary, Deposits, Expenses,
+  and — these three had zero payment-method tracking of any kind
+  before today — Join Ride settlement, Rental Gear settlement, Staff
+  Commission payout. Migration 043. New shared `SettlePaymentDialog`
+  component (`src/components/ui/`) replaces the old plain `confirm()`
+  for the three settle flows, since capturing a channel needs real
+  form fields, not a yes/no.
+- **Reports > "Export Raw Data"** (button lives in the Overview tab's
+  dark "Your Story" hero card, under the summary paragraph — moved
+  there from the date-range controls per explicit request): downloads
+  one ZIP of 6 CSVs for the currently-applied date range — Divers (one
+  row per amount actually collected, not per bill; includes Trace
+  Number and the bill's Notes), Expenses, Govt Fees, Rental Gears, Join
+  Ride, Staff Activity Summary (Leading Our Dives + Our Dive Educators
+  combined via a Section column). Built with `fflate`
+  (`reports/rawExport.ts`) — pure JS, no Node `fs`/stream dependency,
+  the only zip approach that survives the Cloudflare Workers runtime
+  this app deploys to.
+- **Settlement report** shows the resolved channel under every Online
+  amount — table sub-label, print sub-label, and a dedicated CSV
+  column.
+- **Bill Summary notes field** (migration 044, `payments.notes`) — a
+  small textarea scoped to that one bill, separate from the existing
+  diver-level Notes panel further down the page.
+
+**Round 2 — Expense Category "+ Add Category"** (replaces
+"Uncategorized"): migration 045 adds one new `expense_category` enum
+value (`custom`) and a new per-dive-center `expense_categories` table
+(dedup by case-insensitive/trimmed `normalized_label`), plus
+`expenses.custom_category_id`. The 12 real fixed categories are
+completely untouched — same enum, same labels. "Uncategorized" isn't
+removed from the enum (old rows keep it forever, unchanged) — it's
+just retired from the dropdown, replaced by "+ Add Category".
+
+**Round 3 — a Settlement/deposit bug fix + the same "+ Add" pattern
+extended to payment channels:**
+- **Fixed a real bug**: `addDeposit` stamped `deposit_date` from the
+  server's raw UTC date instead of Manila-local time — any deposit
+  entered 12am–8am Manila time was filed under the *previous* calendar
+  day, making it look completely missing from that day's Settlement
+  report (the report itself was fine; the write path was wrong). Now
+  uses the same `manilaTodayStr()` pattern already used in
+  `reports/data.ts`/`dashboard/data.ts`/`office.ts`.
+- Settlement's table and print view now show an explicit "Deposit" tag
+  next to the diver's name — previously the only signal was a faint
+  orange row tint.
+- **Payment Channel "+ Add Channel"**: migration 046, same pattern as
+  Round 2's categories, applied to all 6 places a channel gets
+  recorded — new `payment_channel` enum value `custom`, new
+  per-dive-center `payment_channels` table, and a
+  `custom_channel_id`/`custom_online_channel_id` FK column added to
+  `payments`, `deposits`, `expenses`, `join_ride_records`,
+  `rental_gear_records`, `staff_commission_records`. **One shared
+  resolver does the dedup-match-or-create logic for all 6 places**:
+  `resolveOnlineChannel()` in the new `src/lib/paymentChannels.ts` —
+  import it for any future save path that records a channel, don't
+  re-implement the matching logic inline.
+
+**Established pattern this session — apply it forward**:
+"grandfathering." Whenever a new required sub-field gets added on top
+of a payment-method-like value that already has real historical data
+(this session: the Online channel), a pre-existing value recorded
+before the sub-field existed stays valid with it blank forever — the
+sub-field is only required when the value it governs is newly set or
+actually *changed* on that save, never just because the row is being
+re-saved for an unrelated reason. Built into `savePaymentOnly`/
+`checkoutVisit`/`saveExpenseRecord`'s channel checks. Default to this
+shape for any future "we now require X on top of existing Y" feature
+unless told otherwise.
+
+**Dead-code audit performed at the end of this session** (this was the
+user's explicit request, not routine) — found and fixed one real bug
+plus three sets of populated-but-unread fields; see the Lessons entries
+below for what caused each and how to catch it earlier next time:
+- **Bug**: `rawExport.ts`'s Expenses CSV was showing the literal word
+  "custom" instead of the actual channel name for any expense paid via
+  a custom channel — `expensePaymentMethodCell()` still did a raw
+  `PAYMENT_CHANNEL_LABELS[channel]`-style lookup against the old
+  4-value map instead of using the already-resolved `channelLabel`
+  field. Fixed to take `channelLabel` directly.
+- **Removed** (populated by the loader, never actually read by
+  anything once `channelLabel` existed): `JoinRideRecord.channel`/
+  `.customChannelId`, `RentalGearRecord.channel`/`.customChannelId`,
+  `Deposit.channel`/`.customChannelId`. None of those three flows has
+  an edit path that reads raw payment info back — only the resolved
+  label is ever displayed. (`ExpenseRecord.channel` and the two Staff
+  Commission row types' `channel`/`customChannelId` were *not*
+  removed — confirmed by grep they're genuinely read, for
+  edit-form-repopulation and post-save local-state-patch fallbacks
+  respectively.)
+
+**Not yet done / worth revisiting tomorrow**: `diver-form/[id]/
+actions.ts`'s `savePaymentOnly`/`checkoutVisit`/`addDeposit` each
+inline the same "resolve a custom channel" branching that
+`reports/actions.ts` factored into one shared `resolveChannelForOnline`
+helper. Not a bug — just inconsistent with the shared-resolver pattern
+this session otherwise established. Low priority, purely a DRY
+cleanup, safe to leave or fix either way.
 
 ### Prior sessions (condensed further — see `PROJECT_HISTORY.md` for full detail)
+
+**2026-09-04**: Settlement report gained an "Open Form" button per row
+(matching Dashboard/Divers). Scheduling gained a "Print Roster" button
+(dive-center-wide active-diver roster, reusing `divers/visibility.ts`'s
+active-diver definition rather than Scheduling's own narrower check).
+Built the full diver trace-number feature: a permanent, human-readable
+`{CODE}-{NNNN}` identifier (e.g. `DN-0001`) assigned once at creation,
+shown on the Diver Form header. Migrations 041 (`dive_centers.
+dive_center_code`, `divers.trace_number`, `dive_center_trace_counters`
+for atomic per-dive-center numbering via a single `UPDATE ... RETURNING`)
+and 042 (backfilled all 123 existing divers, oldest-`created_at`-first
+per dive center). Both migrations were run directly by Claude that
+session as an explicit one-time exception to the standing "migrations
+run manually by the user" rule — not a standing change. The only
+diver-creation path in the whole app is the SECURITY DEFINER
+`submit_diver_registration(jsonb)` function, confirmed by grepping
+every insert/rpc call site. Three lessons from that session (default
+"secondary" UI text sized too small, a schema-dependent-code-is-safe
+claim that wasn't actually verified against what `.select()` does with
+an unknown column, and a live `wrangler deploy` blocked once by Claude
+Code's own permission classifier) are recorded as Lessons 6–8 below.
 
 **2026-08-17**: Paddle sandbox billing built, hardened, and verified
 end-to-end (checkout, webhook sync, Retain, office visibility).
@@ -320,12 +363,6 @@ reachable from that sandbox address. Worth scoping as its own
 follow-up (a real `aquadesk.online` sending subdomain would fix both
 use cases at once), not a today problem.
 
-**2026-09-04**: Settlement report "Open Form" button, Scheduling "Print
-Roster", and the full diver trace-number feature (investigation →
-migration → reviewed backfill → app wiring → display) — see "Current
-State" above for the full write-up, and the Lessons section below for
-three things worth not repeating.
-
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
 
 - **Every schema/RLS claim gets tested with a real simulated session**
@@ -370,6 +407,24 @@ three things worth not repeating.
   latest one** — never reconstruct from memory or from an earlier
   write-up (including this file), even one quoted verbatim. This has
   caused a real production crash once already.
+- **`alter type ... add value` cannot be *used* (cast to, compared
+  against, inserted) within the same transaction that adds it** —
+  fine to include in the same `begin;`/`commit;` migration as other
+  unrelated statements (confirmed safe twice: migrations 045/046's new
+  `custom` enum values), just never write a later statement in that
+  same file that references the new value. If a future migration
+  needs to both add an enum value *and* immediately use it, split it
+  into two separate migration files.
+- **The "+ Add X" pattern (custom expense categories, migration 045;
+  custom payment channels, migration 046) is now established and
+  reusable**: one new fixed enum sentinel value (`custom`), one new
+  per-dive-center lookup table with a `label`/`normalized_label` pair
+  and a unique constraint on `(dive_center_id, normalized_label)`, one
+  shared server-side resolver doing case-insensitive/trimmed
+  dedup-match-against-base-values-then-existing-custom-values-then-create,
+  and a nullable `custom_*_id` FK column on whatever table stores the
+  choice. Reach for this exact shape again rather than reinventing it
+  for the next "let people add their own X" request.
 - **A dead-code audit needs a usage-count pass per exported symbol**
   (`grep -rl "\bsymbolName\b" <dir> | wc -l`), not just a grep for
   removed/renamed symbol names — the latter only catches stale
@@ -537,6 +592,62 @@ or this file's own "Current State" claims again:**
    user and retry once they confirm (or have them run the command
    directly) — don't try alternate tools/flags to route around a
    classifier block.
+
+9. **A new server-only shared utility module needs its client-visible
+   surface planned *before* writing consumer code, not discovered
+   mid-implementation.** Building `src/lib/paymentChannels.ts`
+   (2026-09-05, the payment-channel "+ Add Channel" feature), the
+   plain constants `ADD_CHANNEL_VALUE`/`BASE_PAYMENT_CHANNELS` were
+   first placed in that file alongside the real DB-touching functions
+   (`resolveOnlineChannel`/`loadCustomChannels`) simply because they
+   were channel-related — then, once wiring began on client components
+   (`BillSummary`, `DepositsPanel`, `ExpensesTab`,
+   `SettlePaymentDialog`), it became clear a `"use client"` file
+   cannot import from a module tagged `import "server-only"`, even for
+   a plain constant. Caught before it broke a build, but required a
+   mid-session split: the plain constants moved to the already
+   client-safe `lib/payments.ts`, leaving only genuinely
+   server-only functions in `paymentChannels.ts`. **Before writing a
+   new server-only module, list which of its exports a client
+   component will need by name first — split constants/types into a
+   client-safe sibling file from the start if any will.**
+
+10. **Widening a shared enum-like type (adding a new member to a union
+    like `PaymentChannel`) silently breaks any direct
+    `SOME_LABEL_MAP[value]` lookup against that type's label map,
+    without necessarily showing up as a `tsc` error** — if the
+    call site's parameter had already been loosened to plain `string`
+    for an unrelated reason (as `rawExport.ts`'s
+    `expensePaymentMethodCell` had been), indexing with an `as keyof
+    typeof` cast still compiles, but returns the map's own `??`
+    fallback (in this case the literal string `"custom"`) instead of
+    the real value, for the exact new member that was just added. This
+    session's own dead-code audit caught it in `rawExport.ts`'s
+    Expenses CSV export — found only by manually reviewing every
+    consumer, not by `tsc`. **When adding a new member to a shared
+    enum-like type, grep for every direct `LABEL_MAP[value]`-style
+    lookup against that type project-wide as a deliberate step — don't
+    rely on the type checker alone to surface every affected site,
+    especially anywhere the value's type had already been loosened.**
+
+11. **A dead-code usage-count grep (`grep -rl "\bsymbolName\b"`) can
+    show a field as "used" when it's only ever read as an *input* to a
+    helper that computes a different, separate output field — while
+    the original field itself is never read by anything downstream.**
+    This session's audit found exactly this for `JoinRideRecord`/
+    `RentalGearRecord`/`Deposit`'s raw `channel`/`customChannelId`
+    fields: each was legitimately passed into `resolveChannelLabel()`
+    to compute `channelLabel`, which made a naive grep count them as
+    "referenced" — but the raw fields themselves, once exposed on the
+    row type, were never read by any consuming component (all three
+    flows only ever display `channelLabel`, and none has an edit path
+    that needs the raw value back). **When a type gets both a "raw"
+    field and a "resolved/derived" field added together, specifically
+    check whether the raw field is read by anything *outside* the
+    function that computes the derived one** — grep for
+    `.fieldName` usage in the actual consuming components, not just
+    anywhere in the codebase, before assuming a nonzero match count
+    means it's genuinely used.
 
 **Older, still-relevant recurring themes** (each of these has multiple
 full incident write-ups in `PROJECT_HISTORY.md` — this is an index, not
