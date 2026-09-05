@@ -285,6 +285,29 @@ helper. Not a bug — just inconsistent with the shared-resolver pattern
 this session otherwise established. Low priority, purely a DRY
 cleanup, safe to leave or fix either way.
 
+**Round 4 — found by the user after the session had "ended" once
+already, deployed separately**: deposits were invisible to every
+financial figure on Reports > Overview, even though Settlement already
+showed them correctly (fixed in Round 3 above). Root cause: a deposit
+is real money collected the day it's taken, but it's never copied into
+the `payments` table — checkout only ever records the *remaining*
+balance after subtracting whatever was deposited — so anything reading
+only `payments` silently loses every deposit forever. Three places had
+this exact gap, all in `reports/data.ts`, all fixed together:
+- **`loadOverviewData`**: "Collected from Divers"/"Money In" understated
+  actual revenue by the full deposit amount. Added a `depositsCollected`
+  query (deposits within the applied date range) and a new "Deposits
+  Collected" line in the Business Summary UI.
+- **`loadMonthlyFinancials`**: the monthly revenue chart had the
+  identical blind spot — fixed the same way.
+- **`openDiverBills`** (the "Not Yet Settled" figure): overstated what's
+  still owed on any open bill that already has a deposit against it —
+  e.g. an ₱8,000 bill with a ₱5,000 deposit and nothing else recorded
+  showed "₱8,000 still owed" instead of ₱3,000. Fixed by subtracting
+  deposits tied to each open visit (queried by `visit_id`, not
+  date-bound, since this is a live current-balance snapshot, not a
+  date-range report).
+
 ### Prior sessions (condensed further — see `PROJECT_HISTORY.md` for full detail)
 
 **2026-09-04**: Settlement report gained an "Open Form" button per row
