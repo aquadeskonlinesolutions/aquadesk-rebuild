@@ -42,12 +42,12 @@ charge_type: [per_dive, per_day]
 clip_source: [manual, returned, carryover]
 commission_group: [dive_educator, dive_leader]
 commission_status: [unpaid, paid]
-expense_category: [fuel, boat_maintenance, equipment_maintenance, compressor_fill_station, staff_meals, food_expenses, office_supplies, utilities, licenses_permits, marketing, repairs, other, uncategorized]
+expense_category: [fuel, boat_maintenance, equipment_maintenance, compressor_fill_station, staff_meals, food_expenses, office_supplies, utilities, licenses_permits, marketing, repairs, other, uncategorized, custom]
 experience_type: [fun_diving, dive_course]
 fuel_type: [gasoline, diesel]
 join_ride_direction: [joined_our_boat, we_joined_another_boat]
 payment_method: [cash, card, online]
-payment_channel: [e_wallet, paypal, wise, bank]
+payment_channel: [e_wallet, paypal, wise, bank, custom]
 pricing_mode: [tier, package]
 rental_gear_status: [to_collect, collected, to_pay, paid]
 staff_employment_status: [full_time, part_time, freelance]
@@ -102,6 +102,7 @@ divers: dive_center_id, first_name, last_name
 equipment: dive_center_id, name
 equipment_rental_rates: dive_center_id, item_name
 exchange_rates: dive_center_id, currency_code, rate_to_php
+expense_categories: dive_center_id, label, normalized_label
 expenses: dive_center_id, date, category, amount
 fuel_logs: dive_center_id
 govt_fees: dive_center_id, date, fee_type
@@ -113,6 +114,7 @@ manifests: dive_center_id, schedule_id
 medical_questions: dive_center_id, question_text
 other_charges: dive_center_id, charge_name, charge_type
 packages: dive_center_id, package_name
+payment_channels: dive_center_id, label, normalized_label
 payment_surcharges: dive_center_id, surcharge_type
 payments: dive_center_id, diver_id, visit_id
 platform_admins: user_id, full_name, email
@@ -144,10 +146,11 @@ visits: dive_center_id, diver_id, experience_type
 ```
 activities, audit_logs, boats, course_rates, deposits, dive_centers,
 dive_sites, diver_notes, diver_registrations, diver_staff_defaults,
-divers, equipment, equipment_rental_rates, exchange_rates, expenses,
+divers, equipment, equipment_rental_rates, exchange_rates,
+expense_categories, expenses,
 fuel_logs, govt_fees, groups, invoice_emails, join_ride_records,
 join_ride_statements, manifests, medical_questions, other_charges,
-packages, payment_surcharges, payments, platform_admins, privacy_notice,
+packages, payment_channels, payment_surcharges, payments, platform_admins, privacy_notice,
 rate_tiers, rental_gear_records, schedule_crew,
 schedule_day_diver_exclusions, schedule_diver_dive_tanks,
 schedule_divers, schedule_sites, schedule_spare_tanks,
