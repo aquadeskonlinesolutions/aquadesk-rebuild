@@ -170,7 +170,7 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Current State (as of 2026-09-05 session)
+## Current State (as of 2026-09-07 session)
 
 **Paddle/billing status is unchanged and NOT re-verified this
 session** — nothing Paddle-related was touched today. Everything in
@@ -178,137 +178,159 @@ session** — nothing Paddle-related was touched today. Everything in
 dated (2026-08-19); re-verify per those sections' own instructions
 before trusting it, same as always.
 
-**Three rounds of work shipped live on `aquadesk.online` today**, each
-investigated and confirmed before building, each ending in its own
-commit + push + live deploy (smoke-checked with a browser User-Agent
-each time, same method as always):
+Today's work was a **Billing Audit fix set** (4 explicitly-scoped
+tasks, one at a time with go-ahead between each — same working style
+as always) **plus three rounds of live-regression cleanup** triggered
+by that work along the way. Every deploy today, including the
+cleanup ones, was confirmed against the actual Cloudflare deployment
+record (`wrangler deployments list`, not just a clean exit code) and
+a live-vs-local `BUILD_ID` content match — not just "the command
+succeeded."
 
-**Round 1 — the session's original 3-task brief:**
-- **Online payment channel**: new `payment_channel` enum (E-Wallet/
-  PayPal/Wise/Bank), required whenever "Online" is the selected payment
-  method, everywhere it's recorded: Bill Summary, Deposits, Expenses,
-  and — these three had zero payment-method tracking of any kind
-  before today — Join Ride settlement, Rental Gear settlement, Staff
-  Commission payout. Migration 043. New shared `SettlePaymentDialog`
-  component (`src/components/ui/`) replaces the old plain `confirm()`
-  for the three settle flows, since capturing a channel needs real
-  form fields, not a yes/no.
-- **Reports > "Export Raw Data"** (button lives in the Overview tab's
-  dark "Your Story" hero card, under the summary paragraph — moved
-  there from the date-range controls per explicit request): downloads
-  one ZIP of 6 CSVs for the currently-applied date range — Divers (one
-  row per amount actually collected, not per bill; includes Trace
-  Number and the bill's Notes), Expenses, Govt Fees, Rental Gears, Join
-  Ride, Staff Activity Summary (Leading Our Dives + Our Dive Educators
-  combined via a Section column). Built with `fflate`
-  (`reports/rawExport.ts`) — pure JS, no Node `fs`/stream dependency,
-  the only zip approach that survives the Cloudflare Workers runtime
-  this app deploys to.
-- **Settlement report** shows the resolved channel under every Online
-  amount — table sub-label, print sub-label, and a dedicated CSV
-  column.
-- **Bill Summary notes field** (migration 044, `payments.notes`) — a
-  small textarea scoped to that one bill, separate from the existing
-  diver-level Notes panel further down the page.
+**Billing Audit fixes (no migration needed for any of this):**
+- **Date-scoping**: `loadBillingAuditData()` (`reports/data.ts`) now
+  takes `dateFrom`/`dateTo` and scopes the "Invoice History" table's
+  `invoice_emails` query to the Reports page's applied date range,
+  using the existing `manilaDayBoundsUtcIso()` helper (`sent_at` is a
+  `timestamptz`, same Manila-day-to-UTC-instant pattern used
+  everywhere else in this file) — verified directly against a real
+  flagged visit's two closures that the filtered query genuinely
+  excludes out-of-range rows, not just that the code reads right.
+  **Deliberately left unfiltered**: the "Flagged Bills" expanded
+  invoice list runs its own separate, always-unfiltered query — a
+  flagged visit's full closure history must never be hidden by the
+  applied date range, or the audit trail defeats its own purpose.
+  `getBillingAuditData()` and `ReportsClient.tsx`'s tab-open/
+  `applyDateRange` wiring updated to match the existing Expenses/
+  Gov't Fees/Staff pattern (so it actually refetches on Apply, not
+  just on first tab open).
+- **Relabeling** (`BillingAuditTab.tsx`, display-only — `sent_at`/
+  `invoice_count` columns themselves untouched): "Sent At" → "Closed
+  On" everywhere it appeared (confirmed via migration 008's own
+  comment plus a live-row check that `sent_at` already always equals
+  bill-close time, never email-send time — separate `email_sent_at`/
+  `email_delivery_status` columns already exist for that and are
+  unused/`not_sent` on every row); "Invoices Sent" → "Times Closed" in
+  the Flagged Bills table, plus matching prose changes found by
+  grepping for the same wording elsewhere on the tab.
+- **Date picker mobile/tablet responsiveness**: the From/To/Apply row
+  in `ReportsClient.tsx` now stacks into a column below Tailwind's
+  `sm` breakpoint (640px, confirmed unmodified default for this
+  project) instead of relying on bare `flex-wrap` alone.
 
-**Round 2 — Expense Category "+ Add Category"** (replaces
-"Uncategorized"): migration 045 adds one new `expense_category` enum
-value (`custom`) and a new per-dive-center `expense_categories` table
-(dedup by case-insensitive/trimmed `normalized_label`), plus
-`expenses.custom_category_id`. The 12 real fixed categories are
-completely untouched — same enum, same labels. "Uncategorized" isn't
-removed from the enum (old rows keep it forever, unchanged) — it's
-just retired from the dropdown, replaced by "+ Add Category".
+**Regression cleanup, three rounds — see Lessons 12-15 below for the
+full "what went wrong and why" writeup, don't just read this summary:**
+1. A width/flex-basis fix for "date value invisible on mobile" shipped
+   live and turned out to be a complete non-fix — the real cause was
+   unrelated to width entirely, confirmed by MK's own device testing
+   after deploy.
+2. Real cause found: `globals.css` had a leftover, never-actually-used
+   `@media (prefers-color-scheme: dark)` block (default Next.js
+   scaffolding — confirmed zero `dark:` Tailwind-variant usage
+   anywhere in this app) flipping the page's inherited text color on
+   any dark-mode device, while the date inputs — and, as it turned out,
+   every plain login/registration input too — have no explicit
+   text-color class and inherit it. The first attempt at the real fix
+   (`color-scheme: light` alone) fixed only the native-control-
+   *background* half of the problem and **shipped live text-invisible
+   on login and diver registration** — worse than the original bug, on
+   a day with real paying customers on the site. Fixed for real by
+   removing the leftover dark-mode media query entirely — confirmed
+   working by MK.
+3. A separate "Sign Out sits isolated in its own top bar" report from
+   MK turned out, on investigation, to **not be a regression from any
+   of today's changes at all** — zero diff in `layout.tsx`/
+   `Sidebar.tsx` since before today's work started; it was the app's
+   original, always-existing structure. Per MK's direction, fixed
+   anyway: Sign Out moved into the sidebar's existing name/role block
+   (`Sidebar.tsx`), and the now-empty top `<header>` removed entirely
+   from `(app)/layout.tsx` — a genuinely contained 2-file change,
+   chosen specifically because no shared page-title-row component
+   exists that would have let Sign Out move into each page's own
+   title row without touching 8 separate files (see below).
 
-**Round 3 — a Settlement/deposit bug fix + the same "+ Add" pattern
-extended to payment channels:**
-- **Fixed a real bug**: `addDeposit` stamped `deposit_date` from the
-  server's raw UTC date instead of Manila-local time — any deposit
-  entered 12am–8am Manila time was filed under the *previous* calendar
-  day, making it look completely missing from that day's Settlement
-  report (the report itself was fine; the write path was wrong). Now
-  uses the same `manilaTodayStr()` pattern already used in
-  `reports/data.ts`/`dashboard/data.ts`/`office.ts`.
-- Settlement's table and print view now show an explicit "Deposit" tag
-  next to the diver's name — previously the only signal was a faint
-  orange row tint.
-- **Payment Channel "+ Add Channel"**: migration 046, same pattern as
-  Round 2's categories, applied to all 6 places a channel gets
-  recorded — new `payment_channel` enum value `custom`, new
-  per-dive-center `payment_channels` table, and a
-  `custom_channel_id`/`custom_online_channel_id` FK column added to
-  `payments`, `deposits`, `expenses`, `join_ride_records`,
-  `rental_gear_records`, `staff_commission_records`. **One shared
-  resolver does the dedup-match-or-create logic for all 6 places**:
-  `resolveOnlineChannel()` in the new `src/lib/paymentChannels.ts` —
-  import it for any future save path that records a channel, don't
-  re-implement the matching logic inline.
+**New fact learned about this codebase, worth remembering for future
+page-chrome work**: there is **no shared "page title row" component**
+across `(app)/` pages — Dashboard, Reports, Boat Manifest, Diver Form
+list, Scheduling, Divers, Settings, and Diver Detail each implement
+their own title/subtitle/action-button row independently, with real
+structural differences (Scheduling wraps its row in its own bordered
+card, unlike everyone else; Divers has no right-side content at all;
+Settings has no row at all, just a bare `<h1>`; Diver Detail has no
+title-row concept at all, just a "← Back to Divers" link). Don't
+assume a shared header exists for future page-chrome work without
+checking each page individually, same as this session had to.
 
-**Established pattern this session — apply it forward**:
-"grandfathering." Whenever a new required sub-field gets added on top
-of a payment-method-like value that already has real historical data
-(this session: the Online channel), a pre-existing value recorded
-before the sub-field existed stays valid with it blank forever — the
-sub-field is only required when the value it governs is newly set or
-actually *changed* on that save, never just because the row is being
-re-saved for an unrelated reason. Built into `savePaymentOnly`/
-`checkoutVisit`/`saveExpenseRecord`'s channel checks. Default to this
-shape for any future "we now require X on top of existing Y" feature
-unless told otherwise.
+**Dead-code audit performed this session** (explicit request, same
+habit as 2026-09-05): checked every file touched today (`reports/
+data.ts`, `reports/actions.ts`, `reports/BillingAuditTab.tsx`,
+`reports/ReportsClient.tsx`, `globals.css`, `(app)/layout.tsx`,
+`Sidebar.tsx`) via both `eslint` and a manual variable-usage check —
+**clean, nothing left unused**. The Billing Audit query split
+(filtered `invoiceEmails` for the main table vs. unfiltered
+`allInvoiceEmails` for flagged expansion) both feed one shared
+`toInvoiceRow()` helper; no orphaned variables from the several
+date-picker markup iterations; `signOut`'s import moved cleanly from
+`layout.tsx` to `Sidebar.tsx` with nothing left behind in the old
+spot. (`/office`'s separate platform-admin Sign Out implementation is
+untouched and intentionally independent — confirmed it's a fully
+separate route outside `(app)/`, not a duplicate of anything touched
+today.)
 
-**Dead-code audit performed at the end of this session** (this was the
-user's explicit request, not routine) — found and fixed one real bug
-plus three sets of populated-but-unread fields; see the Lessons entries
-below for what caused each and how to catch it earlier next time:
-- **Bug**: `rawExport.ts`'s Expenses CSV was showing the literal word
-  "custom" instead of the actual channel name for any expense paid via
-  a custom channel — `expensePaymentMethodCell()` still did a raw
-  `PAYMENT_CHANNEL_LABELS[channel]`-style lookup against the old
-  4-value map instead of using the already-resolved `channelLabel`
-  field. Fixed to take `channelLabel` directly.
-- **Removed** (populated by the loader, never actually read by
-  anything once `channelLabel` existed): `JoinRideRecord.channel`/
-  `.customChannelId`, `RentalGearRecord.channel`/`.customChannelId`,
-  `Deposit.channel`/`.customChannelId`. None of those three flows has
-  an edit path that reads raw payment info back — only the resolved
-  label is ever displayed. (`ExpenseRecord.channel` and the two Staff
-  Commission row types' `channel`/`customChannelId` were *not*
-  removed — confirmed by grep they're genuinely read, for
-  edit-form-repopulation and post-save local-state-patch fallbacks
-  respectively.)
+**Standing rule set by MK this session, going forward**: before
+asking MK to verify any fix live (phone, browser, anywhere outside the
+local checkout), confirm and state the actual deployment status —
+pushed? what commit is `origin/master` at? what commit/version does
+the live Cloudflare deployment record show, checked against the
+deployment record and a content-level check (e.g. a `BUILD_ID`
+match), not just a clean exit code? — **in that same message**, never
+as a separate follow-up. Set after an earlier gap this session where
+verification was requested before a fix had even been confirmed
+pushed. Also added as a bullet under "Working practices" below.
 
-**Not yet done / worth revisiting tomorrow**: `diver-form/[id]/
-actions.ts`'s `savePaymentOnly`/`checkoutVisit`/`addDeposit` each
-inline the same "resolve a custom channel" branching that
-`reports/actions.ts` factored into one shared `resolveChannelForOnline`
-helper. Not a bug — just inconsistent with the shared-resolver pattern
-this session otherwise established. Low priority, purely a DRY
-cleanup, safe to leave or fix either way.
-
-**Round 4 — found by the user after the session had "ended" once
-already, deployed separately**: deposits were invisible to every
-financial figure on Reports > Overview, even though Settlement already
-showed them correctly (fixed in Round 3 above). Root cause: a deposit
-is real money collected the day it's taken, but it's never copied into
-the `payments` table — checkout only ever records the *remaining*
-balance after subtracting whatever was deposited — so anything reading
-only `payments` silently loses every deposit forever. Three places had
-this exact gap, all in `reports/data.ts`, all fixed together:
-- **`loadOverviewData`**: "Collected from Divers"/"Money In" understated
-  actual revenue by the full deposit amount. Added a `depositsCollected`
-  query (deposits within the applied date range) and a new "Deposits
-  Collected" line in the Business Summary UI.
-- **`loadMonthlyFinancials`**: the monthly revenue chart had the
-  identical blind spot — fixed the same way.
-- **`openDiverBills`** (the "Not Yet Settled" figure): overstated what's
-  still owed on any open bill that already has a deposit against it —
-  e.g. an ₱8,000 bill with a ₱5,000 deposit and nothing else recorded
-  showed "₱8,000 still owed" instead of ₱3,000. Fixed by subtracting
-  deposits tied to each open visit (queried by `visit_id`, not
-  date-bound, since this is a live current-balance snapshot, not a
-  date-range report).
+**Git/environment gotcha found and fixed this session**: this Claude
+Code environment's `gh` CLI was authenticated as `usemiraapp-ai` — a
+real account of MK's, but tied to a completely different project
+(Mira), left over from earlier unrelated use of this same environment.
+It has no push access to `aquadeskonlinesolutions/aquadesk-app`, which
+silently blocked the first push attempt of the day (403 error). Fixed
+by logging that session out; MK re-authenticated as
+`aquadeskonlinesolutions` via `gh auth login`. Worth a quick `gh auth
+status` sanity check at the start of a future session before the
+first push, given this environment has a documented history of being
+shared across MK's different projects.
 
 ### Prior sessions (condensed further — see `PROJECT_HISTORY.md` for full detail)
+
+**2026-09-05**: shipped three rounds of live work in one day (each
+confirmed via User-Agent smoke-check, same method as always): (1) a
+`payment_channel` "Online" sub-field (E-Wallet/PayPal/Wise/Bank)
+required wherever Online is selected — Bill Summary, Deposits,
+Expenses, plus first-time payment-method tracking added to Join Ride/
+Rental Gear/Staff Commission settlement (migration 043); a new shared
+`SettlePaymentDialog` component; Reports > "Export Raw Data" (a 6-CSV
+ZIP via `fflate`, chosen specifically because it's Workers-runtime-safe
+with no Node `fs`/stream dependency); a Settlement report channel
+display; a Bill Summary notes field (migration 044). (2) Expense
+Category "+ Add Category" (migration 045: `custom` enum value + a
+per-dive-center `expense_categories` table). (3) a real bug fix —
+`addDeposit` was stamping `deposit_date` from raw UTC instead of
+Manila-local time, making early-morning deposits vanish from that
+day's Settlement report — plus a Settlement "Deposit" tag, and the
+same "+ Add Channel" pattern extended to payment channels (migration
+046, shared `resolveOnlineChannel()` resolver in
+`src/lib/paymentChannels.ts`). Established the "grandfathering"
+pattern that session (a new required sub-field on an existing value
+only applies going forward, never retroactively — see "Working
+practices" below, still in force). A same-session dead-code audit
+found and fixed one real bug (`rawExport.ts`'s Expenses CSV showing
+the literal word "custom" instead of the resolved channel label) plus
+three populated-but-never-read fields removed. A Round 4 fix (found by
+MK after the session had "ended" once already) discovered deposits
+were never copied into `payments`, so Reports > Overview's "Collected
+from Divers," the monthly revenue chart, and "Not Yet Settled" all
+silently ignored deposit money — fixed in `reports/data.ts`'s
+`loadOverviewData`/`loadMonthlyFinancials`/`openDiverBills`.
 
 **2026-09-04**: Settlement report gained an "Open Form" button per row
 (matching Dashboard/Divers). Scheduling gained a "Print Roster" button
@@ -481,6 +503,14 @@ use cases at once), not a today problem.
   before the next `next dev` start in the same directory** — a stale
   shared build-output directory can leave the dev server reporting
   "Ready" while every route 404s.
+- **Standing rule (set 2026-09-07): before asking MK to verify any fix
+  live** (phone, browser, anywhere outside the local checkout), state
+  the actual deployment status in that same message — pushed? what
+  commit is `origin/master` at? what commit/version does the live
+  Cloudflare deployment record show, confirmed with a content-level
+  check (e.g. a `BUILD_ID` match against the local build), not just a
+  clean exit code? Never ask for verification and let deployment
+  status turn up as a separate, later surprise.
 - **Cloudflare deploy sequence** (`aquadesk-app`): stop the local dev
   server → clear `.next` → **check every `NEXT_PUBLIC_*` kill-switch/
   feature-flag's current value in `.env.production.local` (not
@@ -671,6 +701,89 @@ or this file's own "Current State" claims again:**
     `.fieldName` usage in the actual consuming components, not just
     anywhere in the codebase, before assuming a nonzero match count
     means it's genuinely used.
+
+12. **A native-input-invisible-value bug on mobile was misdiagnosed
+    twice before being fixed, and the second wrong attempt made things
+    worse and shipped live to a site with real paying customers.**
+    First diagnosis: a Tailwind `flex-1`/`flex-basis:0%` layout quirk
+    squeezing the date input too narrow for the browser to render its
+    value — plausible-sounding, but wrong; the fix deployed cleanly
+    (confirmed via `BUILD_ID` match) and changed nothing, because
+    width was never the actual cause. Second diagnosis, closer but
+    still incomplete: `globals.css` had a leftover, never-actually-
+    built-out `@media (prefers-color-scheme: dark)` block (confirmed
+    zero `dark:` Tailwind-variant usage anywhere else in the app)
+    flipping the page's inherited text color on any dark-mode device;
+    the date inputs — and, unnoticed at the time, every plain login/
+    registration input too — have no explicit text-color class and
+    inherit that flipped color. The fix applied — `color-scheme:
+    light`, forcing native control *backgrounds* to stay light — only
+    addressed half of a two-part visual pairing: text color still
+    flipped independently via the untouched media query. Before the
+    fix, a dark-mode device got a browser-auto-dark input background
+    paired with light-flipped text (accidentally readable); after the
+    half-fix, backgrounds were forced light while text stayed light
+    too, breaking visibility everywhere the fix didn't reach — which
+    turned out to be every unstyled input in the app, including login
+    and diver registration, not just date pickers. Only fixed for real
+    by removing the leftover media query entirely, so text color no
+    longer flips at all, matching how every other hardcoded-light
+    component in this app already behaves. **Lesson: when a native
+    form control's *value* is invisible (not missing, not squeezed,
+    just not rendered) with no browser tool available to visually
+    confirm, check inherited/global color rules (`color`,
+    `color-scheme`, `prefers-color-scheme`) before reaching for
+    layout/width explanations — and when the mechanism turns out to be
+    a two-part visual pairing (foreground vs. background, light vs.
+    dark), fix and verify *both* sides in the same change. A fix that
+    touches only one half of such a pairing can make the mismatch
+    worse, not better.**
+
+13. **Both of the wrong/incomplete fixes above were pushed straight to
+    the live, paying-customer production domain with no way to
+    visually verify them first** (no browser/device tool available
+    this session), based on plausible-sounding reasoning alone, each
+    reported with more confidence than the verification actually
+    supported. The second one broke login and diver registration in
+    production for however long it was live before MK caught it on
+    their own phone. **Lesson: for any CSS/behavior change to a live
+    production site that cannot be visually verified locally first (no
+    browser tool), prefer verifying via the local dev server — or at
+    minimum a pre-prod deploy — with the user's own eyes *before*
+    pushing to the live domain, not after.** MK ended up imposing
+    exactly this process for the later Sign Out fix the same day
+    ("verify via dev server before commit/push"); that should be the
+    *default* going forward for any user-facing visual change, not
+    something that only kicks in after a live breakage has already
+    happened once.
+
+14. **Asked MK to verify a fix live on their phone before confirming
+    the fix had actually been pushed or deployed at all** — it turned
+    out the commit was sitting local-only (this project's standing
+    rule is that commits only happen when explicitly asked, and that
+    gap hadn't been surfaced before requesting verification).
+    **Lesson, now a standing rule MK set explicitly (see "Working
+    practices" above)**: before asking MK to verify anything live
+    (phone, browser, any environment outside the local checkout),
+    state the actual deployment status — pushed? what commit is
+    `origin/master` at? what commit/version is the live Cloudflare
+    deployment actually serving, checked against the deployment record
+    and a content-level check like a `BUILD_ID` match, not just a
+    clean exit code? — in the *same* message that asks for
+    verification, never as a separate follow-up.
+
+15. **The first git push attempt of the day failed with a 403** — this
+    Claude Code environment's `gh` CLI was authenticated as
+    `usemiraapp-ai`, a legitimate account of MK's but tied to an
+    entirely different project (Mira), left over from this same
+    environment having been used for that project at some earlier
+    point. It had no push access to `aquadeskonlinesolutions/
+    aquadesk-app`. Fixed by logging that session out and having MK
+    re-authenticate as the correct `aquadeskonlinesolutions` account.
+    **Lesson: this environment has a documented history of being
+    shared across MK's different projects — a quick `gh auth status`
+    check before the first push of a session is cheap insurance
+    against discovering the wrong account mid-task.**
 
 **Older, still-relevant recurring themes** (each of these has multiple
 full incident write-ups in `PROJECT_HISTORY.md` — this is an index, not
