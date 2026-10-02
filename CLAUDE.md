@@ -170,137 +170,150 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Current State (as of 2026-09-07 session)
+## Current State (as of 2026-10-02 session)
 
 **Paddle/billing status is unchanged and NOT re-verified this
-session** — nothing Paddle-related was touched today. Everything in
-"Resume Checklist" and "Time-Sensitive" above is still exactly as
-dated (2026-08-19); re-verify per those sections' own instructions
-before trusting it, same as always.
+session** — nothing Paddle-related was touched. Everything in "Resume
+Checklist" and "Time-Sensitive" above is still exactly as dated
+(2026-08-19); re-verify per those sections' own instructions before
+trusting it. Note the live `PADDLE_API_KEY` was still blank in
+`.env.production.local` when its variable names were listed this
+session (values not read) — the 2026-11-16 expiry date above is now
+about six weeks out.
 
-Today's work was a **Billing Audit fix set** (4 explicitly-scoped
-tasks, one at a time with go-ahead between each — same working style
-as always) **plus three rounds of live-regression cleanup** triggered
-by that work along the way. Every deploy today, including the
-cleanup ones, was confirmed against the actual Cloudflare deployment
-record (`wrangler deployments list`, not just a clean exit code) and
-a live-vs-local `BUILD_ID` content match — not just "the command
-succeeded."
+Today's work was a set of small, explicitly-scoped UI improvements
+requested by MK under a strict "investigate → report → wait for
+approval → implement → validate" process (MK's own prompt; no
+migrations, no schema changes, no data touched). Both commits are live.
 
-**Billing Audit fixes (no migration needed for any of this):**
-- **Date-scoping**: `loadBillingAuditData()` (`reports/data.ts`) now
-  takes `dateFrom`/`dateTo` and scopes the "Invoice History" table's
-  `invoice_emails` query to the Reports page's applied date range,
-  using the existing `manilaDayBoundsUtcIso()` helper (`sent_at` is a
-  `timestamptz`, same Manila-day-to-UTC-instant pattern used
-  everywhere else in this file) — verified directly against a real
-  flagged visit's two closures that the filtered query genuinely
-  excludes out-of-range rows, not just that the code reads right.
-  **Deliberately left unfiltered**: the "Flagged Bills" expanded
-  invoice list runs its own separate, always-unfiltered query — a
-  flagged visit's full closure history must never be hidden by the
-  applied date range, or the audit trail defeats its own purpose.
-  `getBillingAuditData()` and `ReportsClient.tsx`'s tab-open/
-  `applyDateRange` wiring updated to match the existing Expenses/
-  Gov't Fees/Staff pattern (so it actually refetches on Apply, not
-  just on first tab open).
-- **Relabeling** (`BillingAuditTab.tsx`, display-only — `sent_at`/
-  `invoice_count` columns themselves untouched): "Sent At" → "Closed
-  On" everywhere it appeared (confirmed via migration 008's own
-  comment plus a live-row check that `sent_at` already always equals
-  bill-close time, never email-send time — separate `email_sent_at`/
-  `email_delivery_status` columns already exist for that and are
-  unused/`not_sent` on every row); "Invoices Sent" → "Times Closed" in
-  the Flagged Bills table, plus matching prose changes found by
-  grepping for the same wording elsewhere on the tab.
-- **Date picker mobile/tablet responsiveness**: the From/To/Apply row
-  in `ReportsClient.tsx` now stacks into a column below Tailwind's
-  `sm` breakpoint (640px, confirmed unmodified default for this
-  project) instead of relying on bare `flex-wrap` alone.
+**Shipped (commits `17ee0c1` + `7a18f56`, `origin/master` =
+`7a18f56`, live Cloudflare version `48ec32d6-86c1-44e8-896d-2044e12c0492`,
+deployed 2026-10-02 06:40 UTC, confirmed via `wrangler deployments
+list` + live/local `BUILD_ID` match `S-3u-t299xyxrsfIKWitE`):**
+1. **Group Registration Link date labels** (`divers/components/
+   GroupManagementTab.tsx`): the two bare `<input type="date">`s
+   (already correctly wired to `arrival_date`/`departure_date` in
+   `createRegistrationLinkGroup`) now have "Arrival Date"/"Departure
+   Date" labels. Label-only change.
+2. **Phase 2 notes visible in Phase 3** (`scheduling/components/
+   PhaseThreePanel.tsx`): the trip card header now shows the trip
+   `notes` and the "Other Divers Joining" `guestNotes` under the
+   dive-site chips (the old app's `confirmTripHTML()` showed
+   `notesText` there; the rebuild had dropped it). `getTripDetail()`
+   already returned both fields — Phase 3 just never rendered them.
+   `tripPreviewText()` (shared by Copy Preview *and* Download Image)
+   gained an "Other Divers Joining Notes:" line. Phase 3 shows *saved*
+   values only, same as every other Phase 3 field.
+3. **Staff page** (`staff/StaffScheduleClient.tsx`): the Join Rides
+   block already showed `guest_notes`, but only when a guest count or
+   dive center name was also set — now notes alone are enough.
+   Migration 030 is confirmed as the latest `get_crew_schedule` and
+   already returns `guest_notes`.
+4. **Phone/WhatsApp country-code picker** (`components/PhoneInput.tsx`,
+   `lib/countryCodes.ts`, `register/RegistrationWizard.tsx` — the
+   picker is used *only* on diver registration, 4 fields): options now
+   read "🇵🇭 +63 Philippines" (previously flag + code only, and Windows
+   renders flag emoji as two letters, so it was nearly unusable);
+   list sorted alphabetically with "Other" last; **no default** — MK
+   explicitly asked for no preselected country (not even Philippines),
+   so every field starts on a disabled "Country code" placeholder and
+   step validation requires a code whenever a number is entered;
+   United States/Canada merged into one "United States / Canada" `+1`
+   entry (they previously collided: same `<option value>`, so picking
+   Canada snapped back to US); `DEFAULT_COUNTRY_DIAL_CODE` removed
+   entirely; `splitStoredPhone()`'s fallback for a returning diver's
+   unmatched stored number is now `""` (forces a pick) instead of
+   silently prepending `+63`. Select is fixed-width (`w-36`) so the
+   number field keeps its room on phones.
+5. **"Partner" relationship option**, after "Spouse", in all three
+   separate lists: `register/types.ts` `RELATIONSHIPS`,
+   `diver-form/[id]/constants.ts`, `settings/staff/constants.ts`.
+   `emergency_contact_relationship` is plain `text` with no check
+   constraint, so no migration needed. **These three lists are
+   independent copies — any future relationship change must touch all
+   three.**
 
-**Regression cleanup, three rounds — see Lessons 12-15 below for the
-full "what went wrong and why" writeup, don't just read this summary:**
-1. A width/flex-basis fix for "date value invisible on mobile" shipped
-   live and turned out to be a complete non-fix — the real cause was
-   unrelated to width entirely, confirmed by MK's own device testing
-   after deploy.
-2. Real cause found: `globals.css` had a leftover, never-actually-used
-   `@media (prefers-color-scheme: dark)` block (default Next.js
-   scaffolding — confirmed zero `dark:` Tailwind-variant usage
-   anywhere in this app) flipping the page's inherited text color on
-   any dark-mode device, while the date inputs — and, as it turned out,
-   every plain login/registration input too — have no explicit
-   text-color class and inherit it. The first attempt at the real fix
-   (`color-scheme: light` alone) fixed only the native-control-
-   *background* half of the problem and **shipped live text-invisible
-   on login and diver registration** — worse than the original bug, on
-   a day with real paying customers on the site. Fixed for real by
-   removing the leftover dark-mode media query entirely — confirmed
-   working by MK.
-3. A separate "Sign Out sits isolated in its own top bar" report from
-   MK turned out, on investigation, to **not be a regression from any
-   of today's changes at all** — zero diff in `layout.tsx`/
-   `Sidebar.tsx` since before today's work started; it was the app's
-   original, always-existing structure. Per MK's direction, fixed
-   anyway: Sign Out moved into the sidebar's existing name/role block
-   (`Sidebar.tsx`), and the now-empty top `<header>` removed entirely
-   from `(app)/layout.tsx` — a genuinely contained 2-file change,
-   chosen specifically because no shared page-title-row component
-   exists that would have let Sign Out move into each page's own
-   title row without touching 8 separate files (see below).
+**Considered and deliberately not changed** (MK's call, or reported
+only per the strict-scope rule):
+- Phase 3's joiner count/company is already shown, in the navy tank-
+  tally bar ("Joining us: N (DC)") — MK had missed it; no change wanted.
+- Copy Preview/Download Image only include the "Joining us" line when
+  `guestDiversCount > 0`, so a dive-center name alone is omitted there
+  (staff page shows it). Reported, not fixed.
+- `downloadTripImage()` doesn't wrap long lines — anything past ~640px
+  (long notes especially) is clipped off the PNG. Pre-existing.
+- "Confirm Schedule" in Phase 2 only blocks on *unsaved new* trips, not
+  unsaved edits to existing trips — so typed-but-unsaved notes won't
+  reach Phase 3.
+- The group-link form's other inputs are still placeholder-only (no
+  labels), and its `grid-cols-2` doesn't stack on phones.
+- Two pre-existing `@next/next/no-img-element` lint warnings in
+  `StaffScheduleClient.tsx` (lines ~212/247).
+- **No test suite exists in `aquadesk-app` at all** (zero
+  `*.test.*`/`*.spec.*` files) — validation is `tsc --noEmit` + `eslint`
+  + MK checking on the dev server. No browser tool was available this
+  session either; MK verified both rounds visually on the local dev
+  server before approving commit/deploy (the Lesson 13 default, now
+  followed without being asked).
 
-**New fact learned about this codebase, worth remembering for future
-page-chrome work**: there is **no shared "page title row" component**
-across `(app)/` pages — Dashboard, Reports, Boat Manifest, Diver Form
-list, Scheduling, Divers, Settings, and Diver Detail each implement
-their own title/subtitle/action-button row independently, with real
-structural differences (Scheduling wraps its row in its own bordered
-card, unlike everyone else; Divers has no right-side content at all;
-Settings has no row at all, just a bare `<h1>`; Diver Detail has no
-title-row concept at all, just a "← Back to Divers" link). Don't
-assume a shared header exists for future page-chrome work without
-checking each page individually, same as this session had to.
+**Environment facts found this session:**
+- `gh` had **three** accounts logged in: `mkbusiness-ai` (active —
+  another of MK's accounts, not this project's), `aquadeskonlinesolutions`,
+  and `usemiraapp-ai`. Switched with `gh auth switch --hostname
+  github.com --user aquadeskonlinesolutions` (no re-login needed —
+  all three stay in the keyring). Git's credential helper for
+  github.com is `gh auth git-credential` (user `.gitconfig`), so the
+  *active gh account* is what git pushes as — being logged in on the
+  github.com website is irrelevant. Confirmed push rights via
+  `gh api repos/aquadeskonlinesolutions/aquadesk-app --jq .permissions`.
+- `wrangler` is logged in via **OAuth** as `aquadeskonline@gmail.com`
+  → live account `4ec5d01b30db05b278baa0630e421340` only; no
+  `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` env vars were needed
+  for the live deploy. (Pre-prod is a different account — this OAuth
+  login can't deploy there.) `wrangler whoami` warns about a missing
+  `challenge-widgets.write` scope; harmless for deploys.
+- PowerShell 5.1 mangles multi-line here-string commit messages passed
+  to native `git commit -m`/`-F -` (embedded double quotes split into
+  pathspecs — nothing got committed, files were left staged). Use
+  `git commit -F <file>` with the message written to a scratch file.
+  Added to "Working practices" below.
 
-**Dead-code audit performed this session** (explicit request, same
-habit as 2026-09-05): checked every file touched today (`reports/
-data.ts`, `reports/actions.ts`, `reports/BillingAuditTab.tsx`,
-`reports/ReportsClient.tsx`, `globals.css`, `(app)/layout.tsx`,
-`Sidebar.tsx`) via both `eslint` and a manual variable-usage check —
-**clean, nothing left unused**. The Billing Audit query split
-(filtered `invoiceEmails` for the main table vs. unfiltered
-`allInvoiceEmails` for flagged expansion) both feed one shared
-`toInvoiceRow()` helper; no orphaned variables from the several
-date-picker markup iterations; `signOut`'s import moved cleanly from
-`layout.tsx` to `Sidebar.tsx` with nothing left behind in the old
-spot. (`/office`'s separate platform-admin Sign Out implementation is
-untouched and intentionally independent — confirmed it's a fully
-separate route outside `(app)/`, not a duplicate of anything touched
-today.)
-
-**Standing rule set by MK this session, going forward**: before
-asking MK to verify any fix live (phone, browser, anywhere outside the
-local checkout), confirm and state the actual deployment status —
-pushed? what commit is `origin/master` at? what commit/version does
-the live Cloudflare deployment record show, checked against the
-deployment record and a content-level check (e.g. a `BUILD_ID`
-match), not just a clean exit code? — **in that same message**, never
-as a separate follow-up. Set after an earlier gap this session where
-verification was requested before a fix had even been confirmed
-pushed. Also added as a bullet under "Working practices" below.
-
-**Git/environment gotcha found and fixed this session**: this Claude
-Code environment's `gh` CLI was authenticated as `usemiraapp-ai` — a
-real account of MK's, but tied to a completely different project
-(Mira), left over from earlier unrelated use of this same environment.
-It has no push access to `aquadeskonlinesolutions/aquadesk-app`, which
-silently blocked the first push attempt of the day (403 error). Fixed
-by logging that session out; MK re-authenticated as
-`aquadeskonlinesolutions` via `gh auth login`. Worth a quick `gh auth
-status` sanity check at the start of a future session before the
-first push, given this environment has a documented history of being
-shared across MK's different projects.
+**Dead-code check this session:** `DEFAULT_COUNTRY_DIAL_CODE` was the
+only symbol made unused by today's changes; removed in the same commit
+(grep confirms zero remaining references). `tsc --noEmit` clean,
+`eslint` clean on all 9 touched files (bar the 2 pre-existing warnings
+above).
 
 ### Prior sessions (condensed further — see `PROJECT_HISTORY.md` for full detail)
+
+**2026-09-07**: Billing Audit fix set + three rounds of live-regression
+cleanup. (1) `loadBillingAuditData()` (`reports/data.ts`) now scopes
+the "Invoice History" table's `invoice_emails` query to the Reports
+date range via `manilaDayBoundsUtcIso()` — the "Flagged Bills"
+expansion deliberately stays unfiltered (a flagged visit's full
+closure history must never be hidden). `ReportsClient.tsx` refetches
+it on Apply like the other tabs. (2) `BillingAuditTab.tsx` relabeled
+"Sent At" → "Closed On" and "Invoices Sent" → "Times Closed"
+(`sent_at` always equals bill-close time, never email-send time;
+`email_sent_at`/`email_delivery_status` exist separately and are
+unused). (3) Reports date-picker row stacks below `sm`. (4) Regression
+cleanup: a leftover default-Next.js `@media (prefers-color-scheme:
+dark)` block in `globals.css` (zero `dark:` usage anywhere) was
+flipping inherited text color on dark-mode devices — a half-fix
+(`color-scheme: light` alone) shipped live and broke login/
+registration input visibility before the block was removed entirely;
+full story in Lessons 12–13. (5) Sign Out moved into `Sidebar.tsx`'s
+name/role block and the empty top `<header>` removed from
+`(app)/layout.tsx` (not a regression — original structure; MK asked
+anyway). **Still-useful fact: there is no shared "page title row"
+component across `(app)/` pages** — Dashboard, Reports, Boat Manifest,
+Diver Form list, Scheduling, Divers, Settings and Diver Detail each
+build their own, with real structural differences; check each page
+individually for any page-chrome work. That session also set the
+standing "state deployment status in the same message as any live
+verification request" rule (in Working practices) and found the
+`usemiraapp-ai` gh-account problem (Lesson 15). Dead-code audit of all
+touched files came back clean.
 
 **2026-09-05**: shipped three rounds of live work in one day (each
 confirmed via User-Agent smoke-check, same method as always): (1) a
@@ -511,6 +524,16 @@ use cases at once), not a today problem.
   check (e.g. a `BUILD_ID` match against the local build), not just a
   clean exit code? Never ask for verification and let deployment
   status turn up as a separate, later surprise.
+- **Commit messages from PowerShell: always `git commit -F <file>`**
+  (write the message to a scratch file first). Passing a multi-line
+  here-string via `-m` or `-F -` in Windows PowerShell 5.1 splits on
+  embedded double quotes and git treats the fragments as pathspecs —
+  hit 2026-10-02; nothing was committed, files were left staged.
+  Before the first push of a session, also run `gh auth status` — the
+  *active* gh account is what git pushes as (credential helper is
+  `gh auth git-credential`), and this machine has several of MK's
+  accounts logged in; switch with `gh auth switch --hostname github.com
+  --user aquadeskonlinesolutions`.
 - **Cloudflare deploy sequence** (`aquadesk-app`): stop the local dev
   server → clear `.next` → **check every `NEXT_PUBLIC_*` kill-switch/
   feature-flag's current value in `.env.production.local` (not
