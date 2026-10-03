@@ -170,6 +170,45 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
+## Latest update: crew-page live age + Last Dive Date "today" (2026-10-03, late night)
+
+**Shipped (two small fixes):** aquadesk-app `master` = `70f8e7a`; root repo
+`9a8385a` (migration 053). Live Cloudflare version
+`257dbb1a-0d4b-4387-804b-52fbf05b0a13`, `BUILD_ID IzrjmURWA0EtjESO6Ei_n`
+(deployed 2026-10-03 14:44 UTC, BUILD_ID match confirmed; no logged-in
+checks by Claude). Previous live version (rollback target):
+`dafee31b-6a24-4b57-bdf2-65fe2db25ea3`. Backups:
+`D:\aquadesk-backups\{deposits,payments}-backup-2026-10-03T14-32-54-844Z.json`.
+1. **Staff crew page age (migration 053, no app code):**
+   `get_crew_schedule` (030's body verbatim) now returns the existing
+   `age` key as the age calculated from `divers.birthday` with the
+   Asia/Manila date (same rule as `src/lib/age.ts`, Feb 29 → Mar 1),
+   falling back to the stored `divers.age` when there's no birthday.
+   **The birthday never leaves the database** — `/staff` is public
+   (anyone with the day's crew code), so MK chose an SQL-side age over
+   sending birthdays to the page. No key added/removed/renamed; grants
+   unchanged. Verified on production after 053: same fields and counts
+   for all 4 centres with a crew code, no birthday in the response.
+2. **Last Dive Date "today" (`EditProfileModal.tsx`, `actions.ts`):**
+   the picker's limit uses the Manila date (today selectable 00:00–08:00
+   Manila), and a future Last Dive Date is now refused in the browser
+   and in `saveDiverProfile` (MK; before, a typed future date was saved).
+- **Deploy order:** 053 before the code. The old code was verified
+  working with 053 applied (it already shows the live age).
+- **Rollback:** revert `70f8e7a` and redeploy. For 053, re-run
+  `030_crew_schedule_guest_divers.sql` in full (restores the old body
+  exactly — tested locally).
+- **Out-of-scope findings (open):**
+  - Registration's Birthday and Last Dive Date pickers use the UTC date
+    (`RegistrationWizard.tsx` lines 654 and 927) — today isn't selectable
+    between 00:00 and 08:00 Manila.
+  - Scheduling and Boat Manifest calculate age with the server clock
+    (`scheduling/data.ts` line 14, `boat-manifest/data.ts` line 105) — on
+    Cloudflare that's UTC, so on a diver's birthday between 00:00 and
+    08:00 Manila they show one year less than the crew page.
+  - Last Dive Date has no server-side format check (only the database
+    rejects an invalid date).
+
 ## Latest update: server-side payment totals (2026-10-03, night)
 
 **Shipped:** Save (`savePaymentOnly`) and Checkout (`checkoutVisit`) no
