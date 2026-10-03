@@ -170,6 +170,32 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
+## Latest update: diver birthday & age (2026-10-03, evening)
+
+**Shipped:** the diver form's info grid shows **Birthday** (or "Not set")
+and **Age**, and Edit Diver Info has a Birthday date field (with Clear).
+aquadesk-app `master` = `b992566`; live Cloudflare version
+`71a464f9-2a77-4eeb-ba84-b48b7bc72b83`, `BUILD_ID UVBb7r46x4H9cQqCGQKKz`
+(deployed 2026-10-03 11:01 UTC, BUILD_ID match confirmed; logged-in
+checks not done by Claude — no test login). Previous live version:
+`5af7e3c5-8519-4cda-be26-20663d96d2f9`.
+- **No migration.** `divers.birthday` (date, set by registration) is the
+  single source of truth. Age is always calculated from it with the
+  Asia/Manila date (`src/lib/age.ts`; Feb 29 counts on Mar 1 in non-leap
+  years). Server-side validation in `saveDiverProfile`: real date, not in
+  the future, not more than 120 years ago.
+- **MK's choices:** when the birthday changes, the stored `divers.age` and
+  `divers.is_minor` are recalculated in the same save (on clear: age
+  cleared, is_minor kept). Documents show the diver's **current** birthday;
+  signed `diver_registrations` rows are never modified (waiver lock intact).
+- **Rollback:** revert `b992566` and redeploy. No database change to undo.
+- **Out-of-scope findings (open):** stored `divers.age` goes stale over
+  time — the staff crew page (`get_crew_schedule`, migration 030) shows it
+  instead of calculating; Edit Diver Info's Last Dive Date limit uses the
+  UTC date (can't pick today between 00:00–08:00 Manila); three separate
+  age calculations exist (registration wizard, `scheduling/data.ts`,
+  `boat-manifest/data.ts`).
+
 ## Latest update: hardening batch (2026-10-03, later the same day)
 
 Six fixes on top of deposit cancellation, shipped one commit per fix.
