@@ -170,6 +170,51 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
+## Latest update: card/online surcharge no longer "Excess (Change)" (2026-10-04, ~01:00 Manila)
+
+**Shipped:** aquadesk-app `master` = `628515b` (no root-repo change, **no
+migration**). Live Cloudflare version `ba016f27-ff54-40c1-acc9-1f0f29018f70`,
+`BUILD_ID Nbjs4EabvQikmpMIU5l5F` (deployed 2026-10-03 16:59 UTC, BUILD_ID
+match confirmed; no logged-in checks by Claude). Previous live version
+(rollback target): `abab606e-c8a9-43a6-8f85-0a38d4b9275f`, `BUILD_ID
+ZvZnG17hAqPyV57E0umSK`. Backup: `D:\aquadesk-backups\payments-backup-
+2026-10-03T16-58-01-512Z.json` (210 rows) + `baseline-…` file; counts and
+sums unchanged after deploy.
+- **Background (investigated with evidence first):** since `6f457d5`
+  (2026-08-02) `computePaymentBreakdown` counted the card/online surcharge
+  as money paid toward the bill, so paying exactly the amount due by
+  card/online showed the surcharge as Excess (and a surcharge could cover
+  a small shortfall). Not caused by the 2026-10-02/03 sessions (pre-session
+  commit `17ee0c1` reproduced identically); it only became visible when the
+  first surcharged rebuild payments happened (2026-10-01). The old app never
+  had "excess" and stored total_collected = bill + surcharge.
+- **MK's rule:** surcharges are NOT revenue; the Card/Online field means
+  "amount before surcharge" and the app adds the surcharge on top;
+  Excess (Change) = 0 when the diver pays exactly due + surcharge.
+- **Fix (`billing.ts`):** only cash + foreign + card + online count against
+  the bill; the surcharge stays separate (never revenue, never excess).
+  Cash/foreign overpayment excess unchanged. A card/online amount below due
+  now leaves a balance (server refuses checkout). Save and Checkout share
+  the function. **Invoice (`InvoicePanel.tsx`):** "Card ₱5,000 + surcharge
+  ₱200" instead of "Card (incl. surcharge ₱200) ₱5,000" (same for Online).
+- **Historical rows not rewritten (MK):** the two production payments of
+  2026-10-01 (`3962e152`, `5bf21a4c`, excess ₱231.21 each) keep their stored
+  excess. Old-app (pre-2026-08-08) rows keep total_collected incl. surcharge.
+- **Rollback:** revert `628515b` and redeploy. Payments saved while the fix
+  was live keep Excess 0.
+- **Open findings (not fixed):**
+  1. Reports > Billing Audit "View / Print" never shows the payment lines
+     (Cash/Card/Online): `BillingAuditTab.tsx` reads top-level snapshot keys,
+     but every invoice snapshot (old app and rebuild) nests them under
+     `payment`; it also looks for a `card_surcharge` key that doesn't exist.
+  2. Dashboard cash undercount in mixed payments (Part C, **undecided by
+     MK**): `dashboard/data.ts` ~644–648 subtracts the card/online surcharge
+     from cash, so cash ₱2,000 + card ₱3,000 (+₱120) shows Cash ₱1,880,
+     Card ₱3,120, Total Today ₱5,000.
+  3. A card payment below due that is saved (Save, keep open) but not
+     checked out did not appear in Dashboard "Today's Payment Channels" in
+     local testing — not investigated.
+
 ## Latest update: Asia/Manila timezone sweep (2026-10-04, ~00:15 Manila)
 
 **Shipped:** every "today", date boundary and date display now uses the
