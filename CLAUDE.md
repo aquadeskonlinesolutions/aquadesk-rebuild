@@ -122,7 +122,7 @@ sections for schema, page map, design direction, and migration plan.
   separate git repo (`git -C aquadesk-app ...`) — two independent repos
   in this tree, don't mix up which one a `git` command should target.
 - `D:\Rebuild\database\` — tracked SQL migration files (currently
-  001–047), the source of truth for schema/RLS/functions.
+  001–051), the source of truth for schema/RLS/functions.
 
 ## Absolute rule: two separate Supabase projects, never confuse them
 
@@ -169,6 +169,94 @@ user's own accounts). Runtime secrets live in `aquadesk-app/.env.local`
 deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
+
+## Latest update: hardening batch (2026-10-03, later the same day)
+
+Six fixes on top of deposit cancellation, shipped one commit per fix.
+Live: Cloudflare version `5af7e3c5-8519-4cda-be26-20663d96d2f9`,
+`BUILD_ID TUkfQ1ZuhmczgcT2yoMjk` (deployed 2026-10-03 ~10:13 UTC,
+BUILD_ID match confirmed). `master` = aquadesk-app `e03ffc5`, root repo
+`4c00801`. Code-rollback target: `1d6a7de9-926d-4f8e-b587-707c62384323`
+(the deposit-cancellation deploy). MK ran all four migrations in the
+SQL Editor; Claude verified each through the API against a fresh backup
+(`D:\aquadesk-backups\deposits-backup-2026-10-03T10-04-26-318Z.json`,
+30 rows) — counts and deposit sum unchanged throughout. MK did the
+logged-in checks on production ("all good").
+
+**The six fixes:**
+1. **Unlock Bill lockout** (migration 048, `actions.ts` `unlockBill`):
+   new `unlock_bill()` RPC checks the billing password through the
+   internal `billing_password_gate()` — 5 wrong tries → 30-minute lock,
+   "N attempt(s) left", reset on success — then reopens the visit and
+   writes the `bill_unlocked` audit row in one transaction. **One shared
+   counter per user** (MK's choice) across Cancel Deposit, Unlock Bill
+   and the Settings password checks, stored in
+   `billing_password_attempts` (from 047).
+2. **Server-calculated deposits total** (code only): `savePaymentOnly`
+   sums the visit's active deposits itself; the client no longer sends
+   a deposits total (parameter removed, `BillSummary` updated).
+3. **Direct deposit edits blocked** (migration 049, no code): two
+   restrictive RLS policies (`deposits_no_client_update`,
+   `deposits_no_client_delete`, both `false`) stop any direct API
+   UPDATE/DELETE on deposits. Add (insert), Cancel (`cancel_deposit`,
+   SECURITY DEFINER as table owner), Void Visit (FK cascade) and the
+   service-role ETL are unaffected.
+4. **Manila date on a just-added deposit** (code only,
+   `DepositsPanel.tsx`): the row shown right after Add Deposit uses the
+   Asia/Manila date instead of UTC. Stored data unchanged.
+5. **Phone layout** (layout classes only): below `lg` (1024px) the app's
+   main column can shrink (`min-w-0`, `p-4` on phones), the page-level
+   grids use `grid-cols-1`, and Bill Summary's payment fields stack under
+   `sm`. Wide tables scroll inside their cards. `lg:min-w-auto` /
+   `lg:grid-cols-none` restore the defaults, so desktop (1280/1440/1920)
+   is pixel-identical — MK chose to keep desktop exactly as it was.
+6. **Lockout bypass closed** (migrations 050 + 051, Settings > Passwords
+   and Settings > Pricing code): staff could read the bcrypt hashes from
+   `dive_centers` and call `verify_billing_unlock`/`verify_owner_unlock`
+   directly with unlimited guesses. 050 added `password_status()`
+   (booleans only) and `check_unlock_password(kind, password)` (through
+   the same gate; the owner password is owner-only). 051 hides
+   `billing_unlock_hash`/`owner_unlock_hash` from anon/authenticated
+   (table-level SELECT replaced by a column-level grant on every other
+   column) and revokes direct execute on both `verify_*_unlock`.
+
+**Deposits rule (MK, 2026-10-03):** there is deliberately **no "delete
+deposit" button**. A wrong deposit is corrected with Cancel Deposit and a
+full refund, which keeps the audit trail. Don't add a delete path.
+
+**Deploy-order lesson — 051 must run only AFTER the new code is live.**
+The code before this batch reads `dive_centers.*_unlock_hash` and calls
+`verify_*_unlock` directly; with 051 in place, old Unlock Bill fails and
+old Settings > Passwords silently shows passwords as "not set" (verified
+on the local stand-in). 048, 049 and 050 are additive and were run
+before the code deploy; old code was tested working after each.
+
+**Rollback per migration** (SQL is commented at the bottom of each file):
+- **051:** rollback restores table-level SELECT on `dive_centers` and
+  execute on `verify_*_unlock`; safe any time. **Roll back 051 first if
+  old code ever has to go back** — old code breaks while 051 is in place.
+- **050:** drop the two functions; only after 051 is rolled back.
+- **049:** drop the two policies; safe any time.
+- **048:** drop `unlock_bill` and `billing_password_gate`; only after the
+  code has gone back to calling `verify_billing_unlock` (and 051 is
+  rolled back). Attempt rows are kept.
+- Code: revert the fix's commit and redeploy; the six commits are
+  independent except Fix 6 code needs 048 + 050.
+
+**Out-of-scope findings still open (noticed, not fixed):**
+- `savePaymentOnly` still trusts other client values: the grand total
+  (stored and used for the balance), the discount, and the entered
+  amounts/exchange rate.
+- Billing/owner password hashes use bcrypt cost 6 (weak); they're hidden
+  now, but stronger hashing needs the passwords re-set.
+- An owner can set a new owner/billing password without the current one
+  by sending `hadPassword = false` from the browser (`set_*_unlock` only
+  checks the owner role). Owner-only, so low risk.
+- 047's guard trigger would block deleting a custom payment channel or a
+  user that a cancelled deposit references (the FK "set null" counts as
+  an edit of a cancelled deposit).
+- The diver form still scrolls sideways on desktops between 1024px and
+  ~1475px wide (activities table), kept on purpose so desktop is unchanged.
 
 ## Current State (as of 2026-10-03 session)
 
@@ -485,6 +573,12 @@ use cases at once), not a today problem.
 
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
 
+- **Any new column on `public.dive_centers` needs an explicit grant** or
+  the app can't read it: `grant select (column) on public.dive_centers
+  to anon, authenticated;` in the same migration. Since migration 051
+  (2026-10-03) that table has column-level SELECT grants only (the two
+  password-hash columns are deliberately excluded), and
+  `select('*')` on it fails for app users.
 - **Never run migration 047's rollback SQL once any deposit has been
   cancelled** (`select count(*) from deposits where status='cancelled'`
   — already > 0 on production since 2026-10-03). It destroys the
