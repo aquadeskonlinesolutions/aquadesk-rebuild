@@ -170,6 +170,48 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
+## Latest update: server-side payment totals (2026-10-03, night)
+
+**Shipped:** Save (`savePaymentOnly`) and Checkout (`checkoutVisit`) no
+longer trust money values from the browser. aquadesk-app `master` =
+`203f51f`; root repo `c536192` (migration 052). Live Cloudflare version
+`dafee31b-6a24-4b57-bdf2-65fe2db25ea3`, `BUILD_ID Aro5Us8hn0nJGbg4icluc`
+(deployed 2026-10-03 13:06 UTC, BUILD_ID match confirmed; no logged-in
+checks by Claude). Previous live version (rollback target):
+`71a464f9-2a77-4eeb-ba84-b48b7bc72b83`. Backups:
+`D:\aquadesk-backups\{deposits,payments}-backup-2026-10-03T12-18-44-293Z.json`.
+- **What changed:** Save calculates the grand total from the visit's
+  stored activities (sum of non-cancelled `activities.total`, exactly
+  what Bill Summary shows); the browser's figure is only compared, and a
+  mismatch returns "totals changed — reload" (audit-logged). Save and
+  Checkout validate discount (≥ 0, 2 decimals, ≤ subtotal — MK: no other
+  rule or role cap), amounts (≥ 0, 2 decimals, within numeric(12,2)) and
+  exchange rate (≥ 0, 6 decimals, within numeric(12,6)). **Any typed
+  exchange rate is accepted (MK)**, but one that differs from the stored
+  rate is audit-logged (`payment_rate_override`, once per new rate).
+  Every rejection is audit-logged (`payment_rejected`). The Online-channel
+  check now runs after validation. Unaltered inputs give results
+  identical to the old code (10-case old-vs-new matrix + 8 money screens).
+- **Migration 052** (`052_payment_audit_log.sql`): `log_payment_event()`,
+  SECURITY DEFINER, only those two actions, only for the caller's own
+  dive center's visit. Additive.
+- **Deploy order:** 052 before the code (the new code refuses to save a
+  differing exchange rate if it can't write the audit entry). Old code
+  was verified working with 052 applied.
+- **Rollback:** revert `203f51f` and redeploy. 052 can stay in place
+  (or drop it with its rollback block once the code is back).
+- **Out-of-scope findings (open):**
+  1. Checkout's subtotal ignores each activity's own `discount` field
+     (`checkoutVisit`'s `grandTotal` reduce) while the screen and Save
+     subtract it — only matters if a per-row discount is ever non-zero,
+     and the app has no input for one.
+  2. `payments.excess_amount` is stored unrounded (e.g.
+     `292.4935999999998`); Settlement rounds it for display.
+  3. Card/online surcharges count toward paying the bill
+     (`billing.ts` `computePaymentBreakdown` adds them to the amount
+     tendered, not the amount owed), so paying the full bill by card
+     shows the surcharge as "excess". Pre-existing; confirm the intent.
+
 ## Latest update: diver birthday & age (2026-10-03, evening)
 
 **Shipped:** the diver form's info grid shows **Birthday** (or "Not set")
