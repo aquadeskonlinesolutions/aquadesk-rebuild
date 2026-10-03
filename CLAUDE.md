@@ -122,7 +122,7 @@ sections for schema, page map, design direction, and migration plan.
   separate git repo (`git -C aquadesk-app ...`) — two independent repos
   in this tree, don't mix up which one a `git` command should target.
 - `D:\Rebuild\database\` — tracked SQL migration files (currently
-  001–046), the source of truth for schema/RLS/functions.
+  001–047), the source of truth for schema/RLS/functions.
 
 ## Absolute rule: two separate Supabase projects, never confuse them
 
@@ -170,7 +170,69 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Current State (as of 2026-10-02 session)
+## Current State (as of 2026-10-03 session)
+
+**Paddle/billing status is unchanged and NOT re-verified this session**
+(nothing Paddle-related touched) — same caveats as the 2026-10-02 entry
+below; live `PADDLE_API_KEY` expiry 2026-11-16 is ~6 weeks out.
+
+**Shipped: deposit cancellation** (urgent, a live user needed it). Both
+repos fast-forwarded to `master` and pushed: aquadesk-app `bb90fa7`,
+root repo `6c21213` (migration). Live Cloudflare version
+`1d6a7de9-926d-4f8e-b587-707c62384323`, `BUILD_ID -cl44wkeSmGYA7kkOKePq`
+(deployed 2026-10-03 08:30 UTC, BUILD_ID match confirmed). Previous live
+version, the code-rollback target: `48ec32d6-86c1-44e8-896d-2044e12c0492`.
+- **Feature:** "Cancel deposit" on each deposit in the diver form's
+  Deposits panel (`CancelDepositModal.tsx`): refund amount (Full/No
+  refund quick-fill, max = whole deposit), live refund/forfeited, payout
+  method + channel, required reason, billing password. Cancelled
+  deposits stay visible (muted, badge, date/refund/forfeit/reason) and
+  are excluded from Deposits Applied, checkout, and open-bill balances.
+  `voidVisit` refuses a visit that has a cancelled deposit.
+- **Money model (MK chose cash basis):** a deposit stays in Money In on
+  the day it was received; the refund is Money Out on the cancel day
+  (Manila date); the forfeited part is listed but NOT re-counted.
+  Settlement keeps the received-day row (annotated "Cancelled on…") and
+  adds a negative "Deposit Refund" row on the cancel day in the payout
+  method's column. Overview shows a "Deposit Refunds" Money Out line and
+  a "Cancelled Deposits" section only when a cancellation is in range.
+  Dashboard's today-by-channel card subtracts today's refunds. Settlement
+  "Total Collected" never counted deposits (pre-existing), and a Grand
+  Total cell of 0 prints "—" (`SettlementTab.tsx` `fmtPHP`, pre-existing).
+- **Migration 047** (`047_deposit_cancellation.sql`, run by MK in the SQL
+  Editor; Claude verified it via the API against a backup in
+  `D:\aquadesk-backups\`): additive only — `deposits.status`
+  (default `'active'`, backfilled all 29 rows) + cancellation columns,
+  `cancel_deposit()` SECURITY DEFINER RPC (bcrypt billing-password check,
+  5 wrong tries → 30-min lock via new `billing_password_attempts`, row
+  lock, audit_logs `deposit_cancelled`), a guard trigger so status/
+  cancel fields can only change through the RPC, and a restrictive
+  delete policy so cancelled deposits can't be hard-deleted by clients.
+  Deposits have no partial application in this schema: a deposit on a
+  checked-out (closed) bill can't be cancelled until the bill is unlocked.
+- **Rollback rule:** NEVER run 047's rollback SQL once any deposit has
+  been cancelled — it drops the cancellation columns and destroys the
+  money trail (one real cancellation already exists on production as of
+  2026-10-03). To back out, redeploy the previous code version only and
+  leave the migration in place. (Old code would credit cancelled
+  deposits again on open bills — another reason to roll forward instead.)
+- **Testing approach used:** no local Supabase/Docker exists, so tests
+  ran on a throwaway embedded Postgres (npm `embedded-postgres`, started
+  via `pg_ctl` because `postgres.exe` refuses an admin shell) + local
+  PostgREST + a tiny fake GoTrue gateway, with the dev server pointed at
+  it via process env overrides (no `.env` edits), driven by Playwright.
+  All scratch files lived in the session scratchpad, not the repos.
+- **Access facts:** the Supabase CLI on this machine is NOT logged in
+  (`projects list` → Unauthorized) and the DB password isn't stored, so
+  Claude cannot run SQL on production — migrations go through MK. The
+  `.env.local` service-role key allows REST reads/writes only.
+- **Not fixed (out of scope, noticed):** Unlock Bill's billing password
+  has no rate limit; tenant RLS still lets any user edit/delete an active
+  deposit directly; `savePaymentOnly` trusts the client's deposits total;
+  a just-added deposit shows the UTC date until reload; diver form and
+  Reports overflow horizontally at phone width.
+
+### 2026-10-02 session (previous Current State, kept verbatim)
 
 **Paddle/billing status is unchanged and NOT re-verified this
 session** — nothing Paddle-related was touched. Everything in "Resume
@@ -422,6 +484,11 @@ follow-up (a real `aquadesk.online` sending subdomain would fix both
 use cases at once), not a today problem.
 
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
+
+- **Never run migration 047's rollback SQL once any deposit has been
+  cancelled** (`select count(*) from deposits where status='cancelled'`
+  — already > 0 on production since 2026-10-03). It destroys the
+  cancellation money trail. Roll back code only; leave 047 in place.
 
 - **Every schema/RLS claim gets tested with a real simulated session**
   (`SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub', '<uuid>', true)`
