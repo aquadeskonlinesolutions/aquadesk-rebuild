@@ -122,7 +122,7 @@ sections for schema, page map, design direction, and migration plan.
   separate git repo (`git -C aquadesk-app ...`) — two independent repos
   in this tree, don't mix up which one a `git` command should target.
 - `D:\Rebuild\database\` — tracked SQL migration files (currently
-  001–054), the source of truth for schema/RLS/functions.
+  001–055), the source of truth for schema/RLS/functions.
 
 ## Absolute rule: two separate Supabase projects, never confuse them
 
@@ -169,6 +169,63 @@ user's own accounts). Runtime secrets live in `aquadesk-app/.env.local`
 deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
+
+## Latest update: Dashboard cash + three small fixes, migration 055 (2026-10-04, ~01:45 Manila)
+
+**Shipped (one commit per fix):** aquadesk-app `master` = `9998a24`
+(`32464f7`, `4a6647f`, `9998a24`); root repo `2ca23a3` (migration 055).
+Live Cloudflare version `c7688a1f-31fa-4e19-8450-cab8edc3682e`, `BUILD_ID
+COBLvUPgxfTP6phld1wiM` (deployed 2026-10-03 17:41 UTC; BUILD_ID match
+confirmed — the edge served the old BUILD_ID for a few seconds after the
+deploy before switching; no logged-in checks by Claude). Previous live
+version (rollback target): `ba016f27-ff54-40c1-acc9-1f0f29018f70`,
+`BUILD_ID Nbjs4EabvQikmpMIU5l5F`. Backups:
+`D:\aquadesk-backups\{deposits,payments}-backup-2026-10-03T17-35-53-464Z.json`
+(+ fresh baseline `baseline-2026-10-03T17-39-27-954Z.json`). Counts and
+sums unchanged after 055 and after the deploy (audit_logs +2 between the
+first baseline and 055 was a live bill save at 01:36 Manila, not 055).
+1. **Dashboard Cash (`32464f7`, `dashboard/data.ts`):** today's Cash no
+   longer has the card/online surcharge taken off it (side effect of
+   `47ec005`, 2026-08-02). Cash ₱2,000 + card ₱3,000 (+₱120) now shows
+   Cash ₱2,000 / Card ₱3,120 / Total Today ₱5,120 (= revenue +
+   surcharges; Settlement's Total Collected stays ₱5,000). Foreign-cash
+   overpayment cap unchanged. Dashboard is today-only; past days and
+   Settlement/Reports unaffected.
+2. **Item 2 (owner/billing password change needs the current password):
+   SKIPPED by MK** — nothing changed, see open findings.
+3. **Migration 055 (`055_cancelled_deposit_reference_delete.sql`):**
+   047's guard trigger blocked deleting a payment channel or user that a
+   cancelled deposit references (the FK "set null" counted as an edit).
+   055 replaces `guard_deposit_cancellation()` with 047's body plus one
+   allowance: a nested FK set-null (`pg_trigger_depth() > 1`) that only
+   turns `custom_channel_id` / `refund_custom_channel_id` / `cancelled_by`
+   into NULL, every other column unchanged. All other edits of a cancelled
+   deposit are still refused; RLS policies untouched. A user who recorded
+   any deposit still can't be deleted (`recorded_by_user_id` has no ON
+   DELETE action — unchanged).
+4. **`payments.excess_amount` rounded to 2 decimals on write (`4a6647f`,
+   `actions.ts`)** — Save, Checkout and the invoice snapshot. No backfill;
+   old unrounded rows stay as they are.
+5. **Last Dive Date server-side format check (`9998a24`, `saveDiverProfile`):**
+   anything that isn't a real YYYY-MM-DD date (Feb 30, free text, loose
+   formats) is refused with "Enter a valid last dive date."; empty clears;
+   the Manila future-date rule is unchanged.
+- **Deploy order:** 055 before the code (old code was verified working with
+  055 applied). The app commits don't depend on 055.
+- **Rollback:** revert the relevant app commit (`32464f7`, `4a6647f` or
+  `9998a24`) and redeploy. 055's rollback block at the bottom of the file
+  restores 047's function exactly and is safe any time.
+- **Open findings (not fixed):**
+  1. Owner/billing password change still trusts the browser's "already
+     has a password" flag (`settings/passwords/actions.ts` ~25–31 and
+     ~53–59); `set_owner_unlock`/`set_billing_unlock` (001) don't check the
+     current password either. Item 2, skipped by MK.
+  2. A saved-but-not-checked-out payment doesn't appear in Dashboard
+     "Today's Payment Channels" (it counts payments with a `paid_at`) —
+     **correct by design (MK)**.
+  3. Payment channels can be deleted through the direct API by any
+     signed-in user of the centre (`payment_channels_write` policy,
+     `046_custom_payment_channels.sql` line 31); the app has no delete UI.
 
 ## Latest update: card/online surcharge no longer "Excess (Change)" (2026-10-04, ~01:00 Manila)
 
