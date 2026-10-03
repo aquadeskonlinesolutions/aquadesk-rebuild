@@ -122,7 +122,7 @@ sections for schema, page map, design direction, and migration plan.
   separate git repo (`git -C aquadesk-app ...`) — two independent repos
   in this tree, don't mix up which one a `git` command should target.
 - `D:\Rebuild\database\` — tracked SQL migration files (currently
-  001–051), the source of truth for schema/RLS/functions.
+  001–054), the source of truth for schema/RLS/functions.
 
 ## Absolute rule: two separate Supabase projects, never confuse them
 
@@ -169,6 +169,58 @@ user's own accounts). Runtime secrets live in `aquadesk-app/.env.local`
 deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
+
+## Latest update: Asia/Manila timezone sweep (2026-10-04, ~00:15 Manila)
+
+**Shipped:** every "today", date boundary and date display now uses the
+Asia/Manila date, whatever the device or server timezone. aquadesk-app
+`master` = `9657794`; root repo `6e65dfa` (migration 054). Live
+Cloudflare version `abab606e-c8a9-43a6-8f85-0a38d4b9275f`, `BUILD_ID
+ZvZnG17hAqPyV57E0umSK` (deployed 2026-10-03 16:14 UTC, BUILD_ID match
+confirmed; no logged-in checks by Claude). Previous live version
+(rollback target): `257dbb1a-0d4b-4387-804b-52fbf05b0a13`, `BUILD_ID
+IzrjmURWA0EtjESO6Ei_n`. Backups: `D:\aquadesk-backups\{deposits,visits}-
+backup-2026-10-03T15-55-00-017Z.json` (+ `baseline-…` file); counts and
+sums matched the baseline after 054.
+- **Shared helper: `src/lib/manila.ts`** (re-exports `manilaTodayStr` from
+  `age.ts`; adds `addDaysToDateStr`, `manilaMonthRange`, `MANILA_TZ`).
+  **This is the single place to change if timezones ever become
+  per-centre** (there's no timezone column today, so Asia/Manila is
+  hardcoded). The label component is `src/components/ManilaDateNote.tsx`
+  ("Dates in Manila time (PHT)"), shown next to the date pickers on
+  registration (Birthday, Departure, Last Dive Date), Edit Diver Info
+  (Birthday, Last Dive Date), Settlement, Reports and Scheduling.
+- **What was fixed:** registration age and Birthday/Last Dive Date limits
+  (a future date is now refused at the step), Scheduling and Boat
+  Manifest ages, checkout `visit_end`, Reports default month,
+  Expenses/Rental Gears/Join Ride default dates and the Join Ride
+  statement date, Equipment "tomorrow", office overdue days and "this
+  month", and timestamp displays (Billing Audit, flags, documents, notes,
+  invoices on screen + email, waiver versions, "Printed:" lines) now
+  format with `timeZone: "Asia/Manila"`. Stored timestamps stay UTC.
+  Settlement/Reports day boundaries, Dashboard and the SQL functions were
+  already Manila and were not changed — money screens identical.
+- **Migration 054** (`054_manila_date_defaults.sql`): the column defaults
+  of `visits.visit_start` and `deposits.deposit_date` changed from
+  `current_date` (UTC) to `(now() at time zone 'Asia/Manila')::date`.
+  Only the defaults; nothing else touched. `govt_fees.date` has no default.
+- **Deploy order:** 054 before the code. Old code verified working with
+  054 applied.
+- **Rollback:** revert `9657794` and redeploy. 054's rollback SQL (in the
+  file) is safe any time.
+- **Testing:** local stand-in with the server on `TZ=UTC` and a faked
+  clock at 00:30/07:59/08:01/23:59 Manila, browsers on UTC and
+  America/Los_Angeles: 140/140. The crew page's SQL age was not re-tested
+  with a faked DB clock (formula covered by the 053 tests).
+- **Out-of-scope findings (open):** `payments.excess_amount` stored
+  unrounded (`diver-form/[id]/actions.ts` ~1154/1418/1473); checkout's
+  `grandTotal` ignores per-activity `discount` (`actions.ts` ~1315);
+  surcharges count toward paying the bill (`billing.ts`
+  `computePaymentBreakdown`); registration Arrival/Departure have no
+  Manila-based limits (probably fine); Last Dive Date has no server-side
+  format check; Settlement's table scrolls sideways inside its card on
+  phones. The earlier findings about registration pickers and
+  Scheduling/Boat Manifest ages using UTC (below) are now **fixed**.
 
 ## Latest update: crew-page live age + Last Dive Date "today" (2026-10-03, late night)
 
