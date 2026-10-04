@@ -170,7 +170,73 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Latest update: Dashboard cash + three small fixes, migration 055 (2026-10-04, ~01:45 Manila)
+## Latest update: invoice shows deposits + real Grand Total (2026-10-04, ~09:00 Manila)
+
+**Shipped:** aquadesk-app `master` = `c0c47ad` (branch
+`fix/invoice-deposit-surcharge`, fast-forwarded and pushed). **No
+migration, no stored-data change.** Live Cloudflare version
+`3a609093-d828-49a5-88b6-976b7cc4a013`, `BUILD_ID 7T3bKyn1darxhL0p8KNRe`
+(deployed 2026-10-04 01:00 UTC; BUILD_ID match confirmed on
+aquadesk.online, old BUILD_ID gone; no logged-in checks by Claude).
+Previous live version (rollback target): `c7688a1f-31fa-4e19-8450-cab8edc3682e`,
+`BUILD_ID COBLvUPgxfTP6phld1wiM`. Backup:
+`D:\aquadesk-backups\payments-backup-2026-10-04T00-54-50-274Z.json`
+(210 rows) + `baseline-2026-10-04T00-54-50-274Z.json`; deposits 31,
+visits 218, payments 210, audit_logs 2311 and both sums unchanged after
+the deploy.
+- **What changed (display only):** the invoice's print/PDF view
+  (`InvoicePanel.tsx`; there is no separate on-screen invoice, it only
+  shows when printing) and the emailed invoice (`invoiceEmailHtml.ts`,
+  `sendInvoice`) share one totals block in the new
+  `diver-form/[id]/invoiceSummary.ts`: Subtotal → Discount → Less:
+  Deposit → Amount Due (only with a discount/deposit) → Cash / Cash
+  (USD …@ ₱rate = ₱…) / Card ₱X (surcharge ₱Y) / Online ₱X (surcharge ₱Y)
+  → Excess (Change) → Grand Total. The email previously showed no
+  surcharge, excess or deposits; neither view showed foreign cash.
+- **Grand Total** = amount due after discount and deposits + card/online
+  surcharges (what the diver actually paid). Before, "Grand Total" was
+  the activity subtotal.
+- **Deposits** are read at print/send time (the visit's active deposits —
+  same sum as Bill Summary's Deposits Applied; cancelled never shown).
+  The invoice snapshot has never stored deposits (rebuild or old app).
+  A closed bill's deposits can't change without Unlock Bill, and
+  re-closing writes a new invoice, so the latest invoice is accurate.
+  MK chose this over adding deposits to the snapshot.
+- **Subtotal** = sum of the snapshot's own activity rows, because the
+  snapshot's `grand_total` means different things: rebuild = activity
+  subtotal; **old app = total collected incl. surcharge**
+  (`grand_total_php: p.totalCollected`). Empty `{}` snapshots render ₱0.
+- **Testing:** local stand-in, checkout through the UI + Send Invoice
+  captured by a fake Resend (`RESEND_BASE_URL` process env): 14 cases
+  incl. old-app, empty and pre-fix snapshots, 147/147 checks; Grand Total
+  = stored total_collected + total_surcharge for every new checkout.
+  Dashboard, Bill Summary, Reports Overview, Settlement and Billing Audit
+  text identical between old and new code. tsc clean, eslint at baseline
+  (1 error + 6 warnings), build OK.
+- **Rollback:** revert `c0c47ad` and redeploy. Nothing to undo in the DB.
+- **Out-of-scope findings (open):**
+  1. Old-app invoices paid with foreign cash above the bill: the old app
+     stored no excess, so the invoice shows Grand Total = amount due
+     (e.g. ₱5,500) while the old app recorded more collected (₱5,600);
+     no Excess line is invented.
+  2. Rebuild invoices closed before `628515b` (incl. the two production
+     payments of 2026-10-01) still show the card surcharge as "Excess
+     (Change)" — stored values, not rewritten (MK).
+  3. The invoice email doesn't HTML-escape diver name, dive site or
+     staff name (pre-existing).
+  4. Reports > Billing Audit "View / Print" still never shows the
+     payment lines (unchanged, see the surcharge entry below).
+  5. Invoice figures are rounded to whole pesos for display (e.g. a
+     ₱231.21 surcharge shows ₱231); Grand Total rounds the exact sum.
+- **Stand-in gotchas found this session:** PostgREST exits silently
+  with 0xC0000135 (DLL not found) unless the embedded-postgres `bin`
+  folder (libpq) is on PATH; the dev server must be started from
+  `D:\Rebuild\aquadesk-app` (real casing) — from `D:\rebuild\…` every
+  `/diver-form/[id]` route 404s under Turbopack; editing UTF-8 scripts
+  through PowerShell `Get-Content`/`Set-Content` mangles `₱`/`−` — edit
+  with the Write/Edit tools or use `\u20B1` escapes.
+
+## Previous update: Dashboard cash + three small fixes, migration 055 (2026-10-04, ~01:45 Manila)
 
 **Shipped (one commit per fix):** aquadesk-app `master` = `9998a24`
 (`32464f7`, `4a6647f`, `9998a24`); root repo `2ca23a3` (migration 055).
