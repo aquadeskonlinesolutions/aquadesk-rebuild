@@ -170,6 +170,53 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
+## Where things stand (end of 2026-10-04 session — read this first)
+
+**Live:** aquadesk-app `master` = `origin/master` = `c0c47ad`, Cloudflare
+version `3a609093-d828-49a5-88b6-976b7cc4a013`, `BUILD_ID
+7T3bKyn1darxhL0p8KNRe`. Root repo `master` = latest "Update CLAUDE.md"
+commit (pushed). Latest migration: **055** (all of 047–055 are applied on
+production). Nothing uncommitted, nothing half-done. Branch
+`fix/invoice-deposit-surcharge` is merged (can be deleted).
+
+**Done today:** the invoice fix (next section). Nothing else.
+
+**Not re-verified since 2026-08-19:** Paddle/Payoneer verification (see
+Resume Checklist). Live `PADDLE_API_KEY` expires **2026-11-16** and was
+still blank in `.env.production.local`. Resend still sends from the
+shared sandbox address (see "Resend caveat").
+
+**What's next — open items, none started (MK decides the order):**
+Money/security:
+1. Owner/billing password change trusts the browser's "already has a
+   password" flag (`settings/passwords/actions.ts`); `set_*_unlock` don't
+   check the current password. MK skipped this once (2026-10-04).
+2. Payment channels can be deleted through the direct API by any
+   signed-in user of the centre (`payment_channels_write` policy, 046).
+3. Billing/owner password hashes are bcrypt cost 6 (needs passwords
+   re-set to strengthen).
+4. Checkout's subtotal ignores a per-activity `discount` while the screen
+   and Save subtract it (no UI sets one today).
+Invoice/reports:
+5. Reports > Billing Audit "View / Print" never shows payment lines
+   (reads top-level keys; snapshots nest them under `payment`).
+6. Invoice email doesn't HTML-escape diver name / dive site / staff name.
+7. Old-app foreign-cash overpayment invoices show Grand Total = amount
+   due, lower than the old app's recorded collection (no excess stored).
+8. Pre-`628515b` rebuild invoices still show the surcharge as Excess
+   (Change) — stored, not rewritten by MK's choice.
+9. Invoice figures display rounded to whole pesos.
+UI:
+10. Settlement's table scrolls sideways inside its card on phones; the
+    diver form scrolls sideways on desktops 1024–~1475px (kept on purpose).
+11. Scheduling: Copy Preview/Download Image omit a dive-centre-only
+    "Joining us" line; Download Image doesn't wrap long notes; Phase 2
+    "Confirm Schedule" doesn't block unsaved edits to existing trips.
+12. Group-link form: inputs other than the dates have no labels, and the
+    grid doesn't stack on phones.
+Process: no automated test suite exists; testing = tsc + eslint (baseline
+1 error + 6 warnings) + build + the local stand-in (Working practices).
+
 ## Latest update: invoice shows deposits + real Grand Total (2026-10-04, ~09:00 Manila)
 
 **Shipped:** aquadesk-app `master` = `c0c47ad` (branch
@@ -228,15 +275,21 @@ the deploy.
      payment lines (unchanged, see the surcharge entry below).
   5. Invoice figures are rounded to whole pesos for display (e.g. a
      ₱231.21 surcharge shows ₱231); Grand Total rounds the exact sum.
-- **Stand-in gotchas found this session:** PostgREST exits silently
-  with 0xC0000135 (DLL not found) unless the embedded-postgres `bin`
-  folder (libpq) is on PATH; the dev server must be started from
-  `D:\Rebuild\aquadesk-app` (real casing) — from `D:\rebuild\…` every
-  `/diver-form/[id]` route 404s under Turbopack; editing UTF-8 scripts
-  through PowerShell `Get-Content`/`Set-Content` mangles `₱`/`−` — edit
-  with the Write/Edit tools or use `\u20B1` escapes.
+- **Wrong turns this session** are written up as Lessons 16–22 (old-app
+  `grand_total` meaning, path-casing 404s, PowerShell re-encoding,
+  PostgREST DLL, harness mismatches, BUILD_ID lookup). How to run the
+  stand-in is under "Working practices".
+- **Dead-code audit (end of session): clean.** Every new export in
+  `invoiceSummary.ts` is used by both the print view and the email; the
+  old inline totals in `InvoicePanel.tsx`/`invoiceEmailHtml.ts` were
+  replaced in place (no leftover `grandTotal`/`discount`/`payment`
+  locals; the email's inline activity-row sum now calls
+  `activityRowTotal`). `InvoiceSummary` (type) is exported but only used
+  as the exported function's return type — intentional. `InvoicePanel`
+  keeps its own small `num()` for the activity table, matching the
+  project's duplicate-small-helpers convention. Nothing to revisit.
 
-## Previous update: Dashboard cash + three small fixes, migration 055 (2026-10-04, ~01:45 Manila)
+## Earlier update: Dashboard cash + three small fixes, migration 055 (2026-10-04, ~01:45 Manila)
 
 **Shipped (one commit per fix):** aquadesk-app `master` = `9998a24`
 (`32464f7`, `4a6647f`, `9998a24`); root repo `2ca23a3` (migration 055).
@@ -293,7 +346,7 @@ first baseline and 055 was a live bill save at 01:36 Manila, not 055).
      signed-in user of the centre (`payment_channels_write` policy,
      `046_custom_payment_channels.sql` line 31); the app has no delete UI.
 
-## Latest update: card/online surcharge no longer "Excess (Change)" (2026-10-04, ~01:00 Manila)
+## Earlier update: card/online surcharge no longer "Excess (Change)" (2026-10-04, ~01:00 Manila)
 
 **Shipped:** aquadesk-app `master` = `628515b` (no root-repo change, **no
 migration**). Live Cloudflare version `ba016f27-ff54-40c1-acc9-1f0f29018f70`,
@@ -338,7 +391,7 @@ sums unchanged after deploy.
      checked out did not appear in Dashboard "Today's Payment Channels" in
      local testing — not investigated.
 
-## Latest update: Asia/Manila timezone sweep (2026-10-04, ~00:15 Manila)
+## Earlier update: Asia/Manila timezone sweep (2026-10-04, ~00:15 Manila)
 
 **Shipped:** every "today", date boundary and date display now uses the
 Asia/Manila date, whatever the device or server timezone. aquadesk-app
@@ -390,7 +443,7 @@ sums matched the baseline after 054.
   phones. The earlier findings about registration pickers and
   Scheduling/Boat Manifest ages using UTC (below) are now **fixed**.
 
-## Latest update: crew-page live age + Last Dive Date "today" (2026-10-03, late night)
+## Earlier update: crew-page live age + Last Dive Date "today" (2026-10-03, late night)
 
 **Shipped (two small fixes):** aquadesk-app `master` = `70f8e7a`; root repo
 `9a8385a` (migration 053). Live Cloudflare version
@@ -429,7 +482,7 @@ checks by Claude). Previous live version (rollback target):
   - Last Dive Date has no server-side format check (only the database
     rejects an invalid date).
 
-## Latest update: server-side payment totals (2026-10-03, night)
+## Earlier update: server-side payment totals (2026-10-03, night)
 
 **Shipped:** Save (`savePaymentOnly`) and Checkout (`checkoutVisit`) no
 longer trust money values from the browser. aquadesk-app `master` =
@@ -471,7 +524,7 @@ checks by Claude). Previous live version (rollback target):
      tendered, not the amount owed), so paying the full bill by card
      shows the surcharge as "excess". Pre-existing; confirm the intent.
 
-## Latest update: diver birthday & age (2026-10-03, evening)
+## Earlier update: diver birthday & age (2026-10-03, evening)
 
 **Shipped:** the diver form's info grid shows **Birthday** (or "Not set")
 and **Age**, and Edit Diver Info has a Birthday date field (with Clear).
@@ -497,7 +550,7 @@ checks not done by Claude — no test login). Previous live version:
   age calculations exist (registration wizard, `scheduling/data.ts`,
   `boat-manifest/data.ts`).
 
-## Latest update: hardening batch (2026-10-03, later the same day)
+## Earlier update: hardening batch (2026-10-03, later the same day)
 
 Six fixes on top of deposit cancellation, shipped one commit per fix.
 Live: Cloudflare version `5af7e3c5-8519-4cda-be26-20663d96d2f9`,
@@ -900,6 +953,27 @@ use cases at once), not a today problem.
 
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
 
+- **Local stand-in (how UI/money changes are tested — there is no local
+  Supabase/Docker).** Latest copy: `C:\Users\MVRTN\AppData\Local\Temp\
+  claude\D--rebuild\52c9556f-6253-4144-be72-5a9aaa671ce8\scratchpad\pgtest\`
+  (scratchpads are per session and may be cleaned by Windows; copy it into
+  the new session's scratchpad with `robocopy /E`, excluding `shots`,
+  `hb`, `inv_out`, `emails`, `*.log`). Pieces: embedded Postgres (`node
+  db.js start`, port 54329, migrations through 055 + test data; seeds
+  `*_seed.js`), PostgREST (`postgrest\postgrest.exe postgrest.conf`,
+  port 54330 — **the embedded-postgres `node_modules\@embedded-postgres\
+  windows-x64\native\bin` folder must be on PATH**, else it exits
+  silently), fake GoTrue + gateway (`node gateway.js`, port 54321, every
+  test login's password is `Test1234!`, owner = `owner@test.local`),
+  fake Resend (`node fakeresend.js`, port 54340, saves emails to
+  `emails\`). Dev server: `devinv.ps1` (process-env overrides only, no
+  `.env` edits; sets `RESEND_BASE_URL`) on port 3100, **started from
+  `D:\Rebuild\aquadesk-app` (capital R)**. Driven by Playwright scripts
+  (`invflow.js`, `regress_inv.js`, …). Regression method: capture page
+  text on new code, `git stash` the change, capture on old code with the
+  same DB, diff. Stop everything afterwards (`node db.js stop`, kill
+  postgrest/gateway/fakeresend/dev) and delete `.next` after any build.
+
 - **Any new column on `public.dive_centers` needs an explicit grant** or
   the app can't read it: `grant select (column) on public.dive_centers
   to anon, authenticated;` in the same migration. Since migration 051
@@ -1295,6 +1369,72 @@ or this file's own "Current State" claims again:**
     shared across MK's different projects — a quick `gh auth status`
     check before the first push of a session is cheap insurance
     against discovering the wrong account mid-task.**
+
+**Lessons 16–22 — wrong turns from the 2026-10-04 invoice session.**
+None reached production; all cost time. Don't repeat them.
+
+16. **Same key name, different meaning, across the old app and the
+    rebuild.** The invoice snapshot's `grand_total` is the activity
+    subtotal in rebuild invoices but **total collected incl. surcharge**
+    in old-app invoices (`diver-form.html` `buildPaymentPayload`:
+    `grand_total_php: p.totalCollected`). The first plan was to label it
+    "Subtotal" everywhere; that would have printed wrong subtotals on
+    every migrated invoice. Caught only by reading the old app's writer.
+    **Don't:** reuse a stored field's value under a new label because its
+    name sounds right. **Do:** for any stored JSON/column that both apps
+    wrote, read the *old app's writer code* before deciding what the value
+    means, and prefer deriving from raw rows (here: the snapshot's own
+    activity lines) over a pre-computed total.
+
+17. **Debugged the data when the router was the problem.** Every
+    `/diver-form/[id]` page 404'd on the stand-in. Time went into checking
+    divers, RLS and PostgREST queries (all fine) before noticing the dev
+    log showed 404 in ~50 ms with the page never compiling. Cause: the dev
+    server was started from `D:\rebuild\aquadesk-app`; the real folder is
+    `D:\Rebuild`, and Turbopack's route matching for the dynamic segment
+    breaks on the casing mismatch. **Don't:** start `next dev` from a
+    lowercase `D:\rebuild` path. **Do:** `Set-Location D:\Rebuild\aquadesk-app`,
+    and when a page 404s instantly without compiling, suspect routing/
+    path before data.
+
+18. **PowerShell silently re-encoded UTF-8 test scripts.** A one-line ID
+    fix via `Get-Content -Raw` + `WriteAllText` turned every `₱` in the
+    test expectations into `â‚±`, so 0/14 cases "failed" while the app was
+    correct. The repair script was itself written with `Set-Content`
+    (ANSI), so its own `₱` literal was mangled; it ran, changed nothing,
+    and **printed "ok"** because its check only looked for the wrong
+    thing. **Don't:** edit files containing non-ASCII text through
+    PowerShell `Get-Content`/`Set-Content`, and don't trust a fix script
+    whose success check can't detect its own failure. **Do:** use the
+    Write/Edit tools, or `\u20B1` / `\u2212` escapes in scripts. When
+    every test fails at once, check the harness before the app.
+
+19. **Assumed a copied binary would just run.** The copied
+    `postgrest.exe` exited silently (no log). It was exit 0xC0000135, DLL
+    not found: PostgREST needs libpq from the embedded-postgres `bin`
+    folder on PATH. **Do:** run a copied/unfamiliar exe once in the
+    foreground with `--version` and read `$LASTEXITCODE` before wiring it
+    into background `Start-Process` calls that hide errors.
+
+20. **Test-harness mismatches produced false failures twice:** a UUID
+    builder that produced 10 hex chars in the first group (seed rolled
+    back), and the fake Resend saved files with `-` → `_` while the test
+    looked up the raw name ("email not captured"). The failed run had
+    already marked the invoices "Sent", so the rerun first had to reset
+    `email_delivery_status`. **Do:** when a fake service transforms a
+    key, share one function for it; make test runs re-runnable (reset
+    any state the run itself changes) before the first run.
+
+21. **Looked for the BUILD_ID with a guessed regex.** Next 16 puts it in
+    the RSC payload as `"b":"<BUILD_ID>"`, not `buildId`. **Do:** check
+    the served HTML for the literal BUILD_ID string (old and new) — no
+    pattern guessing.
+
+22. **Rule kept, worth keeping:** before changing the invoice, Step 1
+    proved *where* the deposit was lost (not stored + never passed + not
+    loaded) instead of assuming "filtered". That choice decided the fix
+    (read active deposits at print/send) without touching checkout or
+    stored data. Keep doing evidence-first investigation for money bugs.
 
 **Older, still-relevant recurring themes** (each of these has multiple
 full incident write-ups in `PROJECT_HISTORY.md` — this is an index, not
