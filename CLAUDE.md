@@ -172,9 +172,10 @@ a stale copy is still correct or safe to reuse.
 
 ## Where things stand (end of 2026-10-10 session — read this first)
 
-**Live:** aquadesk-app `master` = `origin/master` = `890d5b1` (Boat
-Manifest rentals + follow-up, see next section), Cloudflare version
-`b3c52c2e-fd69-43d8-a410-6492f2490ecf`, `BUILD_ID Rmtp0gb39n5fBB-0YkOke`. Root repo `master` = latest "Update CLAUDE.md"
+**Live:** aquadesk-app `master` = `origin/master` = `658cf53` (Boat
+Manifest rentals + follow-ups, see next section), Cloudflare version
+`74a1a36e-78b5-426c-80cc-4f14f83b9f27`, `BUILD_ID odnha8ioYOzssrdbNgyur`.
+Latest migration: **056** (applied on production 2026-10-10). Root repo `master` = latest "Update CLAUDE.md"
 commit (pushed). Latest migration: **055** (all of 047–055 are applied on
 production). Nothing uncommitted, nothing half-done. Branch
 `fix/invoice-deposit-surcharge` is merged (can be deleted).
@@ -251,12 +252,19 @@ Claude). Rollback target: `3a609093-d828-49a5-88b6-976b7cc4a013`
   trip's `schedules.captain`, else Fleet `boats.captain`, else blank
   (27 of 64 own trips had a trip captain different from Fleet's). Dashboard
   "log join rides" reminder now filters `boat_mode = 'join_ride'`.
-- **Open:** the staff crew page still labels rentals "Join Ride" /
-  "Joining:" and hides their captain — `get_crew_schedule` (latest: 053)
-  returns `is_joiner` but not `boat_mode`, so the fix needs a migration
-  adding a `boat_mode` key (waiting on MK). Phase 3 / Copy Preview don't
-  show a rental's captain (`PhaseThreePanel.tsx` hides captain when
-  `isJoiner`).
+- **Staff page `658cf53` + migration 056 (same day, live as version
+  `74a1a36e-78b5-426c-80cc-4f14f83b9f27`, `BUILD_ID odnha8ioYOzssrdbNgyur`,
+  confirmed on aquadesk.online/staff; rollback target `b3c52c2e-…`):**
+  `056_crew_schedule_boat_mode.sql` = 053's `get_crew_schedule` verbatim +
+  one `'boat_mode'` key (MK ran it 2026-10-10; verified via API: key present
+  on all crew codes, invalid code still refused). **056 is now the latest
+  `get_crew_schedule`** — base any future edit on it. Staff page: rental =
+  rental boat name + "Rental" badge + captain; join ride/own unchanged;
+  missing `boat_mode` falls back to `is_joiner` (old behaviour). Rollback:
+  revert `658cf53` and/or re-run 053 (either order is safe). Confirmed that
+  the live `/staff` JS calls `vqwrluiikodconwlmwls.supabase.co`.
+- **Open:** Phase 3 / Copy Preview don't show a rental's captain
+  (`PhaseThreePanel.tsx` hides captain when `isJoiner`).
 
 ## Earlier update: invoice shows deposits + real Grand Total (2026-10-04, ~09:00 Manila)
 
