@@ -172,9 +172,9 @@ a stale copy is still correct or safe to reuse.
 
 ## Where things stand (end of 2026-10-10 session — read this first)
 
-**Live:** aquadesk-app `master` = `origin/master` = `3a0bd37` (Boat
-Manifest rentals, see next section), Cloudflare version
-`236715ac-71ea-4cf2-9547-5f43addcdbd0`, `BUILD_ID kIJKVKw1E0kTPzUz-Eqiw`. Root repo `master` = latest "Update CLAUDE.md"
+**Live:** aquadesk-app `master` = `origin/master` = `890d5b1` (Boat
+Manifest rentals + follow-up, see next section), Cloudflare version
+`b3c52c2e-fd69-43d8-a410-6492f2490ecf`, `BUILD_ID Rmtp0gb39n5fBB-0YkOke`. Root repo `master` = latest "Update CLAUDE.md"
 commit (pushed). Latest migration: **055** (all of 047–055 are applied on
 production). Nothing uncommitted, nothing half-done. Branch
 `fix/invoice-deposit-surcharge` is merged (can be deleted).
@@ -245,10 +245,18 @@ Claude). Rollback target: `3a609093-d828-49a5-88b6-976b7cc4a013`
 - **Side effects (reviewed):** the staff crew page now shows "Captain:"
   for rental trips that have one (`get_crew_schedule` reads
   `s.captain`). Dashboard/fuel/is_joiner readers untouched.
-- **Open (not changed):** Phase 3 / Copy Preview don't show a rental's
-  captain (`PhaseThreePanel.tsx` hides captain when `isJoiner`); Dashboard
-  "log join rides" reminder and the staff page's "Joining:" label still
-  treat rentals as join rides (they key on `is_joiner`).
+- **Follow-up `890d5b1` (same day, live as version
+  `b3c52c2e-fd69-43d8-a410-6492f2490ecf`, BUILD_ID match confirmed;
+  rollback target `236715ac-…`):** own-boat manifest captain =
+  trip's `schedules.captain`, else Fleet `boats.captain`, else blank
+  (27 of 64 own trips had a trip captain different from Fleet's). Dashboard
+  "log join rides" reminder now filters `boat_mode = 'join_ride'`.
+- **Open:** the staff crew page still labels rentals "Join Ride" /
+  "Joining:" and hides their captain — `get_crew_schedule` (latest: 053)
+  returns `is_joiner` but not `boat_mode`, so the fix needs a migration
+  adding a `boat_mode` key (waiting on MK). Phase 3 / Copy Preview don't
+  show a rental's captain (`PhaseThreePanel.tsx` hides captain when
+  `isJoiner`).
 
 ## Earlier update: invoice shows deposits + real Grand Total (2026-10-04, ~09:00 Manila)
 
