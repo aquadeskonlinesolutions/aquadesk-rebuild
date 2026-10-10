@@ -170,11 +170,11 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Where things stand (end of 2026-10-04 session — read this first)
+## Where things stand (end of 2026-10-10 session — read this first)
 
-**Live:** aquadesk-app `master` = `origin/master` = `c0c47ad`, Cloudflare
-version `3a609093-d828-49a5-88b6-976b7cc4a013`, `BUILD_ID
-7T3bKyn1darxhL0p8KNRe`. Root repo `master` = latest "Update CLAUDE.md"
+**Live:** aquadesk-app `master` = `origin/master` = `3a0bd37` (Boat
+Manifest rentals, see next section), Cloudflare version
+`236715ac-71ea-4cf2-9547-5f43addcdbd0`, `BUILD_ID kIJKVKw1E0kTPzUz-Eqiw`. Root repo `master` = latest "Update CLAUDE.md"
 commit (pushed). Latest migration: **055** (all of 047–055 are applied on
 production). Nothing uncommitted, nothing half-done. Branch
 `fix/invoice-deposit-surcharge` is merged (can be deleted).
@@ -217,7 +217,40 @@ UI:
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
 
-## Latest update: invoice shows deposits + real Grand Total (2026-10-04, ~09:00 Manila)
+## Latest update: Boat Manifest includes rental-boat trips (2026-10-10)
+
+**Shipped:** aquadesk-app `master` = `3a0bd37` (branch
+`feat/manifest-rental-boats`, fast-forwarded, pushed). **No migration, no
+stored-data change.** Live Cloudflare version
+`236715ac-71ea-4cf2-9547-5f43addcdbd0`, `BUILD_ID kIJKVKw1E0kTPzUz-Eqiw`
+(BUILD_ID match confirmed on aquadesk.online; no logged-in checks by
+Claude). Rollback target: `3a609093-d828-49a5-88b6-976b7cc4a013`
+(`BUILD_ID 7T3bKyn1darxhL0p8KNRe`) — or revert `3a0bd37` and redeploy.
+- **Data facts:** `is_joiner` is true for BOTH rental and join ride;
+  `schedules.boat_mode` (036: own_boat/join_ride/rental) is what tells
+  them apart. Rental boat name lives in `joiner_boat_name`. Before this
+  change a rental's captain was never captured (forced null). Rentals
+  created before 036 were backfilled as `join_ride` and can't be told
+  apart. Real data 2026-10-10: 64 own, 27 join_ride, 2 rental.
+- **Manifest (`boat-manifest/data.ts`):** filters `boat_mode in
+  (own_boat, rental)` instead of `is_joiner = false`; the detail load
+  refuses a join ride server-side. Rental: name + captain from the trip,
+  missing = blank (the `mbca()` prefix returns "" for an empty name).
+  Own boat unchanged: **Fleet** boat name and **Fleet `boats.captain`**
+  (not the trip's captain — only 5/19 boats have one, so most own-boat
+  manifests print the blank captain line; kept as-is on purpose).
+- **Scheduling:** rental trips have an optional "Boat Captain" input,
+  saved to `schedules.captain`; join rides still save none. Server now
+  also requires a boat name for rental/join-ride (same as the form).
+- **Side effects (reviewed):** the staff crew page now shows "Captain:"
+  for rental trips that have one (`get_crew_schedule` reads
+  `s.captain`). Dashboard/fuel/is_joiner readers untouched.
+- **Open (not changed):** Phase 3 / Copy Preview don't show a rental's
+  captain (`PhaseThreePanel.tsx` hides captain when `isJoiner`); Dashboard
+  "log join rides" reminder and the staff page's "Joining:" label still
+  treat rentals as join rides (they key on `is_joiner`).
+
+## Earlier update: invoice shows deposits + real Grand Total (2026-10-04, ~09:00 Manila)
 
 **Shipped:** aquadesk-app `master` = `c0c47ad` (branch
 `fix/invoice-deposit-surcharge`, fast-forwarded and pushed). **No
