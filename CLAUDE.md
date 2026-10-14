@@ -170,17 +170,40 @@ deliberately never written into this file or `PROJECT_HISTORY.md`** — if
 direct DB/API access is needed, ask the user again rather than assuming
 a stale copy is still correct or safe to reuse.
 
-## Where things stand (end of 2026-10-10 session — read this first)
+## Where things stand (2026-10-14 session — read this first)
 
-**Live:** aquadesk-app `master` = `origin/master` = `658cf53` (Boat
-Manifest rentals + follow-ups, see next section), Cloudflare version
-`74a1a36e-78b5-426c-80cc-4f14f83b9f27`, `BUILD_ID odnha8ioYOzssrdbNgyur`.
-Latest migration: **056** (applied on production 2026-10-10). Root repo `master` = latest "Update CLAUDE.md"
-commit (pushed). Latest migration: **055** (all of 047–055 are applied on
-production). Nothing uncommitted, nothing half-done. Branch
-`fix/invoice-deposit-surcharge` is merged (can be deleted).
+**Live:** aquadesk-app `master` = `origin/master` = `1dd0499` (bill lock
++ Changes After Unlock + open-bills fix), Cloudflare version
+`83c61e33-dff1-45c1-972a-836ca7316fb4`, `BUILD_ID ObE4NCVYUhwsWkPTBPec3`.
+Latest migration: **057** (applied on production 2026-10-14 by Claude,
+MK's explicit in-session approval + DB password). Root repo `master` =
+latest "Update CLAUDE.md" commit (pushed).
 
-**Done today:** the invoice fix (next section). Nothing else.
+**In progress — a 5-step plan MK set on 2026-10-14 (stop for MK's
+go-ahead after each step):** 1. bill lock (migration 057) + open-bills
+fix — **DONE**, see next section. 2. Read-only check of the "Our Dive
+Educators" report vs the 9 course activity rows Boat Return created
+(a rebuild bug: the old app skipped course visits in boat return) —
+report before deleting anything. 3. Apply Bundle rework. 4. Add-ons
+moved to Bill Summary. 5. Fun ⇄ Course mode switch + course-fee row type.
+MK's decisions for 3–5 (keep these): **no limit on course fees per
+visit** (visits often hold OW + AOW, or a course + fun dives) — only
+guard against the system creating the same fee twice on its own; course
+mode writes no activity row from Boat Return; bundle = new row placed
+last with an explicit row type, dives set to ₱0 with exact original
+prices kept in a snapshot table, Remove Bundle restores them, the last
+dive's real site is never overwritten, only bundles whose dive count
+matches are offered, leave the 2 existing Divergems bundle visits as
+they are; bundle row excluded from every staff count (trip and walk-in
+leader rows, educator rows, Raw Data staff CSV, Overview days served,
+govt-fees reminder, Boat Return duplicate check, Apply Charges) but kept
+in revenue; Apply Charges must never reprice course-fee rows, must skip
+bundle rows, must price fun dives as fun dives on mixed visits, no
+equipment on course days; the 3 Divergems add-on rows (one closed visit,
+₱43,240, visit total ₱43,840) migrate as "Uncategorized" with a before/
+after visit-total check across every visit shown to MK first; add-on
+category name is copied onto each add-on. Course → Fun asks keep/remove
+the course fee; every switch goes to Billing Audit.
 
 **Not re-verified since 2026-08-19:** Paddle/Payoneer verification (see
 Resume Checklist). Live `PADDLE_API_KEY` expires **2026-11-16** and was
@@ -218,7 +241,47 @@ UI:
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
 
-## Latest update: Boat Manifest includes rental-boat trips (2026-10-10)
+## Latest update: database bill lock + Changes After Unlock (2026-10-14)
+
+**Shipped:** aquadesk-app `1dd0499`; migration `057_closed_bill_lock.sql`
+(root repo). Live Cloudflare version `83c61e33-dff1-45c1-972a-836ca7316fb4`,
+`BUILD_ID ObE4NCVYUhwsWkPTBPec3` (match confirmed on aquadesk.online, old
+BUILD_ID gone). Rollback target: `74a1a36e-78b5-426c-80cc-4f14f83b9f27`.
+Baselines: `D:\aquadesk-backups\baseline-*-pre057.json` / `-post057.json`
+(11 real checkouts happened 09:03–09:38 UTC between them — before 057 ran
+at ~10:01 UTC; 057 itself changed no data).
+- **057 lock:** BEFORE trigger `activities_closed_bill_lock`
+  (`guard_closed_visit_activities`, SECURITY INVOKER) refuses insert/
+  update/delete of an activity whose visit isn't `open` — "This bill is
+  closed. Unlock it with the billing password before changing it."
+  Bypassed by `postgres`/`service_role`/`supabase_admin` and by nested FK
+  actions that only delete or only null `schedule_id`. **Any future
+  SECURITY DEFINER function owned by postgres that writes activities
+  bypasses this lock — it must check `visit_status = 'open'` itself.**
+- **057 audit:** AFTER triggers on activities, payments, deposits
+  (`log_bill_change_after_unlock`) write `audit_logs` action
+  `bill_changed_after_unlock` (target = visit, performed_by = auth.uid(),
+  notes "<diver> — <what>: field before → after; …") only while the visit
+  is open AND has a `bill_unlocked` row. No-change saves aren't logged.
+  Checkout closes the visit before writing payments, so it isn't logged.
+  The add-ons table (Task 4) must get the same two triggers.
+- **App:** `closedVisitError()` in `diver-form/[id]/actions.ts` (Add
+  Activity, Apply Charges, rate selections, Apply Bundle). Billing Audit
+  has a date-scoped "Changes After Unlock" table. Reports Overview "Open
+  Diver Bills" excludes cancelled activities (no production effect today).
+- **Tested:** rebuilt local stand-in (old one was wiped by Windows) —
+  new code 8/8 + 6/6 + Boat Return + Billing Audit; live (old) code with
+  057 on a clean DB 8/8 + 6/6 + 1/1. On production: rolled-back
+  transaction as a real owner — closed-bill edit/insert refused, reopen →
+  Boat Return-style insert + edit accepted and logged with who, checkout
+  close + payment update accepted, lock back after; counts unchanged.
+- **Rollback:** code — redeploy `74a1a36e-…` or revert `1dd0499`; 057 —
+  rollback block at the bottom of the file (safe any time).
+- **DB access fact:** pooler `aws-0-ap-southeast-1.pooler.supabase.com`
+  (6543) works with user `postgres.vqwrluiikodconwlmwls`; the password is
+  never stored (ask MK). Supabase CLI is still not logged in.
+
+## Earlier update: Boat Manifest includes rental-boat trips (2026-10-10)
 
 **Shipped:** aquadesk-app `master` = `3a0bd37` (branch
 `feat/manifest-rental-boats`, fast-forwarded, pushed). **No migration, no
@@ -1003,8 +1066,16 @@ use cases at once), not a today problem.
 ## Working practices (condensed — see `PROJECT_HISTORY.md` for full original detail)
 
 - **Local stand-in (how UI/money changes are tested — there is no local
-  Supabase/Docker).** Latest copy: `C:\Users\MVRTN\AppData\Local\Temp\
-  claude\D--rebuild\52c9556f-6253-4144-be72-5a9aaa671ce8\scratchpad\pgtest\`
+  Supabase/Docker).** Latest copy (rebuilt 2026-10-14 — the older copy's
+  scripts and binaries had been wiped by Windows): `C:\Users\MVRTN\AppData\
+  Local\Temp\claude\D--rebuild\290cdd1f-3dad-4ead-8f18-1007929a12f1\
+  scratchpad\pgtest\` (`db.js init|start|stop|createdb|migrate N|sql|q`,
+  `bootstrap.sql` = Supabase roles/auth/storage stubs, `seed.sql`,
+  `gateway.js`, `postgrest.conf`, `dev.ps1`, `ui1.js`; the database must
+  be UTF8 — initdb defaults to WIN1252; Playwright launches the installed
+  `chromium_headless_shell-1243` via `executablePath`; start the dev
+  server with `Start-Process … -WorkingDirectory 'D:\Rebuild\aquadesk-app'`,
+  not Git Bash, or every dynamic route 404s). Older layout notes:
   (scratchpads are per session and may be cleaned by Windows; copy it into
   the new session's scratchpad with `robocopy /E`, excluding `shots`,
   `hb`, `inv_out`, `emails`, `*.log`). Pieces: embedded Postgres (`node
