@@ -273,6 +273,39 @@ UI:
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
 
+## Latest update: Add-ons in the Bill Summary, Task 2 (2026-10-15) — LIVE
+
+**Shipped:** aquadesk-app `master` = `6444858`; migration **059** run on
+production 2026-10-15 (MK approved; DB password given in chat, not stored).
+Live Cloudflare version `733489da-f9ee-4553-b031-918b55da7e18`,
+`BUILD_ID kTdNkZQZV87Ym_PUTSLuv` (match confirmed, old BUILD_ID gone).
+Rollback target (code only): `595ba51d-31a1-4f09-9b1d-095e5cb293be`.
+Baseline + backup: `D:\aquadesk-backups\baseline-pre059.json`,
+`activities-backup-pre059.json` (518 rows; after 059 all identical, counts and
+payment/deposit/audit totals unchanged).
+- **059 (additive):** `addon_categories` (per centre, unique on lower-cased
+  label), `visit_addons` (description, category link + category NAME copied on,
+  amount > 0), database bill lock (`guard_closed_visit_addons`), audit branch in
+  `log_bill_change_after_unlock()` (057 body + visit_addons), and the ONE shared
+  totals function `visit_addons_totals(uuid[])` (app wrapper `src/lib/addons.ts`
+  `loadAddonTotals`). Old `activities.addons` / `addon_breakdown` untouched.
+- **Behaviour:** add-ons are visit-level, add on top of the activity subtotal,
+  editable/deletable while the bill is open; closed bill refuses from the
+  database; after Unlock Bill every change is audited. New invoice snapshots
+  carry `addons_list`; old snapshots keep their per-row Add-ons column. Older
+  per-row amounts show read-only as "Older add-ons" and keep counting.
+- **MK's rule (option A):** add-ons count only as money owed/collected (Bill
+  Summary, Visit Total, Save/Checkout, invoices, open bills, Dashboard bill
+  stack, Divers list, Scheduling balance check, payment totals/Settlement). They
+  must NOT appear in any chart or revenue breakdown: the Fun vs Course chart is
+  unchanged (activities only), no Raw Data add-ons file. Only readers of
+  visit_addons: dashboard/data.ts, divers/data.ts, scheduling/data.ts,
+  reports/data.ts (open bills), diver-form actions/data/addonActions.
+- **Void guard:** a visit with add-ons can't be voided (cascade).
+- **Package Test test divers:** PT-0032 no add-ons, PT-0033 open (add several),
+  PT-0034 closed with a ₱500 Van add-on (invoice on file), PT-0035 older ₱240
+  per-row add-on.
+
 ## Latest update: Apply Bundle rework, Task 1 (2026-10-15) — LIVE
 
 **Shipped:** aquadesk-app `master` = `2492615`; root `35d70ac`; migration
