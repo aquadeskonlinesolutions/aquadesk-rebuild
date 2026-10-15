@@ -273,6 +273,67 @@ UI:
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
 
+## Latest update: Fun Diving ⇄ Course switch, Task 3 (2026-10-15) — LIVE, VERIFIED
+
+**Shipped:** aquadesk-app `master` = `14c8455`; migration **060** run on
+production 2026-10-15 (MK approved; DB password given in chat, not stored).
+Live Cloudflare version `d3ef5392-301a-4cac-9178-e59a18629593`,
+`BUILD_ID f5mdm7MsQXoTJlUCwF73j` (match confirmed). Rollback target (code
+only): `733489da-f9ee-4553-b031-918b55da7e18`. Baseline + backup:
+`D:\aquadesk-backups\baseline-pre060.json`, `activities-backup-pre060.json`
+(524 rows; after 060 all identical, counts and totals unchanged; 0 switched
+visits, 0 course_fee rows). Live checklist run on Package Test: all pass
+(proof in `D:\aquadesk-backups\live-mode-proof\`).
+- **060 (additive):** `activities.row_type` may also be `course_fee`;
+  `visits.mode_switched_at` (null on every old bill); unique index = at most
+  one BLANK course fee row per visit (typed rows never blocked, no limit per
+  visit); `guard_visit_mode_change` trigger (mode can't change on a non-open
+  bill, even by direct update); `switch_visit_mode()` RPC (open check, flips
+  mode, optional removal of ONLY `course_fee` rows, writes audit_logs
+  `visit_mode_switched`).
+- **How courses work (MK confirmed):** entered manually — secretary writes
+  course name, rate, instructor in Staff on a course fee row. Boat Return
+  never creates courses. Several courses per visit; fun dives and courses can
+  share a visit. Commission: instructor per course fee row, divemaster per dive.
+- **Behaviour:** Switch Mode button on open bills. Fun→Course only changes the
+  mode (dives stay billed, no fee added). Course→Fun: branded dialog Keep /
+  Remove course fee (only `course_fee` rows; older unmarked rows never).
+  A row added while in Course mode is a `course_fee` row; a course picked on a
+  `course_fee` row always takes the full rate. Apply Charges: skips course_fee
+  and bundle rows, prices unmarked rows of a SWITCHED bill as fun dives, no
+  equipment on days that have a course fee. Older never-switched course bills
+  (mode_switched_at null) keep today's pricing, with a branded warning listing
+  the rows that will be repriced / set to ₱0 first. Boat Return writes no row
+  for a diver whose open bill is in Course mode (reads the mode live) and says
+  who was skipped. Billing Audit has a "Fun Diving / Course Switches" table.
+- **Educators report (MK approved 2026-10-15):** a course line = a
+  `course_fee` row, OR a row of an older course bill that was never switched.
+  Unmarked rows on a switched bill are fun dives. Past lines unchanged
+  (old vs new compared: 0 moved). Report/dashboard filters now exclude only
+  `bundle` rows (`row_type is null or <> 'bundle'`), so course fee rows count
+  toward days served, educators and the govt-fees reminder; the Boat Return
+  duplicate check still ignores both marker types.
+- **Open item:** PT-0039 (Package Test) left OPEN in Course mode with ₱4,000
+  already paid and 1 invoice — MK said leave it; closing it again would write
+  a second invoice.
+
+## Latest update: Standing rules + test tooling notes (2026-10-15)
+
+- **Live data stays untouched, no native pop-ups** — see the two STANDING RULE
+  sections at the top of this file. Package/bundle/course/add-on work is
+  tested in **Package Test**; tier-pricing work in **Test Dive Center**.
+- **Live-site test runs (headed browser):** the signed-in session is lost when
+  the browser closes (session cookies). `scratchpad/pgtest/live_session.js`
+  (written, not yet run) saves the session to
+  `D:\aquadesk-backups\live-session\state.json` after ONE sign-in and reuses it
+  headless. Never ask MK to re-sign in per run; ask for the billing password
+  only once per bill and only in the browser's Unlock dialog. Scripts must not
+  close the window silently — say so first.
+- **Course dropdown labels read "Open Water (₱19,000)"** (name + rate) — match
+  by value, not label, in tests.
+- **Shell quoting:** long Node edits through `node -e` break on apostrophes;
+  write scripts with the Write tool instead.
+
 ## Latest update: Add-ons in the Bill Summary, Task 2 (2026-10-15) — LIVE
 
 **Shipped:** aquadesk-app `master` = `6444858`; migration **059** run on
