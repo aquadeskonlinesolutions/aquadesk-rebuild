@@ -21,6 +21,25 @@ new session write-ups belong in *this* file, not the archive.
 Windows PowerShell for this project going forward, not Git Bash/WSL —
 use PowerShell syntax for any commands/instructions given to them.
 
+## STANDING RULE (MK, 2026-10-15): live data stays untouched — permanent
+
+**Never touch existing entries on live accounts** (Dive Nation, Atlas,
+Divergems, and any other real centre). No migrations that rewrite rows,
+backfills, row-type updates, deletes or edits of past data. Past bills,
+activities, add-ons, invoices and reports must look exactly as they do
+today, so clients aren't confused.
+- New formats/features apply **only to entries created from now on**. Old
+  rows keep today's behaviour; legacy columns stay as read-only data that
+  is still counted in totals, invoices and reports exactly as before.
+- Any new exclusion/filter (e.g. bundle rows left out of staff counts)
+  must not change past figures. Show MK before/after numbers for past
+  periods and ask if any figure would move.
+- If a change would affect past entries in any way — display, totals,
+  counts, reports — **stop and ask MK**. The default answer is: they
+  remain untouched. Never decide this silently.
+- Test data goes in test centres only: package/bundle/course work in
+  **Package Test**, tier-pricing work in **Test Dive Center**.
+
 ## Resume Checklist (read this first if picking this project back up cold)
 
 The user's Pro plan expired 2026-08-20 and the next session could start
