@@ -13,7 +13,13 @@
 --      restore them. Tenant-scoped read access; no direct writes from the
 --      app's users (only the two functions below write it). The same
 --      closed-bill lock trigger as migration 057 is attached.
---   4. apply_bundle() / remove_bundle() — each does its whole job in one
+--   4. activity_dive_count() — how many dives one activity row stands for,
+--      read from its dive-site text (one comma-separated entry per dive:
+--      "Gato, Gato, Gato" = 3, "Local, Local" = 2, "Lighthouse" = 1). No
+--      dive count is stored anywhere else. Returns NULL when the text cannot
+--      be counted reliably (empty, or an entry containing a digit or "+",
+--      e.g. "3sharks+3gato"); Apply Bundle then refuses instead of guessing.
+--   5. apply_bundle() / remove_bundle() — each does its whole job in one
 --      database transaction (all-or-nothing), checks the visit is open and
 --      belongs to the caller's dive center, and — because they run with the
 --      owner's rights and so bypass the 057 trigger — check "open" themselves.
@@ -61,7 +67,17 @@ create trigger activity_bundle_snapshots_closed_bill_lock
   before insert or update or delete on public.activity_bundle_snapshots
   for each row execute function public.guard_closed_visit_activities();
 
--- ---- 4. apply_bundle ---------------------------------------------------------
+-- ---- 4. dive count of a row -----------------------------------------------------
+create or replace function public.activity_dive_count(p_site text)
+returns integer
+language sql immutable set search_path = public as $$
+  select case when t.n = 0 or t.bad > 0 then null else t.n::integer end
+    from (select count(*) filter (where btrim(e) <> '') as n,
+                 count(*) filter (where btrim(e) ~ '[0-9+]') as bad
+            from regexp_split_to_table(coalesce(p_site, ''), ',') as e) t;
+$$;
+
+-- ---- 5. apply_bundle ---------------------------------------------------------
 -- p_equipment: the gear amount the app priced with its usual equipment rule;
 -- ignored (treated as 0) when the bundle already includes equipment.
 create or replace function public.apply_bundle(p_visit_id uuid, p_bundle_id uuid, p_equipment numeric)
@@ -71,7 +87,9 @@ declare
   v_dc uuid := public.current_dive_center_id();
   v_visit record;
   v_bundle record;
+  v_rows int;
   v_count int;
+  v_unknown record;
   v_last_date date;
   v_equipment numeric(12,2);
   v_bundle_row uuid;
@@ -108,11 +126,22 @@ begin
     raise exception 'This visit already has a bundle from before this update, which can''t be changed here. Nothing was applied.';
   end if;
 
-  select count(*), max(date) into v_count, v_last_date
+  select count(*), max(date), coalesce(sum(public.activity_dive_count(dive_site)), 0)
+    into v_rows, v_last_date, v_count
     from public.activities
    where visit_id = p_visit_id and status <> 'cancelled' and row_type is null;
-  if v_count = 0 then
+  if v_rows = 0 then
     raise exception 'Add at least one dive before applying a bundle.';
+  end if;
+  -- A row whose dives can't be counted from its site text stops the apply.
+  select date, dive_site into v_unknown
+    from public.activities
+   where visit_id = p_visit_id and status <> 'cancelled' and row_type is null
+     and public.activity_dive_count(dive_site) is null
+   order by date, created_at limit 1;
+  if found then
+    raise exception 'The dives on the % row (%) can''t be counted, so no bundle was applied. Set that row''s dive site to one entry per dive (for example "Gato, Gato, Gato") and try again.',
+      v_unknown.date, coalesce(nullif(btrim(v_unknown.dive_site), ''), 'no dive site');
   end if;
   if v_count <> v_bundle.dive_count then
     raise exception 'This bundle is for % dives but the visit has %. Nothing was applied.', v_bundle.dive_count, v_count;
@@ -147,7 +176,7 @@ begin
 end;
 $$;
 
--- ---- 5. remove_bundle --------------------------------------------------------
+-- ---- 6. remove_bundle --------------------------------------------------------
 create or replace function public.remove_bundle(p_visit_id uuid)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -203,6 +232,7 @@ commit;
 -- begin;
 -- drop function if exists public.apply_bundle(uuid, uuid, numeric);
 -- drop function if exists public.remove_bundle(uuid);
+-- drop function if exists public.activity_dive_count(text);
 -- drop table if exists public.activity_bundle_snapshots;
 -- drop index if exists public.activities_one_bundle_row_per_visit;
 -- alter table public.activities drop column if exists row_type;
