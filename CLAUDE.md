@@ -260,6 +260,39 @@ UI:
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
 
+## Latest update: Apply Bundle rework, Task 1 (2026-10-15) — LIVE
+
+**Shipped:** aquadesk-app `master` = `2492615`; root `35d70ac`; migration
+**058** run on production 2026-10-15 (MK approved; DB password given in chat,
+not stored). Live Cloudflare version `a10a882d-c0ca-4545-89f2-8149264a8038`,
+`BUILD_ID qs6cj1_19UnuRpQ3sLIcA` (match confirmed, old BUILD_ID gone).
+Rollback target: `83c61e33-dff1-45c1-972a-836ca7316fb4`. Baseline + full
+activity backup: `D:\aquadesk-backups\baseline-pre058.json`,
+`activities-backup-pre058.json` (511 rows; after 058 all 511 identical,
+row_type NULL, payments/deposits/audit totals unchanged).
+- **058 (additive):** `activities.row_type` (null everywhere; `bundle` only on
+  new bundle rows), one-bundle-row-per-visit unique index,
+  `activity_bundle_snapshots` (saved prices, written only by the functions),
+  `activity_dive_count(text)`, `apply_bundle()` / `remove_bundle()`
+  (SECURITY DEFINER; they check "visit is open" themselves).
+- **Behaviour:** Apply Bundle never replaces/renames/deletes a row — dives go
+  to 0 (prices saved), ONE new bundle row (same date as the last dive, shown
+  last, named after the bundle). Dive count = comma entries in each row's site
+  text (Gato, Gato, Gato = 3); text with digits/"+" or empty is REFUSED, never
+  guessed (MK). Legacy bundles (bundle_id, no row_type) can't get a new bundle
+  and have no Remove Bundle. Apply Charges refuses a visit with a bundle.
+  Bundle rows are excluded by row_type from staff counts (walk-in/commission
+  lines, Raw Data staff CSV, Overview days served, govt-fees reminder, Boat
+  Return duplicate check) but stay in revenue.
+- **Decisions (MK):** Dive Nation past staff counts for package text like
+  "3sharks+3gato" stay as they are. The 38 uncountable fun-diving rows and the
+  31 such staff lines are all on CLOSED bills.
+- **Package Test test divers (PT-0028..0031):** PT-0028 3 dives, PT-0029 6
+  singles, PT-0030 Gato+Shark Diving (6), PT-0031 2 Local + 3 singles (5).
+  PT-0024 was used by MK (legacy-style bundle, closed).
+- **Next (2026-10-14 plan, re-scoped by the live-data rule):** add-ons to Bill
+  Summary and the Fun/Course switch + course_fee row type — new entries only.
+
 ## Latest update: database bill lock + Changes After Unlock (2026-10-14)
 
 **Shipped:** aquadesk-app `1dd0499`; migration `057_closed_bill_lock.sql`
