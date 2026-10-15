@@ -40,6 +40,19 @@ today, so clients aren't confused.
 - Test data goes in test centres only: package/bundle/course work in
   **Package Test**, tier-pricing work in **Test Dive Center**.
 
+## STANDING RULE (MK, 2026-10-15): no native browser pop-ups — permanent
+
+**Never use native browser pop-ups** (`window.confirm`, `alert`, `prompt`) in
+AquaDesk. Every confirmation, warning or message uses the app's own branded UI:
+`useConfirm()` from `@/components/ui/ConfirmDialog` (promise-based; options
+`title`, `confirmLabel`, `danger`, `dismissible` — `dismissible: true` also lets
+Esc / a click on the backdrop cancel), `useToast()` for short notices, or an
+inline message / modal in the page's existing style (see `BillUnlockModal`).
+Applies from the start to the add-ons (Bill Summary) and Fun/Course mode-switch
+work. Audit 2026-10-15: the only native pop-up in the app was the Remove Bundle
+confirm (now replaced); `window.print()` print dialogs are the browser's own and
+not replaceable.
+
 ## Resume Checklist (read this first if picking this project back up cold)
 
 The user's Pro plan expired 2026-08-20 and the next session could start
