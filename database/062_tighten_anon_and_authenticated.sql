@@ -8,6 +8,14 @@
 -- storage. RLS already stops all of this, so nothing visible changes. Run only
 -- after MK approves, and after 061.
 --
+-- Checked again 2026-10-25 (whole app incl. register page, footer, staff page,
+-- cert-card upload): privacy_notice is never read directly by any page of the
+-- rebuild (only through get_registration_config); calculate_visit_total is not
+-- called anywhere (a code comment mentions it). Only the OLD reference
+-- register.html reads privacy_notice directly, and it talks to the old project.
+-- So neither keeps anon access.
+-- Undo: database/rollbacks/062_rollback_tighten_anon_and_authenticated.sql
+--
 -- Does NOT touch any row of data.
 
 begin;

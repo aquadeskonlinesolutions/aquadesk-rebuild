@@ -293,7 +293,7 @@ UI:
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
 
-## Latest update: Data API grants audit (2026-10-25) — migrations written, NOT yet run on production
+## Latest update: Data API grants audit (2026-10-25) — 061 APPLIED on production, 062 written, NOT run
 
 **Why:** Supabase stops auto-granting table access on 2026-10-30. Found on
 production (read-only query, DB password given in chat, not stored):
@@ -321,6 +321,16 @@ production (read-only query, DB password given in chat, not stored):
 - `062_tighten_anon_and_authenticated.sql` — **needs MK's approval**: revokes
   all anon table access, TRUNCATE/TRIGGER/REFERENCES from authenticated, anon
   execute on the 5 functions above. No data touched; RLS already blocked it.
+**061 applied on production 2026-10-25 (MK approved):** before/after access
+snapshot (tables S/I/U/D/T + column select counts + function execute for anon,
+authenticated, service_role: 57 tables + 33 functions) IDENTICAL. 062 rollback:
+`database/rollbacks/062_rollback_tighten_anon_and_authenticated.sql` (built from
+production's real ACLs, proven exact on a test DB; kept OUT of the numbered files
+so a db reset can't undo 062). MK runs 062 himself at a quiet time and tests the
+public flows.
+**DB password:** the app never uses it (only API keys: Supabase publishable +
+secret, Resend, Paddle). Used only by Claude's/MK's own scripts (pg pooler) and
+`database/migration/etl.js`/`preflight.js` via env `AQUADESK_TARGET_DB_URL`.
 **Test done (2026-10-25):** no Docker on this machine so `supabase db reset`
 is impossible; instead embedded Postgres 17 + bootstrap stubs (roles with NO
 default privileges, auth/storage stubs, pgcrypto stubbed), replay 001→062,
