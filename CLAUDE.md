@@ -293,7 +293,7 @@ UI:
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
 
-## Latest update: Data API grants audit (2026-10-25) — 061 APPLIED on production, 062 written, NOT run
+## Latest update: Data API grants audit (2026-10-25) — 061 AND 062 APPLIED on production
 
 **Why:** Supabase stops auto-granting table access on 2026-10-30. Found on
 production (read-only query, DB password given in chat, not stored):
@@ -318,7 +318,10 @@ production (read-only query, DB password given in chat, not stored):
   without the two hashes; service_role all; every function; anon only the 10
   public-page functions). Function access verified IDENTICAL to production;
   on production it changes nothing.
-- `062_tighten_anon_and_authenticated.sql` — **needs MK's approval**: revokes
+- `062_tighten_anon_and_authenticated.sql` — **APPLIED on production 2026-10-25
+  (Claude ran it at MK's request; MK then passed his tests: public registration
+  through submit, cert-card upload, staff crew page by code, login, owner session
+  with dashboard / diver form / Settlement)**: revokes
   all anon table access, TRUNCATE/TRIGGER/REFERENCES from authenticated, anon
   execute on the 5 functions above. No data touched; RLS already blocked it.
 **061 applied on production 2026-10-25 (MK approved):** before/after access
@@ -326,8 +329,17 @@ snapshot (tables S/I/U/D/T + column select counts + function execute for anon,
 authenticated, service_role: 57 tables + 33 functions) IDENTICAL. 062 rollback:
 `database/rollbacks/062_rollback_tighten_anon_and_authenticated.sql` (built from
 production's real ACLs, proven exact on a test DB; kept OUT of the numbered files
-so a db reset can't undo 062). MK runs 062 himself at a quiet time and tests the
-public flows.
+so a db reset can't undo 062). **062 result (2026-10-25):** before/after snapshot
+(57 tables + 46 functions x anon/authenticated/service_role = 309 entries): 117
+changed, 192 identical. anon: 0 tables reachable, no execute on the 5 functions
+(24 functions stay executable, all intended). authenticated: only S/I/U/D left
+(dive_centers: UPDATE + column select; trace_counters: none; snapshots: select).
+service_role unchanged. Rollback NOT needed. SUPABASE_SECRET_KEY confirmed
+server-only (`lib/supabase/admin.ts` is `server-only`; importers are server
+actions / a server page / the Paddle webhook processor).
+**Gotcha:** a slow background snapshot script overwrote the saved before-state
+after 062 ran — never let two snapshot jobs write the same file; the before-state
+was rebuilt from the diff.
 **DB password:** the app never uses it (only API keys: Supabase publishable +
 secret, Resend, Paddle). Used only by Claude's/MK's own scripts (pg pooler) and
 `database/migration/etl.js`/`preflight.js` via env `AQUADESK_TARGET_DB_URL`.
