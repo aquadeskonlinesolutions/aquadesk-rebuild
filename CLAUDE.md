@@ -53,6 +53,26 @@ work. Audit 2026-10-15: the only native pop-up in the app was the Remove Bundle
 confirm (now replaced); `window.print()` print dialogs are the browser's own and
 not replaceable.
 
+## STANDING RULE (MK, 2026-10-25): every new table ships with its GRANTs — permanent
+
+From 2026-10-30 Supabase gives new tables in `public` **no automatic Data API
+grants** (anon / authenticated / service_role). A table without explicit grants
+is unreachable from the app, and a schema rebuilt from migrations has none.
+- **Every migration that creates a table (or a function the app calls) must
+  include its GRANT statements in the same file.** Typical new tenant table:
+  `grant select, insert, update, delete on public.x to authenticated, service_role;`
+  with RLS enabled. Narrower where the app needs less (read-only, service-role
+  only). Functions: `revoke all ... from public, anon;` then `grant execute ...
+  to authenticated` (and `service_role` if the server calls it).
+- **anon only where a public page truly needs it** (registration, staff crew
+  page, login lockout, cert-card upload) — and for those, a SECURITY DEFINER
+  function with `grant execute ... to anon`, **not** table access. anon has no
+  table grants at all in this project (061/062).
+- Never grant TRUNCATE / TRIGGER / REFERENCES to client roles. A new column on
+  `dive_centers` still needs its own column-level `grant select (col)`.
+- Check: replay 001..N on a clean Postgres with no default privileges and diff
+  the access against production (method under "Latest update: Data API grants").
+
 ## Resume Checklist (read this first if picking this project back up cold)
 
 The user's Pro plan expired 2026-08-20 and the next session could start
@@ -272,6 +292,46 @@ UI:
     grid doesn't stack on phones.
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
+
+## Latest update: Data API grants audit (2026-10-25) — migrations written, NOT yet run on production
+
+**Why:** Supabase stops auto-granting table access on 2026-10-30. Found on
+production (read-only query, DB password given in chat, not stored):
+- None of migrations 001–060 has a table GRANT. Replaying them on a clean
+  Postgres without default privileges gives **56 of 56 tables with no access
+  for any role**. Only functions had explicit grants.
+- **anon currently has full SELECT/INSERT/UPDATE/DELETE/TRUNCATE on every
+  public table** (auto-grant), protected only by RLS. Real anon session test:
+  sees 0 rows everywhere except `privacy_notice` (1 row, `using true`; the
+  registration page reads it through `get_registration_config`, never
+  directly). Public pages use only RPCs + storage. authenticated also holds
+  TRUNCATE/TRIGGER/REFERENCES (not reachable via the Data API).
+- anon can also execute `set_owner_unlock`, `set_billing_unlock`,
+  `generate_daily_staff_token`, `log_bill_unlock`, `calculate_visit_total`
+  (each refuses inside for non-owners/other centres; PUBLIC default execute).
+  anon must KEEP `diver_exists_for_path` (cert-card storage policy calls it).
+- 051's column-level SELECT on `dive_centers` also went to anon.
+**Files (root repo `database/`):**
+- `061_explicit_data_api_grants.sql` — additive; writes today's access down
+  (authenticated S/I/U/D per table, read-only snapshots, none on
+  trace_counters/billing_password_attempts, dive_centers UPDATE + column select
+  without the two hashes; service_role all; every function; anon only the 10
+  public-page functions). Function access verified IDENTICAL to production;
+  on production it changes nothing.
+- `062_tighten_anon_and_authenticated.sql` — **needs MK's approval**: revokes
+  all anon table access, TRUNCATE/TRIGGER/REFERENCES from authenticated, anon
+  execute on the 5 functions above. No data touched; RLS already blocked it.
+**Test done (2026-10-25):** no Docker on this machine so `supabase db reset`
+is impossible; instead embedded Postgres 17 + bootstrap stubs (roles with NO
+default privileges, auth/storage stubs, pgcrypto stubbed), replay 001→062,
+compare has_*_privilege per role against production. Role-level flow checks:
+authenticated reads all tables and RPCs; anon public RPCs work, direct table /
+set_*_unlock / staff-token calls denied; hashes unreadable; service_role ok.
+**NOT done:** browser flows (login, diver form, billing, reports, settlement)
+against a rebuilt DB — only the access layer was proven.
+**Gotchas:** `npm install embedded-postgres` blocks its postinstall — run
+`node scripts/hydrate-symlinks.js` inside `@embedded-postgres/windows-x64`
+or `initdb` exits 0xC0000135; `pg_ctl -w start` through a pipe hangs.
 
 ## Latest update: Fun Diving ⇄ Course switch, Task 3 (2026-10-15) — LIVE, VERIFIED
 
