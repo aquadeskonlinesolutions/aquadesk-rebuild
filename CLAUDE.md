@@ -293,6 +293,44 @@ UI:
 Process: no automated test suite exists; testing = tsc + eslint (baseline
 1 error + 6 warnings) + build + the local stand-in (Working practices).
 
+## Latest update: Package Test cleanup, nitrox rule, /staff wording (2026-10-25) — LIVE
+
+**Shipped:** aquadesk-app `master` = `5e10378`; root `97da725`; migration **063**
+applied on production (Claude ran it at MK's request, DB password via env var for
+the session only). Live Cloudflare version `102381b8-e92d-4510-9b9a-48a830499b3a`,
+`BUILD_ID i6ZqmrsndhOtQJ5zxij7j` (match confirmed on aquadesk.online and /staff,
+old BUILD_ID gone). Rollback target (code only): `d3ef5392-301a-4cac-9178-e59a18629593`.
+- **Package Test cleanup (MK approved the exact list):** 12 test divers hard-deleted
+  from Package Test Dive Center (PT-0025/27/28/30/31/32/35/38/40/41/42 from the
+  2026-10-15 live checklists + PT-0043 from MK's 062 test), with their visits,
+  activities, add-ons, registrations, 3 test-only schedules (+ manifests) and the
+  PT-0043 cert-card file. PT: 43 → 31 divers, activities 101 → 77, schedules 20 → 17;
+  payments/deposits/invoices unchanged. Other centres' counts identical. Backup:
+  `D:\aquadesk-backups\pt-cleanup-2026-10-25T13-28-00-172Z\` (rows + the image).
+  Left on purpose (MK): PT-0001..0023, and 8 divers with billing history (PT-0024,
+  26, 29, 33 closed; PT-0034, 36, 37, 39 still OPEN). The app has no void for a bill
+  with activities/payments (`voidVisit` refuses; checkout needs the billing password).
+  The delete wrote ordinary `delete` audit rows; old "insert" audit rows stay.
+- **Nitrox rule (063 + `RegistrationWizard.tsx`):** the registration form has no
+  dedicated nitrox request — the equipment step lists the centre's Settings >
+  Equipment items, and only Package Test has an item named "Nitrox". Any item whose
+  name contains "nitrox" is now hidden unless "Nitrox certified" is ticked, cleared
+  when un-ticked, and filtered on submit. 063 = 041's `submit_diver_registration`
+  verbatim + a silent filter of such items when `nitrox_certified` is not true
+  (certified / other items / malformed JSON pass through byte-identical; tested in a
+  rolled-back production transaction, 9 cases incl. a returning diver). Prefill
+  (`get_diver_prefill`) returns only name/contact fields, so it can't bring back a
+  stale request; staff edit paths (Edit Equipment / Edit Diver Info) are untouched.
+  **063 is now the latest `submit_diver_registration`** — base future edits on it.
+  Rollback: re-run 041's create-or-replace in full.
+- **/staff wording (`StaffScheduleClient.tsx`):** join rides show the join-ride name as
+  the title (or "Join ride (boat name not given)") with a "Join ride" badge; the old
+  "Joining:" line is gone. Own-boat/rental trips with no boat say "Boat not assigned"
+  (was "Boat TBD"). "Site TBD" unchanged. Join rides always save `boat_id = null`.
+- **Not browser-tested by Claude** (no stand-in run this session): tsc clean, eslint at
+  baseline, cf:build OK, live BUILD_ID match, DB function tested. MK tests the form
+  and /staff.
+
 ## Latest update: Data API grants audit (2026-10-25) — 061 AND 062 APPLIED on production
 
 **Why:** Supabase stops auto-granting table access on 2026-10-30. Found on
